@@ -1,0 +1,1 @@
+<td>{{ ($fee->feeType ? $fee->feeType->name : (($fee->fee_type_id) ? ('Fee Type (ID: ’ . $fee->fee_type_id .’)’) : 'N/A’) }}</td> 

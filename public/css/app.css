@@ -1,0 +1,162 @@
+.pagination-wrap {
+    clear: both;
+    margin-bottom: 20px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Lightbox Custom Styles */
+.lb-data .lb-caption {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.lb-data .lb-number {
+    font-size: 12px;
+    color: #666;
+}
+
+.lb-nav a.lb-prev,
+.lb-nav a.lb-next {
+    opacity: 0.8;
+}
+
+.lb-nav a.lb-prev:hover,
+.lb-nav a.lb-next:hover {
+    opacity: 1;
+}
+
+.lb-closeContainer {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.lb-close {
+    opacity: 0.8;
+}
+
+.lb-close:hover {
+    opacity: 1;
+}
+
+/* Ensure images maintain aspect ratio */
+.lb-image {
+    max-height: 80vh !important;
+    width: auto !important;
+}
+
+/* Add a subtle shadow to the lightbox */
+.lb-outerContainer {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Style the loading indicator */
+.lb-loader {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+}
+
+/* Make the overlay more subtle */
+.lightboxOverlay {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+/* Comment Modal Styles */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    border-bottom: 1px solid #eee;
+    padding: 1rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.post-image-container {
+    position: relative;
+    height: 100%;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.post-image-container img {
+    max-height: 100%;
+    width: auto;
+    object-fit: contain;
+}
+
+.comments-section {
+    height: 100%;
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.comments-section::-webkit-scrollbar {
+    width: 5px;
+}
+
+.comments-section::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.comments-section::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.comments-section::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.comment-item {
+    margin-bottom: 1rem;
+}
+
+.comment-content {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 0.75rem;
+}
+
+.comment-content h6 {
+    margin-bottom: 0.25rem;
+}
+
+.comment-content p {
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .post-image-container {
+        min-height: 200px;
+        margin-bottom: 1rem;
+    }
+    
+    .comments-section {
+        max-height: 400px;
+    }
+} 
