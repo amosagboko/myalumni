@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('election_offices', function (Blueprint $table) {
-            $table->foreignId('fee_type_id')->after('is_active')->constrained('fee_types')->nullOnDelete();
+            $table->foreignId('fee_type_id')->after('is_active')->constrained('fee_types');
         });
     }
 
