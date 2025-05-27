@@ -54,11 +54,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('messages', function (Blueprint $table) {
-            // Drop the new columns
-            $table->dropForeign(['sender_id']);
-            $table->dropForeign(['receiver_id']);
-            $table->dropColumn(['sender_id', 'receiver_id', 'message', 'read_at', 'type', 'attachment', 'status']);
-            $table->dropSoftDeletes();
+            if (Schema::hasColumn('messages', 'type')) {
+                $table->dropColumn('type');
+            }
+            if (Schema::hasColumn('messages', 'attachment')) {
+                $table->dropColumn('attachment');
+            }
+            if (Schema::hasColumn('messages', 'status')) {
+                $table->dropColumn('status');
+            }
+            if (Schema::hasColumn('messages', 'deleted_at')) {
+                $table->dropSoftDeletes();
+            }
         });
     }
 }; 

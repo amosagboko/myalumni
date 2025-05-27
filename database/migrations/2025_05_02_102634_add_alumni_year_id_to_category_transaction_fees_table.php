@@ -12,24 +12,40 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, drop the foreign key constraint
-        Schema::table('category_transaction_fees', function (Blueprint $table) {
-            $table->dropForeign(['category_id']);
-        });
+        // Check if the foreign key (or column) exists before dropping it
+        if (Schema::hasColumn('category_transaction_fees', 'category_id')) {
+            try {
+                Schema::table('category_transaction_fees', function (Blueprint $table) {
+                    $table->dropForeign(['category_id']);
+                });
+            } catch (\Exception $e) {
+                // Foreign key (or column) does not exist, continue
+            }
+        }
 
-        // Then add the new column
+        // Check if the index (or constraint) exists before dropping it
+        if (Schema::hasIndex('category_transaction_fees', 'category_transaction_fees_category_id_fee_type_year_unique')) {
+            try {
+                Schema::table('category_transaction_fees', function (Blueprint $table) {
+                    $table->dropUnique('category_transaction_fees_category_id_fee_type_year_unique');
+                });
+            } catch (\Exception $e) {
+                // Index (or constraint) does not exist, continue
+            }
+        }
+
+        // Then add the new column (and its FK constraint) and (re-)add the unique index (or constraint)
         Schema::table('category_transaction_fees', function (Blueprint $table) {
             $table->foreignId('alumni_year_id')->after('category_id')->constrained('alumni_years')->onDelete('cascade');
+            $table->unique(['category_id', 'fee_type', 'alumni_year_id'], 'category_transaction_fees_category_id_fee_type_year_unique');
         });
 
-        // Now we can safely modify the unique constraint
-        DB::statement('ALTER TABLE category_transaction_fees DROP INDEX category_transaction_fees_category_id_fee_type_unique');
-        DB::statement('ALTER TABLE category_transaction_fees ADD UNIQUE INDEX category_transaction_fees_category_id_fee_type_year_unique (category_id, fee_type, alumni_year_id)');
-
-        // Finally, recreate the foreign key constraint
-        Schema::table('category_transaction_fees', function (Blueprint $table) {
-            $table->foreign('category_id')->references('id')->on('alumni_categories')->onDelete('cascade');
-        });
+        // (Re-)add the foreign key constraint (if needed)
+        if (Schema::hasColumn('category_transaction_fees', 'category_id')) {
+            Schema::table('category_transaction_fees', function (Blueprint $table) {
+                $table->foreign('category_id')->references('id')->on('alumni_categories')->onDelete('cascade');
+            });
+        }
     }
 
     /**
@@ -37,23 +53,41 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // First, drop the foreign key constraint
-        Schema::table('category_transaction_fees', function (Blueprint $table) {
-            $table->dropForeign(['category_id']);
-        });
+        // Check if the foreign key (or column) exists before dropping it
+        if (Schema::hasColumn('category_transaction_fees', 'category_id')) {
+            try {
+                Schema::table('category_transaction_fees', function (Blueprint $table) {
+                    $table->dropForeign(['category_id']);
+                });
+            } catch (\Exception $e) {
+                // Foreign key (or column) does not exist, continue
+            }
+        }
 
-        // Then modify the unique constraint
-        DB::statement('ALTER TABLE category_transaction_fees DROP INDEX category_transaction_fees_category_id_fee_type_year_unique');
-        DB::statement('ALTER TABLE category_transaction_fees ADD UNIQUE INDEX category_transaction_fees_category_id_fee_type_unique (category_id, fee_type)');
+        // Check if the index (or constraint) exists before dropping it
+        if (Schema::hasIndex('category_transaction_fees', 'category_transaction_fees_category_id_fee_type_year_unique')) {
+            try {
+                Schema::table('category_transaction_fees', function (Blueprint $table) {
+                    $table->dropUnique('category_transaction_fees_category_id_fee_type_year_unique');
+                });
+            } catch (\Exception $e) {
+                // Index (or constraint) does not exist, continue
+            }
+        }
 
-        // Drop the alumni_year_id column
-        Schema::table('category_transaction_fees', function (Blueprint $table) {
-            $table->dropColumn('alumni_year_id');
-        });
+        // Drop the alumni_year_id column (and its FK constraint) (if it exists)
+        if (Schema::hasColumn('category_transaction_fees', 'alumni_year_id')) {
+            Schema::table('category_transaction_fees', function (Blueprint $table) {
+                $table->dropForeign(['alumni_year_id']);
+                $table->dropColumn('alumni_year_id');
+            });
+        }
 
-        // Finally, recreate the foreign key constraint
-        Schema::table('category_transaction_fees', function (Blueprint $table) {
-            $table->foreign('category_id')->references('id')->on('alumni_categories')->onDelete('cascade');
-        });
+        // (Re-)add the foreign key constraint (if needed)
+        if (Schema::hasColumn('category_transaction_fees', 'category_id')) {
+            Schema::table('category_transaction_fees', function (Blueprint $table) {
+                $table->foreign('category_id')->references('id')->on('alumni_categories')->onDelete('cascade');
+            });
+        }
     }
 };
