@@ -33,8 +33,11 @@ class AlumniYearController extends Controller
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
-            'is_active' => 'boolean'
+            'is_active' => 'sometimes|boolean'
         ]);
+
+        // Set is_active to false if not present in request
+        $validated['is_active'] = $request->boolean('is_active', false);
 
         if ($validated['is_active']) {
             // Deactivate all other years
@@ -93,9 +96,9 @@ class AlumniYearController extends Controller
      */
     public function destroy(AlumniYear $alumniYear)
     {
-        if ($alumniYear->feeTemplates()->exists()) {
+        if ($alumniYear->categoryTransactionFees()->exists()) {
             return redirect()->route('alumni-years.index')
-                ->with('error', 'Cannot delete alumni year with associated fee templates.');
+                ->with('error', 'Cannot delete alumni year with associated transaction fees.');
         }
 
         $alumniYear->delete();

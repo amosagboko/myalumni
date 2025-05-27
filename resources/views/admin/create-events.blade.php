@@ -1,5 +1,3 @@
-@extends('layouts.alumniadmin')
-
-@section('content')
+<x-alumniadmin-dashboard>
     @livewire('admin.manage-events')
-@endsection 
+</x-alumniadmin-dashboard> 

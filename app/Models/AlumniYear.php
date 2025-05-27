@@ -22,13 +22,13 @@ class AlumniYear extends Model
         'is_active' => 'boolean'
     ];
 
-    public function feeTemplates()
+    public function categoryTransactionFees()
     {
-        return $this->hasMany(FeeTemplate::class);
+        return $this->hasMany(CategoryTransactionFee::class);
     }
 
     public function transactions()
     {
-        return $this->hasManyThrough(Transaction::class, FeeTemplate::class);
+        return $this->hasManyThrough(Transaction::class, CategoryTransactionFee::class);
     }
 }
