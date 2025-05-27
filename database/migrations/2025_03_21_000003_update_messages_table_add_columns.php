@@ -33,6 +33,18 @@ return new class extends Migration
             $table->foreignId('receiver_id')->after('sender_id')->constrained('users')->onDelete('cascade');
             $table->text('message')->after('receiver_id');
             $table->timestamp('read_at')->nullable()->after('message');
+
+            // Add message type to distinguish between text, image, file etc.
+            $table->string('type')->default('text')->after('message');
+            
+            // Add attachment path for media messages
+            $table->string('attachment')->nullable()->after('type');
+            
+            // Add message status (sent, delivered, read)
+            $table->enum('status', ['sent', 'delivered', 'read'])->default('sent')->after('attachment');
+            
+            // Add soft deletes for message deletion
+            $table->softDeletes();
         });
     }
 
@@ -45,7 +57,8 @@ return new class extends Migration
             // Drop the new columns
             $table->dropForeign(['sender_id']);
             $table->dropForeign(['receiver_id']);
-            $table->dropColumn(['sender_id', 'receiver_id', 'message', 'read_at']);
+            $table->dropColumn(['sender_id', 'receiver_id', 'message', 'read_at', 'type', 'attachment', 'status']);
+            $table->dropSoftDeletes();
         });
     }
 }; 

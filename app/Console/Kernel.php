@@ -36,6 +36,7 @@ class Kernel extends ConsoleKernel
             Commands\ResetElectionData::class,
             Commands\SimulateVoting::class,
             Commands\ListElections::class,
+            Commands\ExportDatabase::class,
         ];
     }
 } 
