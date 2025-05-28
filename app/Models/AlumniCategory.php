@@ -29,19 +29,41 @@ class AlumniCategory extends Model
     }
 
     /**
-     * Get the transaction fees for this category.
+     * Get the fee templates for this category.
      */
-    public function transactionFees()
+    public function feeTemplates()
     {
-        return $this->hasMany(CategoryTransactionFee::class, 'category_id');
+        return $this->hasMany(FeeTemplate::class, 'category_id');
     }
 
     /**
-     * Get the active transaction fees for this category.
+     * Get the fee rules for this category.
      */
-    public function activeTransactionFees()
+    public function feeRules()
     {
-        return $this->transactionFees()->active();
+        return $this->hasMany(FeeRule::class, 'category_id');
+    }
+
+    /**
+     * Get the active fee templates for this category.
+     */
+    public function activeFeeTemplates()
+    {
+        return $this->feeTemplates()
+            ->where('is_active', true)
+            ->where('valid_from', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('valid_until')
+                    ->orWhere('valid_until', '>', now());
+            });
+    }
+
+    /**
+     * Get the active fee rules for this category.
+     */
+    public function activeFeeRules()
+    {
+        return $this->feeRules()->where('is_active', true);
     }
 
     /**
@@ -49,9 +71,16 @@ class AlumniCategory extends Model
      */
     public function getFee($feeType)
     {
-        return $this->transactionFees()
-            ->where('fee_type', $feeType)
-            ->active()
+        return $this->feeTemplates()
+            ->whereHas('feeType', function ($query) use ($feeType) {
+                $query->where('code', $feeType);
+            })
+            ->where('is_active', true)
+            ->where('valid_from', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('valid_until')
+                    ->orWhere('valid_until', '>', now());
+            })
             ->first();
     }
 
@@ -69,5 +98,13 @@ class AlumniCategory extends Model
     public function getRouteKeyName()
     {
         return 'slug';
+    }
+
+    /**
+     * Check if this category has any associated fees (either templates or rules).
+     */
+    public function hasFees()
+    {
+        return $this->feeTemplates()->exists() || $this->feeRules()->exists();
     }
 }

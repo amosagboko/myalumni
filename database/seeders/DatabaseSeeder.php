@@ -3,14 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         // First, create all roles and permissions
@@ -19,17 +15,17 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             FeeTemplatePermissionSeeder::class,
             AlumniYearSeeder::class,
-            AlumniCategorySeeder::class,
-            CategoryTransactionFeeSeeder::class,
+            AlumniCategorySeeder::class
         ]);
 
-        // Then create the test user
+        // Seed payment system data
+        $this->call(PaymentSystemSeeder::class);
+
+        // Create test user and assign role
         $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
-
-        // Finally assign the role
         $user->assignRole('administrator');
     }
 }

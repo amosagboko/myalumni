@@ -100,7 +100,7 @@ class FeeTypeController extends Controller
             return back()->with('error', 'System fee types cannot be deleted.');
         }
 
-        if ($feeType->transactionFees()->exists()) {
+        if ($feeType->hasFees()) {
             return back()->with('error', 'Cannot delete fee type that has associated fees.');
         }
 

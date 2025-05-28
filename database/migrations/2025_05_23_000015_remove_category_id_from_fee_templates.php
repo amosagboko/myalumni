@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->boolean('is_test_mode')->default(false)->after('status');
+        Schema::table('fee_templates', function (Blueprint $table) {
+            $table->dropForeign(['category_id']);
+            $table->dropColumn('category_id');
         });
     }
 
@@ -21,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('is_test_mode');
+        Schema::table('fee_templates', function (Blueprint $table) {
+            $table->foreignId('category_id')->nullable()->after('fee_type_id')->constrained('alumni_categories')->onDelete('restrict');
         });
     }
-};
+}; 

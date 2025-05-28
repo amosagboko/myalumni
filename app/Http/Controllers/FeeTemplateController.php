@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CategoryTransactionFee;
+use App\Models\FeeTemplate;
 use App\Models\AlumniYear;
 use App\Models\AlumniCategory;
 use App\Models\FeeType;
@@ -14,16 +14,16 @@ class FeeTemplateController extends Controller
 {
     public function index()
     {
-        $fees = CategoryTransactionFee::with(['category', 'alumniYear', 'transactions'])
+        $fees = FeeTemplate::with(['feeType', 'transactions'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return view('fee-templates.index', compact('fees'));
     }
 
-    public function show(CategoryTransactionFee $fee)
+    public function show(FeeTemplate $fee)
     {
-        $fee->load(['category', 'alumniYear', 'feeType', 'transactions']);
+        $fee->load(['feeType', 'transactions']);
         return view('fee-templates.show', compact('fee'));
     }
 
@@ -32,151 +32,116 @@ class FeeTemplateController extends Controller
         $alumniYears = AlumniYear::where('is_active', true)
             ->orderBy('year', 'desc')
             ->get();
-        $categories = AlumniCategory::where('is_active', true)->get();
         $feeTypes = FeeType::where('is_active', true)->get();
-        
-        return view('fee-templates.create', compact('alumniYears', 'categories', 'feeTypes'));
+        return view('fee-templates.create', compact('alumniYears', 'feeTypes'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'category_id' => 'required|exists:alumni_categories,id',
-            'alumni_year_id' => 'required|exists:alumni_years,id',
-            'fee_type' => 'required|exists:fee_types,code',
+            'graduation_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
+            'fee_type_id' => 'required|exists:fee_types,id',
             'amount' => 'required|numeric|min:0',
+            'name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
-            'is_test_mode' => 'boolean'
+            'valid_from' => 'required|date',
+            'valid_until' => 'nullable|date|after:valid_from'
         ]);
-
         try {
             DB::beginTransaction();
-
-            // Get the fee type ID from the code
-            $feeType = FeeType::where('code', $validated['fee_type'])->first();
-            if (!$feeType) {
-                throw new \Exception('Fee type not found');
-            }
-
-            // Check if a fee already exists for this combination
-            $existingFee = CategoryTransactionFee::where([
-                'category_id' => $validated['category_id'],
-                'fee_type_id' => $feeType->id,
-                'alumni_year_id' => $validated['alumni_year_id']
+            $existingFee = FeeTemplate::where([
+                'fee_type_id' => $validated['fee_type_id'],
+                'graduation_year' => $validated['graduation_year'],
+                'valid_from' => $validated['valid_from']
             ])->first();
-
             if ($existingFee) {
-                throw new \Exception(
-                    'A fee already exists for this category, fee type, and alumni year combination. ' .
-                    'Please edit the existing fee instead.'
-                );
+                throw new \Exception('A fee already exists for this fee type, graduation year, and valid from. Please edit the existing fee instead.');
             }
-
-            // Log the data we're trying to create
-            Log::info('Attempting to create fee with data:', [
-                'validated_data' => $validated,
-                'fee_type_id' => $feeType->id,
-                'fee_type_code' => $validated['fee_type']
-            ]);
-
-            // Create the fee with fee_type_id instead of fee_type
-            $fee = CategoryTransactionFee::create([
-                'category_id' => $validated['category_id'],
-                'alumni_year_id' => $validated['alumni_year_id'],
-                'fee_type_id' => $feeType->id,
+            $fee = FeeTemplate::create([
+                'graduation_year' => $validated['graduation_year'],
+                'fee_type_id' => $validated['fee_type_id'],
                 'amount' => $validated['amount'],
+                'name' => $validated['name'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
-                'is_test_mode' => $validated['is_test_mode'] ?? false
+                'valid_from' => $validated['valid_from'],
+                'valid_until' => $validated['valid_until'] ?? null
             ]);
-
             DB::commit();
-
-            return redirect()
-                ->route('fee-templates.index')
-                ->with('success', 'Fee created successfully.');
+            return redirect()->route('fee-templates.index')->with('success', 'Fee template created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Fee creation failed', [
+            Log::error('Fee template creation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'validated_data' => $validated ?? null,
-                'fee_type_code' => $validated['fee_type'] ?? null,
-                'fee_type_id' => $feeType->id ?? null
+                'validated_data' => $validated ?? null
             ]);
-
-            return back()
-                ->withInput()
-                ->with('error', $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
-    public function edit(CategoryTransactionFee $fee)
+    public function edit(FeeTemplate $fee)
     {
         $fee->load('feeType');
         $alumniYears = AlumniYear::orderBy('year', 'desc')->get();
-        $categories = AlumniCategory::where('is_active', true)->get();
         $feeTypes = FeeType::where('is_active', true)->get();
-        
-        return view('fee-templates.edit', compact('fee', 'alumniYears', 'categories', 'feeTypes'));
+        return view('fee-templates.edit', compact('fee', 'alumniYears', 'feeTypes'));
     }
 
-    public function update(Request $request, CategoryTransactionFee $fee)
+    public function update(Request $request, FeeTemplate $fee)
     {
         $validated = $request->validate([
-            'category_id' => 'required|exists:alumni_categories,id',
-            'alumni_year_id' => 'required|exists:alumni_years,id',
-            'fee_type' => 'required|exists:fee_types,code',
+            'graduation_year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
+            'fee_type_id' => 'required|exists:fee_types,id',
             'amount' => 'required|numeric|min:0',
+            'name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
-            'is_test_mode' => 'boolean'
+            'valid_from' => 'required|date',
+            'valid_until' => 'nullable|date|after:valid_from'
         ]);
-
         try {
             DB::beginTransaction();
-
-            // Get the fee type ID from the code
-            $feeType = FeeType::where('code', $validated['fee_type'])->first();
-            if (!$feeType) {
-                throw new \Exception('Fee type not found');
+            $existingFee = FeeTemplate::where([
+                'fee_type_id' => $validated['fee_type_id'],
+                'graduation_year' => $validated['graduation_year'],
+                'valid_from' => $validated['valid_from']
+            ])->where('id', '!=', $fee->id)->first();
+            if ($existingFee) {
+                throw new \Exception('Another fee already exists for this fee type, graduation year, and valid from.');
             }
-
-            // Update the fee with fee_type_id instead of fee_type
             $fee->update([
-                'category_id' => $validated['category_id'],
-                'alumni_year_id' => $validated['alumni_year_id'],
-                'fee_type_id' => $feeType->id,
+                'graduation_year' => $validated['graduation_year'],
+                'fee_type_id' => $validated['fee_type_id'],
                 'amount' => $validated['amount'],
+                'name' => $validated['name'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
-                'is_test_mode' => $validated['is_test_mode'] ?? false
+                'valid_from' => $validated['valid_from'],
+                'valid_until' => $validated['valid_until'] ?? null
             ]);
-
             DB::commit();
-
-            return redirect()
-                ->route('fee-templates.index')
-                ->with('success', 'Fee updated successfully.');
+            return redirect()->route('fee-templates.index')->with('success', 'Fee template updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Fee update failed: ' . $e->getMessage());
-
-            return back()
-                ->withInput()
-                ->with('error', 'Failed to update fee. Please try again.');
+            Log::error('Fee template update failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'validated_data' => $validated ?? null
+            ]);
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
-    public function destroy(CategoryTransactionFee $fee)
+    public function destroy(FeeTemplate $fee)
     {
         try {
             DB::beginTransaction();
 
             // Check if there are any transactions
             if ($fee->transactions()->exists()) {
-                return back()->with('error', 'Cannot delete fee with existing transactions.');
+                return back()->with('error', 'Cannot delete fee template with existing transactions.');
             }
 
             $fee->delete();
@@ -185,16 +150,19 @@ class FeeTemplateController extends Controller
 
             return redirect()
                 ->route('fee-templates.index')
-                ->with('success', 'Fee deleted successfully.');
+                ->with('success', 'Fee template deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Fee deletion failed: ' . $e->getMessage());
+            Log::error('Fee template deletion failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-            return back()->with('error', 'Failed to delete fee. Please try again.');
+            return back()->with('error', 'Failed to delete fee template. Please try again.');
         }
     }
 
-    public function activate(CategoryTransactionFee $fee)
+    public function activate(FeeTemplate $fee)
     {
         try {
             DB::beginTransaction();
@@ -203,16 +171,21 @@ class FeeTemplateController extends Controller
 
             DB::commit();
 
-            return back()->with('success', 'Fee activated successfully.');
+            return redirect()
+                ->route('fee-templates.index')
+                ->with('success', 'Fee template activated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Fee activation failed: ' . $e->getMessage());
+            Log::error('Fee template activation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-            return back()->with('error', 'Failed to activate fee. Please try again.');
+            return back()->with('error', 'Failed to activate fee template. Please try again.');
         }
     }
 
-    public function deactivate(CategoryTransactionFee $fee)
+    public function deactivate(FeeTemplate $fee)
     {
         try {
             DB::beginTransaction();
@@ -221,12 +194,17 @@ class FeeTemplateController extends Controller
 
             DB::commit();
 
-            return back()->with('success', 'Fee deactivated successfully.');
+            return redirect()
+                ->route('fee-templates.index')
+                ->with('success', 'Fee template deactivated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Fee deactivation failed: ' . $e->getMessage());
+            Log::error('Fee template deactivation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-            return back()->with('error', 'Failed to deactivate fee. Please try again.');
+            return back()->with('error', 'Failed to deactivate fee template. Please try again.');
         }
     }
 } 

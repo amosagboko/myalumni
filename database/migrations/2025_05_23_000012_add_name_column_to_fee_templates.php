@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('category_transaction_fees', function (Blueprint $table) {
-            $table->boolean('is_test_mode')->default(false)->after('is_active');
+        Schema::table('fee_templates', function (Blueprint $table) {
+            $table->string('name', 255)->nullable()->after('fee_type_id');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('category_transaction_fees', function (Blueprint $table) {
-            $table->dropColumn('is_test_mode');
+        Schema::table('fee_templates', function (Blueprint $table) {
+            $table->dropColumn('name');
         });
     }
-}; 
+};

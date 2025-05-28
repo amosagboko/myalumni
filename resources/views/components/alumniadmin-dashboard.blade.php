@@ -64,12 +64,6 @@
                                 <a href="{{ route('admin.users') }}" class="nav-content-bttn open-font" ><i data-feather="users" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i><span>App Users</span></a></li>
                             <li><a href="{{ route('upload.alumni') }}" class="nav-content-bttn open-font" ><i data-feather="award" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i><span>Upload Alumni</span></a></li>
                             <li class="nav-item">
-                                <a href="{{ route('admin.categories.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.categories*') ? 'active' : '' }}">
-                                    <i data-feather="tag" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
-                                    <span>Alumni Categories</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a href="{{ route('admin.fee-types.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.fee-types*') ? 'active' : '' }}">
                                     <i data-feather="list" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Fee Types</span>

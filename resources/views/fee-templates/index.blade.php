@@ -30,7 +30,6 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Category</th>
                                         <th>Year</th>
                                         <th>Fee Type</th>
                                         <th>Amount</th>
@@ -42,9 +41,8 @@
                                 <tbody>
                                     @forelse($fees as $fee)
                                         <tr>
-                                            <td>{{ $fee->category->name }}</td>
-                                            <td>{{ $fee->alumniYear->year }}</td>
-                                            <td>{{ $fee->fee_type }}</td>
+                                            <td>{{ $fee->graduation_year }}</td>
+                                            <td>{{ $fee->feeType?->name ?? 'Unknown Fee Type' }}</td>
                                             <td>₦{{ number_format($fee->amount, 2) }}</td>
                                             <td>
                                                 <span class="badge {{ $fee->is_active ? 'bg-success' : 'bg-secondary' }}">

@@ -85,66 +85,58 @@ class Alumni extends Model
         if ($this->year_of_graduation <= 2023) {
             Log::info('Alumni graduated in 2023 or earlier', ['graduation_year' => $this->year_of_graduation]);
 
-            // Get the subscription category
-            $subscriptionCategory = AlumniCategory::where('name', 'Alumni Annual Registration (Subscription)')
+            // Get the subscription fee type
+            $subscriptionFeeType = FeeType::where('code', 'subscription')
                 ->where('is_active', true)
                 ->first();
 
-            Log::info('Subscription category lookup result', [
-                'found' => (bool)$subscriptionCategory,
-                'category_id' => $subscriptionCategory?->id,
-                'category_name' => $subscriptionCategory?->name
+            Log::info('Subscription fee type lookup result', [
+                'found' => (bool)$subscriptionFeeType,
+                'fee_type_id' => $subscriptionFeeType?->id,
+                'fee_type_code' => $subscriptionFeeType?->code
             ]);
 
-            if ($subscriptionCategory) {
-                // Get the subscription fee type
-                $subscriptionFeeType = FeeType::where('code', 'subscription')
+            if ($subscriptionFeeType) {
+                // Get the fee template for this year
+                $fees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)
+                    ->where('graduation_year', $activeYear->year)
                     ->where('is_active', true)
-                    ->first();
+                    ->where('valid_from', '<=', now())
+                    ->where(function ($query) {
+                        $query->whereNull('valid_until')
+                            ->orWhere('valid_until', '>', now());
+                    })
+                    ->get();
 
-                Log::info('Subscription fee type lookup result', [
-                    'found' => (bool)$subscriptionFeeType,
-                    'fee_type_id' => $subscriptionFeeType?->id,
-                    'fee_type_code' => $subscriptionFeeType?->code
+                Log::info('Subscription fees lookup result', [
+                    'count' => $fees->count(),
+                    'fees' => $fees->map(function($fee) {
+                        return [
+                            'id' => $fee->id,
+                            'amount' => $fee->amount,
+                            'is_active' => $fee->is_active,
+                            'fee_type_id' => $fee->fee_type_id
+                        ];
+                    })->toArray()
                 ]);
 
-                if ($subscriptionFeeType) {
-                    // Get the fee for this category and year
-                    $fees = CategoryTransactionFee::where('category_id', $subscriptionCategory->id)
-                        ->where('alumni_year_id', $activeYear->id)
-                        ->where('fee_type_id', $subscriptionFeeType->id)
-                        ->where('is_active', true)
-                        ->get();
-
-                    Log::info('Subscription fees lookup result', [
-                        'count' => $fees->count(),
-                        'fees' => $fees->map(function($fee) {
-                            return [
-                                'id' => $fee->id,
-                                'amount' => $fee->amount,
-                                'is_active' => $fee->is_active,
-                                'fee_type_id' => $fee->fee_type_id
-                            ];
-                        })->toArray()
-                    ]);
-
-                    // Return the fees (even if empty) - don't fall through to 2025+ logic
-                    return $fees;
-                }
-                
-                Log::warning('No subscription fee type found');
+                // Return the fees (even if empty) - don't fall through to 2025+ logic
+                return $fees;
             }
             
-            // If no subscription category or fee type found, return empty collection
-            Log::warning('No subscription category or fee type found');
+            Log::warning('No subscription fee type found');
             return collect([]);
         }
 
         // For 2025+ graduates only, get fees based on the alumni's category and active year
         if ($this->year_of_graduation >= 2025) {
-            $fees = CategoryTransactionFee::where('category_id', $this->category_id)
-                ->where('alumni_year_id', $activeYear->id)
+            $fees = FeeTemplate::where('graduation_year', $activeYear->year)
                 ->where('is_active', true)
+                ->where('valid_from', '<=', now())
+                ->where(function ($query) {
+                    $query->whereNull('valid_until')
+                        ->orWhere('valid_until', '>', now());
+                })
                 ->get();
 
             return $fees;

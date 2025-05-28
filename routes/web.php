@@ -49,9 +49,6 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
         return view('admin.users.create');
     })->name('users.create');
     
-    // Alumni Categories Management
-    Route::resource('categories', AlumniCategoryController::class);
-    
     // Fee Type Management
     Route::resource('fee-types', FeeTypeController::class);
     Route::patch('fee-types/{feeType}/toggle-status', [FeeTypeController::class, 'toggleStatus'])->name('fee-types.toggle-status');
@@ -112,7 +109,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Fee Template Routes
-    Route::prefix('fee-templates')->name('fee-templates.')->group(function () {
+    Route::prefix('fee-templates')->name('fee-templates.')->middleware(['auth'])->group(function () {
         // View routes
         Route::get('/', [FeeTemplateController::class, 'index'])
             ->middleware('can:view fee templates')
@@ -124,6 +121,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/', [FeeTemplateController::class, 'store'])->name('store');
         });
         
+        // Show route
         Route::get('/{fee}', [FeeTemplateController::class, 'show'])
             ->middleware('can:view fee template details')
             ->name('show');
@@ -139,10 +137,43 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:delete fee templates')
             ->name('destroy');
 
-        // Activation routes
+        // Status management routes
         Route::middleware('can:activate fee templates')->group(function () {
             Route::post('/{fee}/activate', [FeeTemplateController::class, 'activate'])->name('activate');
             Route::post('/{fee}/deactivate', [FeeTemplateController::class, 'deactivate'])->name('deactivate');
+        });
+
+        // Fee Rules routes
+        Route::prefix('{fee}/rules')->name('rules.')->middleware('can:manage fee rules')->group(function () {
+            Route::get('/', [FeeTemplateController::class, 'rules'])->name('index');
+            Route::get('/create', [FeeTemplateController::class, 'createRule'])->name('create');
+            Route::post('/', [FeeTemplateController::class, 'storeRule'])->name('store');
+            Route::get('/{rule}/edit', [FeeTemplateController::class, 'editRule'])->name('edit');
+            Route::put('/{rule}', [FeeTemplateController::class, 'updateRule'])->name('update');
+            Route::delete('/{rule}', [FeeTemplateController::class, 'destroyRule'])->name('destroy');
+            Route::post('/{rule}/activate', [FeeTemplateController::class, 'activateRule'])->name('activate');
+            Route::post('/{rule}/deactivate', [FeeTemplateController::class, 'deactivateRule'])->name('deactivate');
+        });
+
+        // Transactions routes
+        Route::prefix('{fee}/transactions')->name('transactions.')->middleware('can:view fee transactions')->group(function () {
+            Route::get('/', [FeeTemplateController::class, 'transactions'])->name('index');
+            Route::get('/{transaction}', [FeeTemplateController::class, 'showTransaction'])->name('show');
+            Route::post('/{transaction}/mark-paid', [FeeTemplateController::class, 'markTransactionPaid'])
+                ->middleware('can:manage fee transactions')
+                ->name('mark-paid');
+            Route::post('/{transaction}/mark-failed', [FeeTemplateController::class, 'markTransactionFailed'])
+                ->middleware('can:manage fee transactions')
+                ->name('mark-failed');
+        });
+
+        // Reports routes
+        Route::prefix('reports')->name('reports.')->middleware('can:view fee reports')->group(function () {
+            Route::get('/', [FeeTemplateController::class, 'reports'])->name('index');
+            Route::get('/export', [FeeTemplateController::class, 'exportReports'])->name('export');
+            Route::get('/summary', [FeeTemplateController::class, 'summaryReport'])->name('summary');
+            Route::get('/transactions', [FeeTemplateController::class, 'transactionReport'])->name('transactions');
+            Route::get('/categories', [FeeTemplateController::class, 'categoryReport'])->name('categories');
         });
     });
 

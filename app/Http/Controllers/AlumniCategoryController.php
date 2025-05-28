@@ -115,9 +115,9 @@ class AlumniCategoryController extends Controller
                 return back()->with('error', 'Cannot delete category that has alumni assigned to it.');
             }
 
-            // Check if category has any transaction fees
-            if ($category->transactionFees()->exists()) {
-                return back()->with('error', 'Cannot delete category that has transaction fees.');
+            // Check if category has any fees (templates or rules)
+            if ($category->hasFees()) {
+                return back()->with('error', 'Cannot delete category that has associated fees.');
             }
 
             $category->delete();

@@ -18,46 +18,32 @@
                             @csrf
                             @method('PUT')
                             <div class="mb-3">
-                                <label for="category_id" class="form-label">Category</label>
-                                <select name="category_id" id="category_id" class="form-select @error('category_id') is-invalid @enderror" required>
-                                    <option value="">Select Category</option>
-                                    @foreach($categories as $category)
-                                        <option value="{{ $category->id }}" {{ old('category_id', $fee->category_id) == $category->id ? 'selected' : '' }}>
-                                            {{ $category->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('category_id')
+                                <label for="graduation_year" class="form-label">Graduation Year</label>
+                                <input type="number" name="graduation_year" id="graduation_year" class="form-control @error('graduation_year') is-invalid @enderror" value="{{ old('graduation_year', $fee->graduation_year) }}" min="1900" max="{{ date('Y') + 1 }}" required>
+                                @error('graduation_year')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
                             <div class="mb-3">
-                                <label for="alumni_year_id" class="form-label">Alumni Year</label>
-                                <select name="alumni_year_id" id="alumni_year_id" class="form-select @error('alumni_year_id') is-invalid @enderror" required>
-                                    <option value="">Select Year</option>
-                                    @foreach($alumniYears as $year)
-                                        <option value="{{ $year->id }}" {{ old('alumni_year_id', $fee->alumni_year_id) == $year->id ? 'selected' : '' }}>
-                                            {{ $year->year }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('alumni_year_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="fee_type" class="form-label">Fee Type</label>
-                                <select name="fee_type" id="fee_type" class="form-select @error('fee_type') is-invalid @enderror" required>
+                                <label for="fee_type_id" class="form-label">Fee Type</label>
+                                <select name="fee_type_id" id="fee_type_id" class="form-select @error('fee_type_id') is-invalid @enderror" required>
                                     <option value="">Select Fee Type</option>
                                     @foreach($feeTypes as $feeType)
-                                        <option value="{{ $feeType->code }}" {{ old('fee_type', $fee->feeType->code) == $feeType->code ? 'selected' : '' }}>
+                                        <option value="{{ $feeType->id }}" {{ old('fee_type_id', $fee->fee_type_id) == $feeType->id ? 'selected' : '' }}>
                                             {{ $feeType->name }}
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('fee_type')
+                                @error('fee_type_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $fee->name) }}" placeholder="Optional name for this fee template">
+                                @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -81,17 +67,27 @@
                                 @enderror
                             </div>
 
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ old('is_active', $fee->is_active) ? 'checked' : '' }}>
-                                    <label for="is_active" class="form-check-label">Active</label>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="valid_from" class="form-label">Valid From</label>
+                                    <input type="date" name="valid_from" id="valid_from" class="form-control @error('valid_from') is-invalid @enderror" value="{{ old('valid_from', $fee->valid_from->format('Y-m-d')) }}" required>
+                                    @error('valid_from')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="valid_until" class="form-label">Valid Until (Optional)</label>
+                                    <input type="date" name="valid_until" id="valid_until" class="form-control @error('valid_until') is-invalid @enderror" value="{{ old('valid_until', $fee->valid_until?->format('Y-m-d')) }}">
+                                    @error('valid_until')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <input type="checkbox" name="is_test_mode" id="is_test_mode" class="form-check-input" value="1" {{ old('is_test_mode', $fee->is_test_mode) ? 'checked' : '' }}>
-                                    <label for="is_test_mode" class="form-check-label">Test Mode</label>
+                                    <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ old('is_active', $fee->is_active) ? 'checked' : '' }}>
+                                    <label for="is_active" class="form-check-label">Active</label>
                                 </div>
                             </div>
 

@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('category_transaction_fees', function (Blueprint $table) {
+        Schema::create('fee_templates', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained('alumni_categories')->onDelete('cascade');
-            $table->enum('fee_type', ['registration', 'development_levy', 'data_processing']);
+            $table->foreignId('fee_type_id')->constrained()->onDelete('restrict');
+            $table->integer('graduation_year');
             $table->decimal('amount', 10, 2);
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->date('valid_from');
+            $table->date('valid_until')->nullable();
             $table->timestamps();
 
-            // Ensure unique combination of category and fee type
-            $table->unique(['category_id', 'fee_type']);
+            // Ensure unique fee type per graduation year and valid_from date (without category_id)
+            $table->unique(['fee_type_id', 'graduation_year', 'valid_from'], 'unique_fee_type_year_valid_from');
         });
     }
 
@@ -30,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('category_transaction_fees');
+        Schema::dropIfExists('fee_templates');
     }
-};
+}; 

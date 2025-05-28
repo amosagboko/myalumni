@@ -55,7 +55,7 @@
                                                                class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="edit-2" class="btn-round-md" style="width: 14px; height: 14px;"></i>
                                                             </a>
-                                                            @if($category->alumni_count === 0 && !$category->transactionFees()->exists())
+                                                            @if($category->alumni_count === 0 && !$category->hasFees())
                                                                 <form action="{{ route('admin.categories.destroy', $category) }}" 
                                                                       method="POST" 
                                                                       class="d-inline"

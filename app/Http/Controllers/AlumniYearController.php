@@ -96,9 +96,9 @@ class AlumniYearController extends Controller
      */
     public function destroy(AlumniYear $alumniYear)
     {
-        if ($alumniYear->categoryTransactionFees()->exists()) {
+        if ($alumniYear->hasFees()) {
             return redirect()->route('alumni-years.index')
-                ->with('error', 'Cannot delete alumni year with associated transaction fees.');
+                ->with('error', 'Cannot delete alumni year with associated fees.');
         }
 
         $alumniYear->delete();

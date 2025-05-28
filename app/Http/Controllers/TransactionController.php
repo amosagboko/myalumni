@@ -5,21 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\FeeTemplate;
 use App\Models\AlumniYear;
-use App\Models\CategoryTransactionFee;
 use App\Http\Requests\TransactionRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with(['user', 'categoryTransactionFee.alumniYear'])
+        $transactions = Transaction::with(['user', 'feeType', 'category', 'fee'])
             ->when(!Auth::user()->isAdmin(), function ($query) {
                 return $query->where('user_id', Auth::id());
             })
             ->latest()
-            ->get();
+            ->paginate(10);
             
         return view('transactions.index', compact('transactions'));
     }
@@ -27,9 +27,14 @@ class TransactionController extends Controller
     public function create()
     {
         $currentYear = AlumniYear::where('is_active', true)->first();
-        $fees = CategoryTransactionFee::with(['category', 'alumniYear'])
-            ->where('alumni_year_id', $currentYear->id)
+        $fees = FeeTemplate::with(['category', 'feeType'])
+            ->where('graduation_year', $currentYear->year)
             ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('valid_until')
+                    ->orWhere('valid_until', '>', now());
+            })
+            ->where('valid_from', '<=', now())
             ->get();
 
         return view('transactions.create', compact('fees', 'currentYear'));
@@ -40,74 +45,128 @@ class TransactionController extends Controller
         try {
             DB::beginTransaction();
             
-            $fee = CategoryTransactionFee::findOrFail($request->fee_id);
+            $fee = FeeTemplate::findOrFail($request->fee_id);
             
             // Verify amount matches fee
             if ($request->amount != $fee->amount) {
                 return back()->with('error', 'Payment amount does not match fee amount.');
             }
 
+            // Verify fee is active and valid
+            if (!$fee->isValid()) {
+                return back()->with('error', 'This fee is no longer active or valid.');
+            }
+
+            // Check for existing pending transaction
+            $existingTransaction = Transaction::where('user_id', Auth::id())
+                ->where('fee_id', $fee->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($existingTransaction) {
+                return back()->with('error', 'You already have a pending transaction for this fee.');
+            }
+
+            // Create the transaction
             $transaction = Transaction::create([
                 'user_id' => Auth::id(),
-                'category_transaction_fee_id' => $request->fee_id,
-                'amount' => $request->amount,
+                'alumni_id' => Auth::user()->alumni->id,
+                'fee_id' => $fee->id,
+                'amount' => $fee->amount,
+                'status' => 'pending',
                 'payment_reference' => $request->payment_reference,
-                'status' => 'pending'
+                'payment_provider' => 'paystack', // Default provider
+                'payment_details' => [
+                    'fee_type' => $fee->feeType->name,
+                    'fee_description' => $fee->description,
+                    'graduation_year' => $fee->graduation_year,
+                    'category' => $fee->category->name
+                ]
             ]);
-            
+
             DB::commit();
-            return redirect()->route('transactions.index')
-                ->with('success', 'Transaction created successfully. Please wait for admin verification.');
+
+            return redirect()
+                ->route('transactions.show', $transaction)
+                ->with('success', 'Transaction created successfully. Please proceed with payment.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to create transaction. Please try again.');
+            Log::error('Transaction creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to create transaction. Please try again.');
         }
     }
 
     public function show(Transaction $transaction)
     {
-        $this->authorize('view', $transaction);
+        // Check if user has permission to view this transaction
+        if (!Auth::user()->isAdmin() && $transaction->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $transaction->load(['user', 'feeType', 'category', 'fee']);
         return view('transactions.show', compact('transaction'));
     }
 
-    public function verify(Transaction $transaction)
+    public function markAsPaid(Transaction $transaction)
     {
-        $this->authorize('verify', $transaction);
-
         try {
             DB::beginTransaction();
-            
-            $transaction->update([
-                'status' => 'verified',
-                'paid_at' => now()
-            ]);
-            
+
+            if ($transaction->status !== 'pending') {
+                throw new \Exception('Only pending transactions can be marked as paid.');
+            }
+
+            $transaction->markAsCompleted();
+
             DB::commit();
-            return redirect()->route('transactions.index')
-                ->with('success', 'Transaction verified successfully.');
+
+            return redirect()
+                ->route('transactions.show', $transaction)
+                ->with('success', 'Transaction marked as paid successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to verify transaction. Please try again.');
+            Log::error('Transaction payment marking failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'transaction_id' => $transaction->id
+            ]);
+
+            return back()->with('error', $e->getMessage());
         }
     }
 
-    public function reject(Transaction $transaction)
+    public function markAsFailed(Transaction $transaction)
     {
-        $this->authorize('verify', $transaction);
-
         try {
             DB::beginTransaction();
-            
-            $transaction->update([
-                'status' => 'rejected'
-            ]);
-            
+
+            if ($transaction->status !== 'pending') {
+                throw new \Exception('Only pending transactions can be marked as failed.');
+            }
+
+            $transaction->markAsFailed();
+
             DB::commit();
-            return redirect()->route('transactions.index')
-                ->with('success', 'Transaction rejected successfully.');
+
+            return redirect()
+                ->route('transactions.show', $transaction)
+                ->with('success', 'Transaction marked as failed successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to reject transaction. Please try again.');
+            Log::error('Transaction failure marking failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'transaction_id' => $transaction->id
+            ]);
+
+            return back()->with('error', $e->getMessage());
         }
     }
 } 
