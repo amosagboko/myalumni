@@ -60,14 +60,18 @@ class AlumniPaymentController extends Controller
                 'has_phone' => !empty($alumni->phone_number),
                 'has_email' => !empty($user->email),
                 'phone_number' => $alumni->phone_number,
-                'email' => $user->email
+                'email' => $user->email,
+                'name' => $user->name,
+                'graduation_year' => $alumni->year_of_graduation,
+                'fee_id' => $request->fee_id
             ]);
 
             // Validate required alumni information
             if (!$alumni->phone_number) {
                 Log::warning('Missing alumni phone number', [
                     'alumni_id' => $alumni->id,
-                    'user_id' => $user->id
+                    'user_id' => $user->id,
+                    'fee_id' => $request->fee_id
                 ]);
                 return redirect()->back()->with('error', 'Please update your phone number in your profile before making a payment.');
             }
@@ -75,7 +79,8 @@ class AlumniPaymentController extends Controller
             if (!$user->email) {
                 Log::warning('Missing user email', [
                     'alumni_id' => $alumni->id,
-                    'user_id' => $user->id
+                    'user_id' => $user->id,
+                    'fee_id' => $request->fee_id
                 ]);
                 return redirect()->back()->with('error', 'Please update your email address in your profile before making a payment.');
             }
@@ -98,7 +103,8 @@ class AlumniPaymentController extends Controller
             if (!$fee->is_active) {
                 Log::warning('Attempted to pay inactive fee', [
                     'fee_id' => $fee->id,
-                    'fee_type' => $fee->feeType->code
+                    'fee_type' => $fee->feeType->code,
+                    'alumni_id' => $alumni->id
                 ]);
                 return redirect()->back()->with('error', 'This fee is currently inactive.');
             }
@@ -142,11 +148,9 @@ class AlumniPaymentController extends Controller
             ]);
 
             if ($existingTransaction) {
-                Log::info('Found existing pending transaction', [
+                Log::info('Found existing pending transaction, attempting to reinitialize payment', [
                     'transaction_id' => $existingTransaction->id,
-                    'payment_link' => $existingTransaction->payment_link,
-                    'payment_reference' => $existingTransaction->payment_reference,
-                    'status' => $existingTransaction->status
+                    'payment_reference' => $existingTransaction->payment_reference
                 ]);
                 // If there's an existing payment link, redirect to it
                 if ($existingTransaction->payment_link) {
@@ -185,7 +189,8 @@ class AlumniPaymentController extends Controller
                 Log::info('Creating new transaction', [
                     'alumni_id' => $alumni->id,
                     'fee_id' => $fee->id,
-                    'amount' => $fee->amount
+                    'amount' => $fee->amount,
+                    'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10))
                 ]);
 
                 $transaction = Transaction::create([
@@ -200,7 +205,9 @@ class AlumniPaymentController extends Controller
                     'transaction_id' => $transaction->id,
                     'payment_reference' => $transaction->payment_reference,
                     'amount' => $transaction->amount,
-                    'service_code' => config('services.credocentral.service_code')
+                    'service_code' => config('services.credocentral.service_code'),
+                    'alumni_id' => $alumni->id,
+                    'fee_id' => $fee->id
                 ]);
 
                 // Initialize payment with Credo Central
@@ -208,14 +215,21 @@ class AlumniPaymentController extends Controller
                     'transaction_id' => $transaction->id,
                     'amount' => $transaction->amount,
                     'reference' => $transaction->payment_reference,
-                    'service_code' => config('services.credocentral.service_code')
+                    'service_code' => config('services.credocentral.service_code'),
+                    'alumni_id' => $alumni->id,
+                    'fee_id' => $fee->id,
+                    'customer_name' => $transaction->alumni->user->name,
+                    'customer_email' => $transaction->alumni->user->email,
+                    'customer_phone' => $transaction->alumni->phone_number
                 ]);
                 
                 $paymentLink = $this->credocentral->initializePayment($transaction);
                 
                 Log::info('Payment initialized successfully', [
                     'transaction_id' => $transaction->id,
-                    'payment_link' => $paymentLink
+                    'payment_link' => $paymentLink,
+                    'alumni_id' => $alumni->id,
+                    'fee_id' => $fee->id
                 ]);
 
                 DB::commit();
@@ -227,7 +241,10 @@ class AlumniPaymentController extends Controller
                     'trace' => $e->getTraceAsString(),
                     'fee_id' => $fee->id,
                     'alumni_id' => $alumni->id,
-                    'service_code' => config('services.credocentral.service_code')
+                    'service_code' => config('services.credocentral.service_code'),
+                    'alumni_phone' => $alumni->phone_number,
+                    'alumni_email' => $user->email,
+                    'alumni_name' => $user->name
                 ]);
                 throw $e;
             }
