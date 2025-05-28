@@ -79,7 +79,7 @@ class AlumniPaymentController extends Controller
                 'fee_type' => $fee->feeType->code,
                 'fee_amount' => $fee->amount,
                 'is_active' => $fee->is_active,
-                'alumni_year' => $fee->alumni_year,
+                'alumni_year' => $fee->graduation_year,
                 'alumni_graduation_year' => $alumni->year_of_graduation,
                 'alumni_phone' => $alumni->phone_number,
                 'alumni_email' => $user->email,
@@ -96,11 +96,11 @@ class AlumniPaymentController extends Controller
             }
 
             // Check if fee is applicable to alumni's graduation year
-            if ($fee->alumni_year !== $alumni->year_of_graduation) {
+            if ($fee->graduation_year !== $alumni->year_of_graduation) {
                 Log::warning('Year mismatch for fee payment', [
                     'fee_id' => $fee->id,
                     'fee_type' => $fee->feeType->code,
-                    'fee_year' => $fee->alumni_year,
+                    'fee_year' => $fee->graduation_year,
                     'alumni_year' => $alumni->year_of_graduation
                 ]);
                 return redirect()->back()->with('error', 'This fee is not applicable to your graduation year.');
