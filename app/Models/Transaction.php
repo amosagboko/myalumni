@@ -36,9 +36,9 @@ class Transaction extends Model
     /**
      * Get the user that owns the transaction through alumni.
      */
-    public function user()
+    public function user(): BelongsTo
     {
-        return $this->alumni->user();
+        return $this->belongsTo(User::class, 'alumni_id', 'id')->through('alumni');
     }
 
     /**
@@ -54,7 +54,7 @@ class Transaction extends Model
      */
     public function feeTemplate(): BelongsTo
     {
-        return $this->belongsTo(FeeTemplate::class);
+        return $this->belongsTo(FeeTemplate::class, 'fee_template_id');
     }
 
     /**

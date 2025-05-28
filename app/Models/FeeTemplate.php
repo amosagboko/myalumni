@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class FeeTemplate extends Model
 {
@@ -119,14 +120,23 @@ class FeeTemplate extends Model
     public function isPaid()
     {
         if (!Auth::check()) {
+            Log::info('User not authenticated for fee template payment check', ['fee_template_id' => $this->id]);
             return false;
         }
 
-        return $this->transactions()
+        $exists = $this->transactions()
             ->whereHas('alumni', function($q) {
                 $q->where('user_id', Auth::id());
             })
             ->where('status', 'paid')
             ->exists();
+
+        Log::info('Fee template payment check result', [
+            'fee_template_id' => $this->id,
+            'user_id' => Auth::id(),
+            'is_paid' => $exists
+        ]);
+
+        return $exists;
     }
 }
