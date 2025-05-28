@@ -14,9 +14,17 @@ class CredoCentralService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.credocentral.base_url', 'https://api.credocentral.com');
+        $this->baseUrl = rtrim(config('services.credocentral.base_url', 'https://api.credocentral.com'), '/');
         $this->publicKey = config('services.credocentral.public_key');
         $this->secretKey = config('services.credocentral.secret_key');
+
+        // Log API configuration on service initialization
+        Log::info('Credo Central Service initialized', [
+            'base_url' => $this->baseUrl,
+            'has_public_key' => !empty($this->publicKey),
+            'has_secret_key' => !empty($this->secretKey),
+            'environment' => app()->environment()
+        ]);
     }
 
     /**
@@ -26,20 +34,23 @@ class CredoCentralService
     {
         $client = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->secretKey,
-            'Content-Type' => 'application/json'
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json'
         ])
         ->timeout(30); // Set a 30-second timeout
 
         // Add retry logic with proper error handling
-        $client->retry(3, 100, function ($exception) {
+        $client->retry(3, 100, function ($exception, $request) {
             Log::warning('Retrying Credo Central API request', [
                 'error' => $exception->getMessage(),
-                'url' => $this->baseUrl
+                'url' => $request->url(),
+                'method' => $request->method(),
+                'headers' => array_keys($request->headers()),
+                'has_body' => !empty($request->body())
             ]);
             return $exception instanceof \Illuminate\Http\Client\ConnectionException;
         });
 
-        // Always verify SSL certificates for security
         return $client;
     }
 
@@ -49,6 +60,20 @@ class CredoCentralService
     public function initializePayment(Transaction $transaction)
     {
         try {
+            // First verify API is accessible
+            try {
+                $healthCheck = $this->getHttpClient()->get($this->baseUrl . '/health');
+                Log::info('Credo Central API health check', [
+                    'status' => $healthCheck->status(),
+                    'body' => $healthCheck->body()
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Credo Central API health check failed', [
+                    'error' => $e->getMessage(),
+                    'url' => $this->baseUrl . '/health'
+                ]);
+            }
+
             $endpoint = '/transaction/initialize';
             $fullUrl = $this->baseUrl . $endpoint;
             
@@ -60,7 +85,8 @@ class CredoCentralService
                 'method' => 'POST',
                 'headers' => [
                     'Authorization' => 'Bearer ' . substr($this->secretKey, 0, 10) . '...',
-                    'Content-Type' => 'application/json'
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
                 ],
                 'has_public_key' => !empty($this->publicKey),
                 'has_secret_key' => !empty($this->secretKey),
@@ -112,8 +138,19 @@ class CredoCentralService
                     'has_public_key' => !empty($this->publicKey),
                     'has_secret_key' => !empty($this->secretKey),
                     'service_code' => config('services.credocentral.service_code'),
-                    'environment' => app()->environment()
+                    'environment' => app()->environment(),
+                    'effective_url' => $response->effectiveUri() ?? $fullUrl
                 ]);
+
+                if ($response->failed()) {
+                    Log::error('Credo Central API request failed', [
+                        'transaction_id' => $transaction->id,
+                        'status_code' => $response->status(),
+                        'body' => $response->body(),
+                        'request_url' => $fullUrl,
+                        'effective_url' => $response->effectiveUri() ?? $fullUrl
+                    ]);
+                }
 
                 // Try to parse JSON response
                 $responseData = null;
