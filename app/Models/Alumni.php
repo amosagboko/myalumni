@@ -97,6 +97,22 @@ class Alumni extends Model
                 ]);
 
                 if ($subscriptionFeeType) {
+                    // Debug: Check all fee templates for this type first
+                    $allFees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)->get();
+                    Log::info('All subscription fees found', [
+                        'count' => $allFees->count(),
+                        'fees' => $allFees->map(function($fee) {
+                            return [
+                                'id' => $fee->id,
+                                'graduation_year' => $fee->graduation_year,
+                                'is_active' => $fee->is_active,
+                                'valid_from' => $fee->valid_from,
+                                'valid_until' => $fee->valid_until,
+                                'amount' => $fee->amount
+                            ];
+                        })->toArray()
+                    ]);
+
                     // Get the fee template for this alumni's graduation year
                     $fees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)
                         ->where('graduation_year', $this->year_of_graduation)
@@ -105,8 +121,17 @@ class Alumni extends Model
                         ->where(function ($query) {
                             $query->whereNull('valid_until')
                                 ->orWhere('valid_until', '>', now());
-                        })
-                        ->get();
+                        });
+
+                    // Debug: Log the SQL query
+                    Log::info('Subscription fee query', [
+                        'sql' => $fees->toSql(),
+                        'bindings' => $fees->getBindings(),
+                        'alumni_graduation_year' => $this->year_of_graduation,
+                        'current_time' => now()
+                    ]);
+
+                    $fees = $fees->get();
 
                     Log::info('Subscription fees lookup result', [
                         'count' => $fees->count(),
@@ -116,7 +141,9 @@ class Alumni extends Model
                                 'amount' => $fee->amount,
                                 'is_active' => $fee->is_active,
                                 'fee_type_id' => $fee->fee_type_id,
-                                'graduation_year' => $fee->graduation_year
+                                'graduation_year' => $fee->graduation_year,
+                                'valid_from' => $fee->valid_from,
+                                'valid_until' => $fee->valid_until
                             ];
                         })->toArray()
                     ]);
