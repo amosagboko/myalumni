@@ -97,9 +97,9 @@ class Alumni extends Model
                 ]);
 
                 if ($subscriptionFeeType) {
-                    // Get the fee template for the alumni's graduation year
+                    // Get the fee template for the active year
                     $fees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)
-                        ->where('graduation_year', $this->year_of_graduation)
+                        ->where('graduation_year', $activeYear->year)
                         ->where('is_active', true)
                         ->where('valid_from', '<=', now())
                         ->where(function ($query) {
