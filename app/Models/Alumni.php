@@ -97,15 +97,15 @@ class Alumni extends Model
                 ]);
 
                 if ($subscriptionFeeType) {
-                // Get the fee template for this year
-                $fees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)
-                    ->where('graduation_year', $activeYear->year)
+                    // Get the fee template for this alumni's graduation year
+                    $fees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)
+                        ->where('graduation_year', $this->year_of_graduation)
                         ->where('is_active', true)
-                    ->where('valid_from', '<=', now())
-                    ->where(function ($query) {
-                        $query->whereNull('valid_until')
-                            ->orWhere('valid_until', '>', now());
-                    })
+                        ->where('valid_from', '<=', now())
+                        ->where(function ($query) {
+                            $query->whereNull('valid_until')
+                                ->orWhere('valid_until', '>', now());
+                        })
                         ->get();
 
                     Log::info('Subscription fees lookup result', [
@@ -115,7 +115,8 @@ class Alumni extends Model
                                 'id' => $fee->id,
                                 'amount' => $fee->amount,
                                 'is_active' => $fee->is_active,
-                                'fee_type_id' => $fee->fee_type_id
+                                'fee_type_id' => $fee->fee_type_id,
+                                'graduation_year' => $fee->graduation_year
                             ];
                         })->toArray()
                     ]);
