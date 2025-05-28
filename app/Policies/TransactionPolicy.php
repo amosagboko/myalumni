@@ -10,13 +10,25 @@ class TransactionPolicy
 {
     use HandlesAuthorization;
 
+    public function viewAny(User $user)
+    {
+        return true; // All authenticated users can view the index
+    }
+
+    public function viewAll(User $user)
+    {
+        return $user->hasRole(['administrator', 'alumni-relations-officer']);
+    }
+
     public function view(User $user, Transaction $transaction)
     {
-        return $user->isAdmin() || $user->isAlumniRelationsOfficer() || $user->id === $transaction->user_id;
+        return $user->hasRole('administrator') || 
+               $user->hasRole('alumni-relations-officer') || 
+               $user->id === $transaction->alumni->user_id;
     }
 
     public function verify(User $user, Transaction $transaction)
     {
-        return $user->isAdmin() || $user->isAlumniRelationsOfficer();
+        return $user->hasRole('administrator') || $user->hasRole('alumni-relations-officer');
     }
 } 

@@ -31,8 +31,7 @@ class FeeType extends Model
      */
     public function feeTemplates(): HasMany
     {
-        return $this->hasMany(FeeTemplate::class)
-            ->where('fee_structure', 'new');
+        return $this->hasMany(FeeTemplate::class);
     }
 
     /**
@@ -63,15 +62,6 @@ class FeeType extends Model
     public function activeFeeRules()
     {
         return $this->feeRules()->where('is_active', true);
-    }
-
-    /**
-     * Get the category transaction fees for this fee type (old structure).
-     */
-    public function categoryTransactionFees(): HasMany
-    {
-        return $this->hasMany(CategoryTransactionFee::class)
-            ->where('fee_structure', 'old');
     }
 
     /**

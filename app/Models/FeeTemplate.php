@@ -13,18 +13,20 @@ class FeeTemplate extends Model
 
     protected $fillable = [
         'fee_type_id',
-        'name',
+        'category_id',
         'graduation_year',
         'amount',
         'description',
         'is_active',
         'valid_from',
-        'valid_until'
+        'valid_until',
+        'is_test_mode'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'is_active' => 'boolean',
+        'is_test_mode' => 'boolean',
         'valid_from' => 'datetime',
         'valid_until' => 'datetime'
     ];
@@ -38,11 +40,19 @@ class FeeTemplate extends Model
     }
 
     /**
-     * Get the transactions associated with this template.
+     * Get the category that owns this template.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(AlumniCategory::class);
+    }
+
+    /**
+     * Get the transactions for this template.
      */
     public function transactions(): HasMany
     {
-        return $this->hasMany(Transaction::class, 'fee_template_id');
+        return $this->hasMany(Transaction::class);
     }
 
     /**
@@ -75,7 +85,7 @@ class FeeTemplate extends Model
     }
 
     /**
-     * Check if the template is currently valid.
+     * Check if this template is currently valid.
      */
     public function isValid(): bool
     {
@@ -96,31 +106,6 @@ class FeeTemplate extends Model
     }
 
     /**
-     * Get the original fee model (either new or old structure).
-     */
-    public function getOriginalFeeAttribute()
-    {
-        if ($this->fee_structure === 'new') {
-            return FeeTemplate::query()
-                ->from('fee_templates')
-                ->where('id', $this->new_template_id)
-                ->first();
-        }
-
-        return CategoryTransactionFee::query()
-            ->where('id', $this->old_fee_id)
-            ->first();
-    }
-
-    /**
-     * Get the fee structure type (old or new).
-     */
-    public function getFeeStructureAttribute(): string
-    {
-        return $this->new_template_id ? 'new' : 'old';
-    }
-
-    /**
      * Get the actual template name.
      */
     public function getNameAttribute($value)
@@ -133,8 +118,14 @@ class FeeTemplate extends Model
      */
     public function isPaid()
     {
+        if (!Auth::check()) {
+            return false;
+        }
+
         return $this->transactions()
-            ->where('user_id', Auth::id())
+            ->whereHas('alumni', function($q) {
+                $q->where('user_id', Auth::id());
+            })
             ->where('status', 'paid')
             ->exists();
     }

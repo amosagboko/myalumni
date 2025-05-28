@@ -50,9 +50,9 @@
                                             <tr>
                                                 <td>{{ $transaction->created_at->format('M d, Y') }}</td>
                                                 <td>{{ $transaction->user->name }}</td>
-                                                <td>{{ $transaction->categoryTransactionFee->getFormattedFeeType() }}</td>
-                                                <td>{{ $transaction->categoryTransactionFee->category->name }}</td>
-                                                <td>{{ $transaction->categoryTransactionFee->alumniYear->year }}</td>
+                                                <td>{{ $transaction->feeTemplate->feeType->name }}</td>
+                                                <td>{{ $transaction->feeTemplate->category->name }}</td>
+                                                <td>{{ $transaction->feeTemplate->graduation_year }}</td>
                                                 <td>₦{{ number_format($transaction->amount, 2) }}</td>
                                                 <td>
                                                     <span class="badge {{ $transaction->status === 'paid' ? 'bg-success' : 'bg-warning' }}">

@@ -168,12 +168,12 @@ class Alumni extends Model
      */
     public function getPendingTransactions($year = null)
     {
-        $query = Transaction::where('user_id', $this->user_id)
+        $query = Transaction::where('alumni_id', $this->id)
             ->where('status', 'pending');
 
         if ($year) {
-            $query->whereHas('categoryTransactionFee', function ($q) use ($year) {
-                $q->where('alumni_year_id', $year->id);
+            $query->whereHas('feeTemplate', function ($q) use ($year) {
+                $q->where('graduation_year', $year->year);
             });
         }
 
@@ -185,12 +185,12 @@ class Alumni extends Model
      */
     public function getPaidTransactions($year = null)
     {
-        $query = Transaction::where('user_id', $this->user_id)
+        $query = Transaction::where('alumni_id', $this->id)
             ->where('status', 'paid');
 
         if ($year) {
-            $query->whereHas('categoryTransactionFee', function ($q) use ($year) {
-                $q->where('alumni_year_id', $year->id);
+            $query->whereHas('feeTemplate', function ($q) use ($year) {
+                $q->where('graduation_year', $year->year);
             });
         }
 
@@ -202,11 +202,11 @@ class Alumni extends Model
      */
     public function getAllTransactions($year = null)
     {
-        $query = Transaction::where('user_id', $this->user_id);
+        $query = Transaction::where('alumni_id', $this->id);
 
         if ($year) {
-            $query->whereHas('categoryTransactionFee', function ($q) use ($year) {
-                $q->where('alumni_year_id', $year->id);
+            $query->whereHas('feeTemplate', function ($q) use ($year) {
+                $q->where('graduation_year', $year->year);
             });
         }
 

@@ -31,15 +31,15 @@
                                         </div>
                                         <div class="row mb-3">
                                             <div class="col-md-4 fw-bold">Fee Type:</div>
-                                            <div class="col-md-8">{{ $transaction->categoryTransactionFee->getFormattedFeeType() }}</div>
+                                            <div class="col-md-8">{{ $transaction->feeTemplate->feeType->name }}</div>
                                         </div>
                                         <div class="row mb-3">
                                             <div class="col-md-4 fw-bold">Category:</div>
-                                            <div class="col-md-8">{{ $transaction->categoryTransactionFee->category->name }}</div>
+                                            <div class="col-md-8">{{ $transaction->feeTemplate->category->name }}</div>
                                         </div>
                                         <div class="row mb-3">
-                                            <div class="col-md-4 fw-bold">Alumni Year:</div>
-                                            <div class="col-md-8">{{ $transaction->categoryTransactionFee->alumniYear->year }}</div>
+                                            <div class="col-md-4 fw-bold">Year:</div>
+                                            <div class="col-md-8">{{ $transaction->feeTemplate->graduation_year }}</div>
                                         </div>
                                         <div class="row mb-3">
                                             <div class="col-md-4 fw-bold">Amount:</div>

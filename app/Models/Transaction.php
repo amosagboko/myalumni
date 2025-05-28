@@ -12,9 +12,8 @@ class Transaction extends Model
     protected $table = 'transactions';
 
     protected $fillable = [
-        'user_id',
         'alumni_id',
-        'fee_id',
+        'fee_template_id',
         'amount',
         'status',
         'payment_reference',
@@ -35,11 +34,11 @@ class Transaction extends Model
     ];
 
     /**
-     * Get the user that owns the transaction.
+     * Get the user that owns the transaction through alumni.
      */
-    public function user(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->alumni->user();
     }
 
     /**
@@ -51,36 +50,11 @@ class Transaction extends Model
     }
 
     /**
-     * Get the fee type for this transaction.
-     */
-    public function feeType(): BelongsTo
-    {
-        return $this->belongsTo(FeeType::class, 'fee_type_id');
-    }
-
-    /**
-     * Get the category for this transaction.
-     */
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(AlumniCategory::class, 'category_id');
-    }
-
-    /**
-     * Get the fee template for this transaction (new structure).
+     * Get the fee template for this transaction.
      */
     public function feeTemplate(): BelongsTo
     {
-        return $this->belongsTo(FeeTemplate::class, 'fee_id');
-    }
-
-    /**
-     * Get the category transaction fee for this transaction (old structure).
-     */
-    public function categoryTransactionFee(): BelongsTo
-    {
-        return $this->belongsTo(CategoryTransactionFee::class, 'fee_id')
-            ->whereNotNull('category_transaction_fee_id');
+        return $this->belongsTo(FeeTemplate::class);
     }
 
     /**
@@ -96,7 +70,7 @@ class Transaction extends Model
      */
     public function getFormattedFeeTypeAttribute(): string
     {
-        return $this->feeType?->name ?? 'Unknown Fee Type';
+        return $this->feeTemplate?->feeType?->name ?? 'Unknown Fee Type';
     }
 
     /**
@@ -120,7 +94,9 @@ class Transaction extends Model
      */
     public function scopeForCurrentUser($query)
     {
-        return $query->where('user_id', Auth::id());
+        return $query->whereHas('alumni', function($q) {
+            $q->where('user_id', Auth::id());
+        });
     }
 
     /**
@@ -196,21 +172,11 @@ class Transaction extends Model
     }
 
     /**
-     * Get the fee structure type (old or new).
-     */
-    public function getFeeStructureAttribute(): string
-    {
-        return $this->fee_template_id ? 'new' : 'old';
-    }
-
-    /**
-     * Get the actual fee model regardless of structure.
+     * Get the fee model.
      */
     public function getFeeAttribute()
     {
-        return $this->feeStructure === 'new' 
-            ? $this->feeTemplate 
-            : $this->categoryTransactionFee;
+        return $this->feeTemplate;
     }
 
     /**

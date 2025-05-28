@@ -5,22 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\FeeTemplate;
 use App\Models\AlumniYear;
+use App\Models\User;
 use App\Http\Requests\TransactionRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class TransactionController extends Controller
 {
+    use HasRoles, AuthorizesRequests;
+
+    protected $user;
+
+    public function __construct()
+    {
+        $this->user = Auth::user();
+        $this->authorizeResource(Transaction::class, 'transaction');
+    }
+
     public function index()
     {
-        $transactions = Transaction::with(['user', 'feeType', 'category', 'fee'])
-            ->when(!Auth::user()->isAdmin(), function ($query) {
-                return $query->where('user_id', Auth::id());
+        $this->authorize('viewAny', Transaction::class);
+
+        $query = Transaction::with(['alumni', 'feeTemplate.feeType', 'feeTemplate.category'])
+            ->when(!$this->authorize('viewAll', Transaction::class), function ($query) {
+                $query->whereHas('alumni', function ($q) {
+                    $q->where('user_id', Auth::id());
+                });
             })
-            ->latest()
-            ->paginate(10);
-            
+            ->latest();
+
+        $transactions = $query->paginate(10);
+
         return view('transactions.index', compact('transactions'));
     }
 
@@ -58,8 +76,8 @@ class TransactionController extends Controller
             }
 
             // Check for existing pending transaction
-            $existingTransaction = Transaction::where('user_id', Auth::id())
-                ->where('fee_id', $fee->id)
+            $existingTransaction = Transaction::where('alumni_id', Auth::user()->alumni->id)
+                ->where('fee_template_id', $fee->id)
                 ->where('status', 'pending')
                 ->first();
 
@@ -69,9 +87,8 @@ class TransactionController extends Controller
 
             // Create the transaction
             $transaction = Transaction::create([
-                'user_id' => Auth::id(),
                 'alumni_id' => Auth::user()->alumni->id,
-                'fee_id' => $fee->id,
+                'fee_template_id' => $fee->id,
                 'amount' => $fee->amount,
                 'status' => 'pending',
                 'payment_reference' => $request->payment_reference,
@@ -105,12 +122,9 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction)
     {
-        // Check if user has permission to view this transaction
-        if (!Auth::user()->isAdmin() && $transaction->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized action.');
-        }
+        // Load necessary relationships
+        $transaction->load(['alumni', 'feeTemplate.feeType', 'feeTemplate.category']);
 
-        $transaction->load(['user', 'feeType', 'category', 'fee']);
         return view('transactions.show', compact('transaction'));
     }
 
@@ -168,5 +182,12 @@ class TransactionController extends Controller
 
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    public function verify(Transaction $transaction)
+    {
+        $this->authorize('verify', $transaction);
+
+        // ... rest of the method ...
     }
 } 
