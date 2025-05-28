@@ -186,11 +186,17 @@ class AlumniPaymentController extends Controller
             // Create new transaction
             DB::beginTransaction();
             try {
-                Log::info('Creating new transaction', [
+                Log::info('Starting transaction creation', [
                     'alumni_id' => $alumni->id,
                     'fee_id' => $fee->id,
                     'amount' => $fee->amount,
-                    'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10))
+                    'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10)),
+                    'alumni_name' => $alumni->user->name,
+                    'alumni_email' => $alumni->user->email,
+                    'alumni_phone' => $alumni->phone_number,
+                    'fee_type' => $fee->feeType->code,
+                    'fee_description' => $fee->description,
+                    'graduation_year' => $fee->graduation_year
                 ]);
 
                 $transaction = Transaction::create([
@@ -198,20 +204,31 @@ class AlumniPaymentController extends Controller
                     'fee_template_id' => $fee->id,
                     'amount' => $fee->amount,
                     'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10)),
-                    'status' => 'pending'
+                    'status' => 'pending',
+                    'payment_details' => [
+                        'fee_type' => $fee->feeType->code,
+                        'fee_description' => $fee->description,
+                        'graduation_year' => $fee->graduation_year,
+                        'alumni_name' => $alumni->user->name,
+                        'alumni_email' => $alumni->user->email,
+                        'alumni_phone' => $alumni->phone_number
+                    ]
                 ]);
 
-                Log::info('Created new transaction', [
+                Log::info('Transaction created successfully', [
                     'transaction_id' => $transaction->id,
                     'payment_reference' => $transaction->payment_reference,
                     'amount' => $transaction->amount,
+                    'status' => $transaction->status,
+                    'created_at' => $transaction->created_at,
+                    'payment_details' => $transaction->payment_details,
                     'service_code' => config('services.credocentral.service_code'),
                     'alumni_id' => $alumni->id,
                     'fee_id' => $fee->id
                 ]);
 
                 // Initialize payment with Credo Central
-                Log::info('Initializing payment with Credo Central', [
+                Log::info('Starting payment initialization with Credo Central', [
                     'transaction_id' => $transaction->id,
                     'amount' => $transaction->amount,
                     'reference' => $transaction->payment_reference,
@@ -220,20 +237,41 @@ class AlumniPaymentController extends Controller
                     'fee_id' => $fee->id,
                     'customer_name' => $transaction->alumni->user->name,
                     'customer_email' => $transaction->alumni->user->email,
-                    'customer_phone' => $transaction->alumni->phone_number
+                    'customer_phone' => $transaction->alumni->phone_number,
+                    'base_url' => config('services.credocentral.base_url'),
+                    'has_public_key' => !empty(config('services.credocentral.public_key')),
+                    'has_secret_key' => !empty(config('services.credocentral.secret_key')),
+                    'environment' => app()->environment()
                 ]);
                 
-                $paymentLink = $this->credocentral->initializePayment($transaction);
-                
-                Log::info('Payment initialized successfully', [
-                    'transaction_id' => $transaction->id,
-                    'payment_link' => $paymentLink,
-                    'alumni_id' => $alumni->id,
-                    'fee_id' => $fee->id
-                ]);
+                try {
+                    $paymentLink = $this->credocentral->initializePayment($transaction);
+                    
+                    Log::info('Payment initialized successfully', [
+                        'transaction_id' => $transaction->id,
+                        'payment_link' => $paymentLink,
+                        'alumni_id' => $alumni->id,
+                        'fee_id' => $fee->id,
+                        'payment_reference' => $transaction->payment_reference
+                    ]);
 
-                DB::commit();
-                return redirect($paymentLink);
+                    DB::commit();
+                    return redirect($paymentLink);
+                } catch (\Exception $e) {
+                    Log::error('Failed to initialize payment with Credo Central', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'payment_reference' => $transaction->payment_reference,
+                        'amount' => $transaction->amount,
+                        'service_code' => config('services.credocentral.service_code'),
+                        'base_url' => config('services.credocentral.base_url'),
+                        'has_public_key' => !empty(config('services.credocentral.public_key')),
+                        'has_secret_key' => !empty(config('services.credocentral.secret_key')),
+                        'environment' => app()->environment()
+                    ]);
+                    throw $e;
+                }
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error('Failed to create or initialize payment', [
@@ -244,7 +282,11 @@ class AlumniPaymentController extends Controller
                     'service_code' => config('services.credocentral.service_code'),
                     'alumni_phone' => $alumni->phone_number,
                     'alumni_email' => $user->email,
-                    'alumni_name' => $user->name
+                    'alumni_name' => $user->name,
+                    'base_url' => config('services.credocentral.base_url'),
+                    'has_public_key' => !empty(config('services.credocentral.public_key')),
+                    'has_secret_key' => !empty(config('services.credocentral.secret_key')),
+                    'environment' => app()->environment()
                 ]);
                 throw $e;
             }
