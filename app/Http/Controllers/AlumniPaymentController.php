@@ -55,6 +55,14 @@ class AlumniPaymentController extends Controller
             $user = Auth::user();
             $alumni = $user->alumni;
 
+            Log::info('Checking alumni information', [
+                'alumni_id' => $alumni->id,
+                'has_phone' => !empty($alumni->phone_number),
+                'has_email' => !empty($user->email),
+                'phone_number' => $alumni->phone_number,
+                'email' => $user->email
+            ]);
+
             // Validate required alumni information
             if (!$alumni->phone_number) {
                 Log::warning('Missing alumni phone number', [
@@ -124,22 +132,42 @@ class AlumniPaymentController extends Controller
                 ->where('status', 'pending')
                 ->first();
 
+            Log::info('Checking for existing transaction', [
+                'alumni_id' => $alumni->id,
+                'fee_id' => $fee->id,
+                'found_existing' => !is_null($existingTransaction),
+                'existing_transaction_id' => $existingTransaction?->id,
+                'existing_status' => $existingTransaction?->status,
+                'existing_payment_link' => $existingTransaction?->payment_link
+            ]);
+
             if ($existingTransaction) {
                 Log::info('Found existing pending transaction', [
                     'transaction_id' => $existingTransaction->id,
                     'payment_link' => $existingTransaction->payment_link,
-                    'payment_reference' => $existingTransaction->payment_reference
+                    'payment_reference' => $existingTransaction->payment_reference,
+                    'status' => $existingTransaction->status
                 ]);
                 // If there's an existing payment link, redirect to it
                 if ($existingTransaction->payment_link) {
+                    Log::info('Redirecting to existing payment link', [
+                        'transaction_id' => $existingTransaction->id,
+                        'payment_link' => $existingTransaction->payment_link
+                    ]);
                     return redirect($existingTransaction->payment_link);
                 }
                 // Otherwise, initialize a new payment for the existing transaction
                 try {
                     Log::info('Initializing payment for existing transaction', [
-                        'transaction_id' => $existingTransaction->id
+                        'transaction_id' => $existingTransaction->id,
+                        'amount' => $existingTransaction->amount,
+                        'reference' => $existingTransaction->payment_reference
                     ]);
                     $paymentLink = $this->credocentral->initializePayment($existingTransaction);
+                    Log::info('Successfully initialized payment for existing transaction', [
+                        'transaction_id' => $existingTransaction->id,
+                        'payment_link' => $paymentLink
+                    ]);
                     return redirect($paymentLink);
                 } catch (\Exception $e) {
                     Log::error('Failed to initialize payment for existing transaction', [
@@ -154,6 +182,12 @@ class AlumniPaymentController extends Controller
             // Create new transaction
             DB::beginTransaction();
             try {
+                Log::info('Creating new transaction', [
+                    'alumni_id' => $alumni->id,
+                    'fee_id' => $fee->id,
+                    'amount' => $fee->amount
+                ]);
+
                 $transaction = Transaction::create([
                     'alumni_id' => $alumni->id,
                     'fee_template_id' => $fee->id,
