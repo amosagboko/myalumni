@@ -9,11 +9,12 @@ use Illuminate\Support\Facades\Auth;
 
 class Transaction extends Model
 {
-    protected $table = 'vw_transactions';
+    protected $table = 'transactions';
 
     protected $fillable = [
         'user_id',
         'alumni_id',
+        'fee_id',
         'amount',
         'status',
         'payment_reference',
