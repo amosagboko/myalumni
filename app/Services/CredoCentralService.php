@@ -108,8 +108,28 @@ class CredoCentralService
                     'headers' => $response->headers(),
                     'request_url' => $fullUrl,
                     'request_data' => $requestData,
-                    'response_time' => $response->handlerStats()['total_time'] ?? null
+                    'response_time' => $response->handlerStats()['total_time'] ?? null,
+                    'has_public_key' => !empty($this->publicKey),
+                    'has_secret_key' => !empty($this->secretKey),
+                    'service_code' => config('services.credocentral.service_code'),
+                    'environment' => app()->environment()
                 ]);
+
+                // Try to parse JSON response
+                $responseData = null;
+                try {
+                    $responseData = $response->json();
+                    Log::info('Credo Central API Response JSON', [
+                        'transaction_id' => $transaction->id,
+                        'parsed_response' => $responseData
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to parse JSON response', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage(),
+                        'raw_body' => $response->body()
+                    ]);
+                }
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
                 Log::error('Failed to connect to Credo Central API', [
                     'error' => $e->getMessage(),
@@ -118,18 +138,6 @@ class CredoCentralService
                     'request_data' => $requestData
                 ]);
                 throw new \Exception('Unable to connect to payment provider. Please try again later.');
-            }
-
-            // Try to parse JSON response
-            $responseData = null;
-            try {
-                $responseData = $response->json();
-            } catch (\Exception $e) {
-                Log::warning('Failed to parse JSON response', [
-                    'transaction_id' => $transaction->id,
-                    'error' => $e->getMessage(),
-                    'raw_body' => $response->body()
-                ]);
             }
 
             if ($response->successful()) {
