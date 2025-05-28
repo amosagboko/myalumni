@@ -33,7 +33,7 @@ class CredoCentralService
     protected function getHttpClient()
     {
         $client = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->secretKey,
+            'Authorization' => $this->publicKey,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json'
         ])
@@ -105,7 +105,7 @@ class CredoCentralService
                     'transaction_id' => $transaction->id,
                     'fee_type' => $transaction->feeTemplate->feeType->code,
                     'alumni_id' => $transaction->alumni_id,
-                    'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT')
+                    // 'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT')
                 ]
             ];
 
