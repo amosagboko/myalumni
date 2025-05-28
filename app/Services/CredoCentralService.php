@@ -81,7 +81,7 @@ class CredoCentralService
                 ],
                 'metadata' => [
                     'transaction_id' => $transaction->id,
-                    'fee_type' => $transaction->categoryTransactionFee->feeType->code,
+                    'fee_type' => $transaction->feeTemplate->feeType->code,
                     'alumni_id' => $transaction->alumni_id,
                     'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT')
                 ]
@@ -94,7 +94,7 @@ class CredoCentralService
                 'transaction_id' => $transaction->id,
                 'payment_reference' => $transaction->payment_reference,
                 'amount' => $transaction->amount,
-                'fee_type' => $transaction->categoryTransactionFee->feeType->code
+                'fee_type' => $transaction->feeTemplate->feeType->code
             ]);
 
             try {
@@ -315,7 +315,7 @@ class CredoCentralService
             ]);
 
             // Handle any post-payment actions (e.g., update candidate status for screening fees)
-            if ($transaction->categoryTransactionFee->feeType->code === 'screening_fee') {
+            if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
                 $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
                     ->where('has_paid_screening_fee', false)
                     ->latest()
