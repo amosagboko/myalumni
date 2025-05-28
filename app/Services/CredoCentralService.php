@@ -130,6 +130,60 @@ class CredoCentralService
                         'raw_body' => $response->body()
                     ]);
                 }
+
+                if ($response->successful()) {
+                    if (!$responseData) {
+                        throw new \Exception('Invalid response format from payment provider');
+                    }
+
+                    Log::info('Credo Central payment initialized', [
+                        'transaction_id' => $transaction->id,
+                        'reference' => $transaction->payment_reference,
+                        'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT'),
+                        'response' => $responseData
+                    ]);
+
+                    // Update transaction with payment link
+                    if (!isset($responseData['data']['authorization_url'])) {
+                        throw new \Exception('Payment authorization URL not found in response');
+                    }
+
+                    $transaction->update([
+                        'payment_link' => $responseData['data']['authorization_url'],
+                        'payment_provider' => 'credocentral',
+                        'payment_provider_reference' => $responseData['data']['reference'] ?? null
+                    ]);
+
+                    return $responseData['data']['authorization_url'];
+                }
+
+                // Handle error response
+                $errorMessage = 'Unknown error';
+                if ($responseData) {
+                    if (isset($responseData['message'])) {
+                        $errorMessage = $responseData['message'];
+                    } elseif (isset($responseData['error'])) {
+                        $errorMessage = $responseData['error'];
+                    } elseif (isset($responseData['errors'])) {
+                        $errorMessage = is_array($responseData['errors']) ? implode(', ', $responseData['errors']) : $responseData['errors'];
+                    }
+                } else {
+                    // If we couldn't parse JSON, use the raw response
+                    $errorMessage = $response->body() ?: 'Empty response from payment provider';
+                }
+
+                Log::error('Credo Central payment initialization failed', [
+                    'transaction_id' => $transaction->id,
+                    'status_code' => $response->status(),
+                    'error_message' => $errorMessage,
+                    'raw_response' => $response->body(),
+                    'request_data' => $requestData,
+                    'request_url' => $this->baseUrl . $endpoint,
+                    'headers' => $response->headers()
+                ]);
+
+                throw new \Exception('Failed to initialize payment: ' . $errorMessage);
+
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
                 Log::error('Failed to connect to Credo Central API', [
                     'error' => $e->getMessage(),
@@ -138,60 +192,15 @@ class CredoCentralService
                     'request_data' => $requestData
                 ]);
                 throw new \Exception('Unable to connect to payment provider. Please try again later.');
-            }
-
-            if ($response->successful()) {
-                if (!$responseData) {
-                    throw new \Exception('Invalid response format from payment provider');
-                }
-
-                Log::info('Credo Central payment initialized', [
+            } catch (\Exception $e) {
+                Log::error('Credo Central payment initialization error', [
                     'transaction_id' => $transaction->id,
-                    'reference' => $transaction->payment_reference,
-                    'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT'),
-                    'response' => $responseData
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'request_data' => $requestData ?? null
                 ]);
-
-                // Update transaction with payment link
-                if (!isset($responseData['data']['authorization_url'])) {
-                    throw new \Exception('Payment authorization URL not found in response');
-                }
-
-                $transaction->update([
-                    'payment_link' => $responseData['data']['authorization_url'],
-                    'payment_provider' => 'credocentral',
-                    'payment_provider_reference' => $responseData['data']['reference'] ?? null
-                ]);
-
-                return $responseData['data']['authorization_url'];
+                throw $e;
             }
-
-            // Handle error response
-            $errorMessage = 'Unknown error';
-            if ($responseData) {
-                if (isset($responseData['message'])) {
-                    $errorMessage = $responseData['message'];
-                } elseif (isset($responseData['error'])) {
-                    $errorMessage = $responseData['error'];
-                } elseif (isset($responseData['errors'])) {
-                    $errorMessage = is_array($responseData['errors']) ? implode(', ', $responseData['errors']) : $responseData['errors'];
-                }
-            } else {
-                // If we couldn't parse JSON, use the raw response
-                $errorMessage = $response->body() ?: 'Empty response from payment provider';
-            }
-
-            Log::error('Credo Central payment initialization failed', [
-                'transaction_id' => $transaction->id,
-                'status_code' => $response->status(),
-                'error_message' => $errorMessage,
-                'raw_response' => $response->body(),
-                'request_data' => $requestData,
-                'request_url' => $this->baseUrl . $endpoint,
-                'headers' => $response->headers()
-            ]);
-
-            throw new \Exception('Failed to initialize payment: ' . $errorMessage);
 
         } catch (\Exception $e) {
             Log::error('Credo Central payment initialization error', [
