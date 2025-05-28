@@ -152,9 +152,8 @@ class AlumniPaymentController extends Controller
             }
 
             // Create new transaction
+            DB::beginTransaction();
             try {
-                DB::beginTransaction();
-                
                 $transaction = Transaction::create([
                     'alumni_id' => $alumni->id,
                     'fee_template_id' => $fee->id,
@@ -171,40 +170,30 @@ class AlumniPaymentController extends Controller
                 ]);
 
                 // Initialize payment with Credo Central
-                try {
-                    Log::info('Initializing payment with Credo Central', [
-                        'transaction_id' => $transaction->id,
-                        'amount' => $transaction->amount,
-                        'reference' => $transaction->payment_reference,
-                        'service_code' => config('services.credocentral.service_code')
-                    ]);
-                    
-                    $paymentLink = $this->credocentral->initializePayment($transaction);
-                    
-                    Log::info('Payment initialized successfully', [
-                        'transaction_id' => $transaction->id,
-                        'payment_link' => $paymentLink
-                    ]);
+                Log::info('Initializing payment with Credo Central', [
+                    'transaction_id' => $transaction->id,
+                    'amount' => $transaction->amount,
+                    'reference' => $transaction->payment_reference,
+                    'service_code' => config('services.credocentral.service_code')
+                ]);
+                
+                $paymentLink = $this->credocentral->initializePayment($transaction);
+                
+                Log::info('Payment initialized successfully', [
+                    'transaction_id' => $transaction->id,
+                    'payment_link' => $paymentLink
+                ]);
 
-                    DB::commit();
-                    return redirect($paymentLink);
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    Log::error('Failed to initialize payment with Credo Central', [
-                        'transaction_id' => $transaction->id,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                        'service_code' => config('services.credocentral.service_code')
-                    ]);
-                    throw $e;
-                }
+                DB::commit();
+                return redirect($paymentLink);
             } catch (\Exception $e) {
                 DB::rollBack();
-                Log::error('Failed to create transaction', [
+                Log::error('Failed to create or initialize payment', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                     'fee_id' => $fee->id,
-                    'alumni_id' => $alumni->id
+                    'alumni_id' => $alumni->id,
+                    'service_code' => config('services.credocentral.service_code')
                 ]);
                 throw $e;
             }
