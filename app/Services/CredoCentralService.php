@@ -252,7 +252,7 @@ class CredoCentralService
     public function verifyPayment(Transaction $transaction)
     {
         try {
-            $response = $this->getHttpClient()->get($this->baseUrl . '/v1/transactions/' . $transaction->payment_provider_reference);
+            $response = $this->getHttpClient()->get($this->baseUrl . '/transaction/' . $transaction->payment_provider_reference);
 
             if ($response->successful()) {
                 $data = $response->json();
