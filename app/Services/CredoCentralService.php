@@ -49,7 +49,7 @@ class CredoCentralService
     public function initializePayment(Transaction $transaction)
     {
         try {
-            $endpoint = '/v1/transaction/initialize';
+            $endpoint = '/transaction/initialize';
             $fullUrl = $this->baseUrl . $endpoint;
             
             // Log the exact URL and request details
