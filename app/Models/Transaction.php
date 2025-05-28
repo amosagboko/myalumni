@@ -70,8 +70,7 @@ class Transaction extends Model
      */
     public function feeTemplate(): BelongsTo
     {
-        return $this->belongsTo(FeeTemplate::class, 'fee_id')
-            ->whereNotNull('fee_template_id');
+        return $this->belongsTo(FeeTemplate::class, 'fee_id');
     }
 
     /**

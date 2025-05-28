@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('alumni_id')->references('id')->on('alumni')->onDelete('restrict');
-            $table->foreignId('fee_template_id')->constrained()->onDelete('restrict');
+            $table->foreignId('fee_id')->references('id')->on('fee_templates')->onDelete('restrict');
             $table->decimal('amount', 10, 2);
             $table->enum('status', ['pending', 'paid', 'failed'])->default('pending');
             $table->boolean('is_test_mode')->default(false);
@@ -32,7 +32,7 @@ return new class extends Migration
 
             // Add indexes for common queries
             $table->index(['alumni_id', 'status']);
-            $table->index(['fee_template_id', 'status']);
+            $table->index(['fee_id', 'status']);
             $table->index(['payment_reference']);
             $table->index(['payment_provider_reference']);
             $table->index(['created_at']);

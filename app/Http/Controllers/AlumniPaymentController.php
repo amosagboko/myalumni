@@ -120,7 +120,7 @@ class AlumniPaymentController extends Controller
 
             // Check for existing pending transaction
             $existingTransaction = Transaction::where('alumni_id', $alumni->id)
-                ->where('fee_template_id', $fee->id)
+                ->where('fee_id', $fee->id)
                 ->where('status', 'pending')
                 ->first();
 
@@ -156,7 +156,7 @@ class AlumniPaymentController extends Controller
             try {
                 $transaction = Transaction::create([
                     'alumni_id' => $alumni->id,
-                    'fee_template_id' => $fee->id,
+                    'fee_id' => $fee->id,
                     'amount' => $fee->amount,
                     'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10)),
                     'status' => 'pending'

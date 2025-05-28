@@ -16,7 +16,7 @@ return new class extends Migration
                 t.id,
                 t.alumni_id,
                 a.user_id,
-                t.fee_template_id,
+                t.fee_id as fee_template_id,
                 t.amount,
                 t.status,
                 t.is_test_mode,
@@ -50,7 +50,7 @@ return new class extends Migration
                 a.year_of_graduation,
                 a.year_of_entry
             FROM transactions t
-            LEFT JOIN fee_templates ft ON t.fee_template_id = ft.id
+            LEFT JOIN fee_templates ft ON t.fee_id = ft.id
             LEFT JOIN fee_types fty ON ft.fee_type_id = fty.id
             LEFT JOIN alumni a ON t.alumni_id = a.id
         ");
