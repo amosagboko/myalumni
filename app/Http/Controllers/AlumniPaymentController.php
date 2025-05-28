@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumni;
 use App\Models\Transaction;
-use App\Models\CategoryTransactionFee;
+use App\Models\FeeTemplate;
 use App\Services\CredoCentralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,7 +48,7 @@ class AlumniPaymentController extends Controller
             ]);
 
             $request->validate([
-                'fee_id' => 'required|exists:category_transaction_fees,id'
+                'fee_id' => 'required|exists:fee_templates,id'
             ]);
 
             /** @var User $user */
@@ -72,21 +72,21 @@ class AlumniPaymentController extends Controller
                 return redirect()->back()->with('error', 'Please update your email address in your profile before making a payment.');
             }
 
-            $fee = CategoryTransactionFee::with('feeType')->findOrFail($request->fee_id);
+            $fee = FeeTemplate::with('feeType')->findOrFail($request->fee_id);
 
             Log::info('Found fee details', [
                 'fee_id' => $fee->id,
                 'fee_type' => $fee->feeType->code,
                 'fee_amount' => $fee->amount,
                 'is_active' => $fee->is_active,
-                'category_id' => $fee->category_id,
-                'alumni_category_id' => $alumni->category_id,
+                'alumni_year' => $fee->alumni_year,
+                'alumni_graduation_year' => $alumni->year_of_graduation,
                 'alumni_phone' => $alumni->phone_number,
                 'alumni_email' => $user->email,
                 'service_code' => config('services.credocentral.service_code')
             ]);
 
-            // Check if fee is active and belongs to user's category
+            // Check if fee is active
             if (!$fee->is_active) {
                 Log::warning('Attempted to pay inactive fee', [
                     'fee_id' => $fee->id,
@@ -95,20 +95,20 @@ class AlumniPaymentController extends Controller
                 return redirect()->back()->with('error', 'This fee is currently inactive.');
             }
 
-            // Allow subscription fees regardless of category, otherwise check category match
-            if ($fee->feeType->code !== 'subscription' && $fee->category_id !== $alumni->category_id) {
-                Log::warning('Category mismatch for fee payment', [
+            // Check if fee is applicable to alumni's graduation year
+            if ($fee->alumni_year !== $alumni->year_of_graduation) {
+                Log::warning('Year mismatch for fee payment', [
                     'fee_id' => $fee->id,
                     'fee_type' => $fee->feeType->code,
-                    'fee_category_id' => $fee->category_id,
-                    'alumni_category_id' => $alumni->category_id
+                    'fee_year' => $fee->alumni_year,
+                    'alumni_year' => $alumni->year_of_graduation
                 ]);
-                return redirect()->back()->with('error', 'This fee is not applicable to your category.');
+                return redirect()->back()->with('error', 'This fee is not applicable to your graduation year.');
             }
 
             // Check for existing pending transaction
             $existingTransaction = Transaction::where('alumni_id', $alumni->id)
-                ->where('category_transaction_fee_id', $fee->id)
+                ->where('fee_template_id', $fee->id)
                 ->where('status', 'pending')
                 ->first();
 
@@ -145,7 +145,7 @@ class AlumniPaymentController extends Controller
                 
                 $transaction = Transaction::create([
                     'alumni_id' => $alumni->id,
-                    'category_transaction_fee_id' => $fee->id,
+                    'fee_template_id' => $fee->id,
                     'amount' => $fee->amount,
                     'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10)),
                     'status' => 'pending'
@@ -330,7 +330,7 @@ class AlumniPaymentController extends Controller
                 'transaction_id' => $transaction->id,
                 'current_status' => $transaction->status,
                 'is_test_mode' => $transaction->is_test_mode,
-                'fee_type' => $transaction->categoryTransactionFee->feeType->code ?? 'unknown'
+                'fee_type' => $transaction->feeTemplate->feeType->code ?? 'unknown'
             ]);
 
             // Check if transaction is already paid
@@ -356,7 +356,7 @@ class AlumniPaymentController extends Controller
             ]);
 
             // If this is an EOI payment, update the candidate status
-            if ($transaction->categoryTransactionFee->feeType->code === 'screening_fee') {
+            if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
                 $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
                     ->where('has_paid_screening_fee', false)
                     ->latest()
@@ -382,7 +382,7 @@ class AlumniPaymentController extends Controller
             DB::commit();
 
             // Set appropriate success message based on the fee type
-            $successMessage = $transaction->categoryTransactionFee->feeType->code === 'screening_fee'
+            $successMessage = $transaction->feeTemplate->feeType->code === 'screening_fee'
                 ? 'Payment completed successfully. Your expression of interest has been submitted.'
                 : 'Demo payment completed successfully.';
 
@@ -426,13 +426,13 @@ class AlumniPaymentController extends Controller
         Log::info('Confirming payment', [
             'transaction_id' => $transaction->id,
             'status' => $transaction->status,
-            'fee_type' => $transaction->categoryTransactionFee->feeType->code ?? 'unknown'
+            'fee_type' => $transaction->feeTemplate->feeType->code ?? 'unknown'
         ]);
 
         // Redirect to payment verification
         Log::info('Redirecting to payment verification', [
             'transaction_id' => $transaction->id,
-            'fee_type' => $transaction->categoryTransactionFee->feeType->code ?? 'unknown'
+            'fee_type' => $transaction->feeTemplate->feeType->code ?? 'unknown'
         ]);
         return redirect()->route('alumni.payments.show', ['transaction' => $transaction->id])
             ->with('info', 'Please verify your payment to complete the transaction.');
@@ -444,7 +444,7 @@ class AlumniPaymentController extends Controller
     public function history()
     {
         $alumni = Auth::user()->alumni;
-        $transactions = Transaction::with(['categoryTransactionFee.feeType', 'categoryTransactionFee.category', 'categoryTransactionFee.alumniYear'])
+        $transactions = Transaction::with(['feeTemplate.feeType', 'feeTemplate.alumniYear'])
             ->where('alumni_id', $alumni->id)
             ->latest()
             ->paginate(10);
@@ -483,7 +483,7 @@ class AlumniPaymentController extends Controller
             ]);
 
             // If this is an EOI payment, update the candidate status
-            if ($transaction->categoryTransactionFee->feeType->code === 'screening_fee') {
+            if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
                 $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
                     ->where('has_paid_screening_fee', false)
                     ->latest()
