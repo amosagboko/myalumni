@@ -95,15 +95,27 @@ class AlumniPaymentController extends Controller
                 return redirect()->back()->with('error', 'This fee is currently inactive.');
             }
 
-            // Check if fee is applicable to alumni's graduation year
-            if ($fee->graduation_year !== $alumni->year_of_graduation) {
-                Log::warning('Year mismatch for fee payment', [
-                    'fee_id' => $fee->id,
-                    'fee_type' => $fee->feeType->code,
-                    'fee_year' => $fee->graduation_year,
-                    'alumni_year' => $alumni->year_of_graduation
-                ]);
-                return redirect()->back()->with('error', 'This fee is not applicable to your graduation year.');
+            // For subscription fees, only check if alumni graduated in 2023 or earlier
+            if ($fee->feeType->code === 'subscription') {
+                if ($alumni->year_of_graduation > 2023) {
+                    Log::warning('Subscription fee not applicable to recent graduates', [
+                        'fee_id' => $fee->id,
+                        'fee_type' => $fee->feeType->code,
+                        'alumni_year' => $alumni->year_of_graduation
+                    ]);
+                    return redirect()->back()->with('error', 'Subscription fees are only applicable to alumni who graduated in 2023 or earlier.');
+                }
+            } else {
+                // For non-subscription fees, check if fee is applicable to alumni's graduation year
+                if ($fee->graduation_year !== $alumni->year_of_graduation) {
+                    Log::warning('Year mismatch for fee payment', [
+                        'fee_id' => $fee->id,
+                        'fee_type' => $fee->feeType->code,
+                        'fee_year' => $fee->graduation_year,
+                        'alumni_year' => $alumni->year_of_graduation
+                    ]);
+                    return redirect()->back()->with('error', 'This fee is not applicable to your graduation year.');
+                }
             }
 
             // Check for existing pending transaction
