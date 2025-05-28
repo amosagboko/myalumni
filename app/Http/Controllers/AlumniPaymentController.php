@@ -205,6 +205,7 @@ class AlumniPaymentController extends Controller
                     'amount' => $fee->amount,
                     'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10)),
                     'status' => 'pending',
+                    'payment_provider' => 'credocentral',
                     'payment_details' => [
                         'fee_type' => $fee->feeType->code,
                         'fee_description' => $fee->description,
