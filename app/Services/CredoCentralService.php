@@ -40,13 +40,9 @@ class CredoCentralService
         ->timeout(30); // Set a 30-second timeout
 
         // Add retry logic with proper error handling
-        $client->retry(3, 100, function ($exception, $request) {
+        $client->retry(3, 100, function ($exception) {
             Log::warning('Retrying Credo Central API request', [
-                'error' => $exception->getMessage(),
-                'url' => $request->toPsrRequest()->getUri()->__toString(),
-                'method' => $request->toPsrRequest()->getMethod(),
-                'headers' => array_keys($request->toPsrRequest()->getHeaders()),
-                'has_body' => !empty($request->toPsrRequest()->getBody()->getContents())
+                'error' => $exception->getMessage()
             ]);
             return $exception instanceof \Illuminate\Http\Client\ConnectionException;
         });
