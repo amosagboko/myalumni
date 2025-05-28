@@ -86,45 +86,45 @@ class Alumni extends Model
             Log::info('Alumni graduated in 2023 or earlier', ['graduation_year' => $this->year_of_graduation]);
 
             // Get the subscription fee type
-            $subscriptionFeeType = FeeType::where('code', 'subscription')
-                ->where('is_active', true)
-                ->first();
+                $subscriptionFeeType = FeeType::where('code', 'subscription')
+                    ->where('is_active', true)
+                    ->first();
 
-            Log::info('Subscription fee type lookup result', [
-                'found' => (bool)$subscriptionFeeType,
-                'fee_type_id' => $subscriptionFeeType?->id,
-                'fee_type_code' => $subscriptionFeeType?->code
-            ]);
+                Log::info('Subscription fee type lookup result', [
+                    'found' => (bool)$subscriptionFeeType,
+                    'fee_type_id' => $subscriptionFeeType?->id,
+                    'fee_type_code' => $subscriptionFeeType?->code
+                ]);
 
-            if ($subscriptionFeeType) {
+                if ($subscriptionFeeType) {
                 // Get the fee template for this year
                 $fees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)
                     ->where('graduation_year', $activeYear->year)
-                    ->where('is_active', true)
+                        ->where('is_active', true)
                     ->where('valid_from', '<=', now())
                     ->where(function ($query) {
                         $query->whereNull('valid_until')
                             ->orWhere('valid_until', '>', now());
                     })
-                    ->get();
+                        ->get();
 
-                Log::info('Subscription fees lookup result', [
-                    'count' => $fees->count(),
-                    'fees' => $fees->map(function($fee) {
-                        return [
-                            'id' => $fee->id,
-                            'amount' => $fee->amount,
-                            'is_active' => $fee->is_active,
-                            'fee_type_id' => $fee->fee_type_id
-                        ];
-                    })->toArray()
-                ]);
+                    Log::info('Subscription fees lookup result', [
+                        'count' => $fees->count(),
+                        'fees' => $fees->map(function($fee) {
+                            return [
+                                'id' => $fee->id,
+                                'amount' => $fee->amount,
+                                'is_active' => $fee->is_active,
+                                'fee_type_id' => $fee->fee_type_id
+                            ];
+                        })->toArray()
+                    ]);
 
-                // Return the fees (even if empty) - don't fall through to 2025+ logic
-                return $fees;
-            }
-            
-            Log::warning('No subscription fee type found');
+                    // Return the fees (even if empty) - don't fall through to 2025+ logic
+                    return $fees;
+                }
+                
+                Log::warning('No subscription fee type found');
             return collect([]);
         }
 
