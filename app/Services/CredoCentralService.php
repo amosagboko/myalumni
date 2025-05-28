@@ -43,10 +43,10 @@ class CredoCentralService
         $client->retry(3, 100, function ($exception, $request) {
             Log::warning('Retrying Credo Central API request', [
                 'error' => $exception->getMessage(),
-                'url' => $request->url(),
-                'method' => $request->method(),
-                'headers' => array_keys($request->headers()),
-                'has_body' => !empty($request->body())
+                'url' => $request->toPsrRequest()->getUri()->__toString(),
+                'method' => $request->toPsrRequest()->getMethod(),
+                'headers' => array_keys($request->toPsrRequest()->getHeaders()),
+                'has_body' => !empty($request->toPsrRequest()->getBody()->getContents())
             ]);
             return $exception instanceof \Illuminate\Http\Client\ConnectionException;
         });
