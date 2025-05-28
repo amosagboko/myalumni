@@ -176,15 +176,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/categories', [FeeTemplateController::class, 'categoryReport'])->name('categories');
         });
     });
-
-    // Payment routes
-    Route::get('/payments', [AlumniPaymentController::class, 'index'])->name('alumni.payments.index');
-    Route::post('/payments/initiate', [AlumniPaymentController::class, 'initiatePayment'])->name('alumni.payments.initiate');
-    Route::get('/payments/{transaction}', [AlumniPaymentController::class, 'show'])->name('alumni.payments.show');
-    Route::get('/payments/{transaction}/verify', [AlumniPaymentController::class, 'verifyPayment'])->name('alumni.payments.verify');
-    Route::get('/payments/{transaction}/success', [AlumniPaymentController::class, 'paymentSuccess'])->name('payments.success');
-    Route::get('/payments/{transaction}/pending', [AlumniPaymentController::class, 'paymentPending'])->name('payments.pending');
-    Route::get('/payments/{transaction}/failed', [AlumniPaymentController::class, 'paymentFailed'])->name('payments.failed');
 });
 
 // Payment webhook route (no auth middleware)
