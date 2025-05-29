@@ -174,30 +174,49 @@ class CredoCentralService
     public function verifyPayment(Transaction $transaction)
     {
         try {
+            Log::info('Starting payment verification', [
+                'transaction_id' => $transaction->id,
+                'reference' => $transaction->payment_reference,
+                'provider_reference' => $transaction->payment_provider_reference,
+                'current_status' => $transaction->status
+            ]);
+
             $response = $this->getHttpClient()->get($this->baseUrl . '/transaction/' . $transaction->payment_provider_reference);
 
             if ($response->successful()) {
                 $data = $response->json();
-                Log::info('Credo Central payment verification', [
+                
+                // Log the raw response for debugging
+                Log::info('Credo Central payment verification response', [
                     'transaction_id' => $transaction->id,
                     'reference' => $transaction->payment_reference,
-                    'response' => $data
+                    'raw_response' => $data,
+                    'status_from_provider' => $data['data']['status'] ?? 'unknown'
                 ]);
 
-                // Check if the payment is successful based on Credo's response
-                $isPaid = isset($data['data']['status']) && 
-                         ($data['data']['status'] === 'success' || $data['data']['status'] === 'paid');
+                // Normalize the status from Credo
+                $status = strtolower($data['data']['status'] ?? '');
+                $isPaid = in_array($status, ['success', 'paid', 'completed']);
+
+                // Log the normalized status
+                Log::info('Payment status normalized', [
+                    'transaction_id' => $transaction->id,
+                    'original_status' => $status,
+                    'is_paid' => $isPaid
+                ]);
 
                 return [
-                    'status' => $data['data']['status'],
+                    'status' => $status,
                     'paid' => $isPaid,
-                    'amount' => $data['data']['amount'] / 100, // Convert from kobo to naira
-                    'paid_at' => $data['data']['paid_at'] ?? $data['data']['created_at'] ?? null
+                    'amount' => $data['data']['amount'] / 100,
+                    'paid_at' => $data['data']['paid_at'] ?? $data['data']['created_at'] ?? null,
+                    'raw_data' => $data['data'] // Include raw data for debugging
                 ];
             }
 
             Log::error('Credo Central payment verification failed', [
                 'transaction_id' => $transaction->id,
+                'status_code' => $response->status(),
                 'response' => $response->json()
             ]);
 
@@ -206,7 +225,8 @@ class CredoCentralService
         } catch (\Exception $e) {
             Log::error('Credo Central payment verification error', [
                 'transaction_id' => $transaction->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             throw $e;
         }

@@ -350,7 +350,10 @@ class AlumniPaymentController extends Controller
                                     'paid_at' => $result['paid_at'] ?? now(),
                                     'payment_details' => array_merge(
                                         $transaction->payment_details ?? [],
-                                        ['verified_at' => now()]
+                                        [
+                                            'verified_at' => now(),
+                                            'verification_data' => $result
+                                        ]
                                     )
                                 ]);
                                 
@@ -370,8 +373,9 @@ class AlumniPaymentController extends Controller
                         // If verification fails, show pending page
                         return redirect()->route('alumni.payments.pending', $transaction)
                             ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
-                        
-                    case '1': // Failure
+                        break;
+
+                    case '1': // Failed
                         $transaction->update([
                             'status' => 'failed',
                             'payment_details' => array_merge(
@@ -391,7 +395,8 @@ class AlumniPaymentController extends Controller
 
                         return redirect()->route('alumni.payments.failed', $transaction)
                             ->with('error', 'Payment was not successful. Please try again.');
-                        
+                        break;
+
                     default: // Pending or other states
                         return redirect()->route('alumni.payments.pending', $transaction)
                             ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');

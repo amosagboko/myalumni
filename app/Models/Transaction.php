@@ -144,11 +144,11 @@ class Transaction extends Model
      */
     public function isPaid(): bool
     {
-        return $this->status === 'paid';
+        return in_array($this->status, ['paid', 'completed']);
     }
 
     /**
-     * Check if this transaction is pending.
+     * Check if the transaction is pending.
      */
     public function isPending(): bool
     {
@@ -156,15 +156,7 @@ class Transaction extends Model
     }
 
     /**
-     * Check if this transaction is completed.
-     */
-    public function isCompleted(): bool
-    {
-        return $this->status === 'completed';
-    }
-
-    /**
-     * Check if this transaction is failed.
+     * Check if the transaction is failed.
      */
     public function isFailed(): bool
     {
@@ -180,14 +172,22 @@ class Transaction extends Model
     }
 
     /**
-     * Mark this transaction as completed.
+     * Mark this transaction as paid.
+     */
+    public function markAsPaid(?string $paidAt = null): bool
+    {
+        return $this->update([
+            'status' => 'paid',
+            'paid_at' => $paidAt ?? now()
+        ]);
+    }
+
+    /**
+     * Mark this transaction as completed (alias for markAsPaid for backward compatibility).
      */
     public function markAsCompleted(): bool
     {
-        return $this->update([
-            'status' => 'completed',
-            'paid_at' => now()
-        ]);
+        return $this->markAsPaid();
     }
 
     /**
@@ -197,6 +197,16 @@ class Transaction extends Model
     {
         return $this->update([
             'status' => 'failed'
+        ]);
+    }
+
+    /**
+     * Mark this transaction as pending.
+     */
+    public function markAsPending(): bool
+    {
+        return $this->update([
+            'status' => 'pending'
         ]);
     }
 
