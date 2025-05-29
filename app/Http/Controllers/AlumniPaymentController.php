@@ -746,21 +746,56 @@ class AlumniPaymentController extends Controller
             }
 
             // Verify payment status
-            try {
-                $result = $this->credocentral->verifyPayment($transaction);
-                
-                if ($result['paid']) {
-                    return redirect()->route('alumni.payments.success', $transaction)
-                        ->with('success', 'Payment completed successfully.');
+            $result = $this->credocentral->verifyPayment($transaction);
+            
+            // Log the verification result
+            Log::info('Payment verification result in redirect', [
+                'transaction_id' => $transaction->id,
+                'is_paid' => $result['paid'],
+                'status' => $result['status'],
+                'reference' => $transaction->payment_reference
+            ]);
+
+            // Handle based on verification result
+            if ($result['paid']) {
+                // Update transaction status if not already paid
+                if ($transaction->status !== 'paid') {
+                    $transaction->update([
+                        'status' => 'paid',
+                        'paid_at' => $result['paid_at'] ?? now(),
+                        'payment_details' => array_merge(
+                            $transaction->payment_details ?? [],
+                            [
+                                'verified_at' => now(),
+                                'verification_data' => $result
+                            ]
+                        )
+                    ]);
                 }
-            } catch (\Exception $e) {
-                Log::warning('Payment verification failed during redirect', [
-                    'transaction_id' => $transaction->id,
-                    'error' => $e->getMessage()
-                ]);
+                
+                return redirect()->route('alumni.payments.success', $transaction)
+                    ->with('success', 'Payment completed successfully.');
             }
 
-            // If verification fails or payment is still pending, show pending page
+            // If not paid, check if it's explicitly failed
+            if (strtolower($result['status']) === 'failed') {
+                $transaction->update([
+                    'status' => 'failed',
+                    'payment_details' => array_merge(
+                        $transaction->payment_details ?? [],
+                        [
+                            'status' => $result['status'],
+                            'failed_at' => now(),
+                            'verification_data' => $result
+                        ]
+                    )
+                ]);
+
+                return redirect()->route('alumni.payments.failed', $transaction)
+                    ->with('error', 'Payment was not successful. Please try again.');
+            }
+
+            // If neither paid nor failed, show pending page
             return redirect()->route('alumni.payments.pending', $transaction)
                 ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
 
