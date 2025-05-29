@@ -313,17 +313,86 @@ class AlumniPaymentController extends Controller
     public function handleWebhook(Request $request)
     {
         try {
-            Log::info('Payment webhook received', ['payload' => $request->all()]);
+            Log::info('Payment webhook received', [
+                'method' => $request->method(),
+                'payload' => $request->all(),
+                'reference' => $request->reference,
+                'transRef' => $request->transRef,
+                'status' => $request->status
+            ]);
 
+            // For GET requests (redirects), handle differently
+            if ($request->isMethod('get')) {
+                // Find the transaction by payment reference
+                $transaction = Transaction::where('payment_reference', $request->reference)
+                    ->orWhere('payment_provider_reference', $request->transRef)
+                    ->first();
+
+                if (!$transaction) {
+                    Log::error('Transaction not found for webhook', [
+                        'reference' => $request->reference,
+                        'transRef' => $request->transRef
+                    ]);
+                    return redirect()->route('alumni.payments.index')
+                        ->with('error', 'Transaction not found. Please contact support.');
+                }
+
+                // If status is 0, mark as failed
+                if ($request->status === '0') {
+                    $transaction->update([
+                        'status' => 'failed',
+                        'payment_details' => json_encode([
+                            'status' => $request->status,
+                            'provider_reference' => $request->transRef,
+                            'redirected_at' => now()
+                        ])
+                    ]);
+
+                    Log::info('Payment marked as failed from webhook redirect', [
+                        'transaction_id' => $transaction->id,
+                        'status' => $request->status
+                    ]);
+
+                    return redirect()->route('alumni.payments.failed', $transaction)
+                        ->with('error', 'Payment was not successful. Please try again.');
+                }
+
+                // For successful payments, verify and redirect
+                try {
+                    $result = $this->credocentral->verifyPayment($transaction);
+                    
+                    if ($result['paid']) {
+                        return redirect()->route('alumni.payments.success', $transaction)
+                            ->with('success', 'Payment completed successfully.');
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Payment verification failed during webhook redirect', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+
+                // If verification fails or payment is still pending
+                return redirect()->route('alumni.payments.pending', $transaction)
+                    ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
+            }
+
+            // For POST requests (webhooks), process normally
             $this->credocentral->handleWebhook($request->all());
-
             return response()->json(['status' => 'success']);
 
         } catch (\Exception $e) {
             Log::error('Webhook handling failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'method' => $request->method(),
+                'request_data' => $request->all()
             ]);
+
+            if ($request->isMethod('get')) {
+                return redirect()->route('alumni.payments.index')
+                    ->with('error', 'Failed to process payment. Please contact support.');
+            }
 
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 400);
         }
