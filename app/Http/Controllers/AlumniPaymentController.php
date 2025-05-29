@@ -645,7 +645,7 @@ class AlumniPaymentController extends Controller
     public function history()
     {
         $alumni = Auth::user()->alumni;
-        $transactions = Transaction::with(['feeTemplate.feeType', 'feeTemplate.alumniYear'])
+        $transactions = Transaction::with(['feeTemplate.feeType'])
             ->where('alumni_id', $alumni->id)
             ->latest()
             ->paginate(10);

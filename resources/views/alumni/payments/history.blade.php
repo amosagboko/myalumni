@@ -32,9 +32,9 @@
                                     @foreach($transactions as $transaction)
                                         <tr>
                                             <td class="small">{{ $transaction->created_at->format('M d, Y H:i A') }}</td>
-                                            <td class="small">{{ $transaction->categoryTransactionFee->feeType->name }}</td>
-                                            <td class="small">{{ $transaction->categoryTransactionFee->category->name }}</td>
-                                            <td class="small">{{ $transaction->categoryTransactionFee->alumniYear->year }}</td>
+                                            <td class="small">{{ $transaction->feeTemplate->feeType->name }}</td>
+                                            <td class="small">{{ $transaction->feeTemplate->category->name ?? 'N/A' }}</td>
+                                            <td class="small">{{ $transaction->feeTemplate->graduation_year }}</td>
                                             <td class="small">₦{{ number_format($transaction->amount, 2) }}</td>
                                             <td class="small">{{ $transaction->payment_reference }}</td>
                                             <td class="small">
@@ -43,16 +43,10 @@
                                                 @elseif($transaction->status === 'pending')
                                                     <span class="badge bg-warning small">Pending</span>
                                                 @else
-                                                    <span class="badge bg-danger small">Rejected</span>
+                                                    <span class="badge bg-danger small">Failed</span>
                                                 @endif
                                             </td>
-                                            <td class="small">
-                                                @if($transaction->paid_at)
-                                                    {{ $transaction->paid_at->format('M d, Y H:i A') }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
+                                            <td class="small">{{ $transaction->paid_at ? $transaction->paid_at->format('M d, Y H:i A') : 'N/A' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
