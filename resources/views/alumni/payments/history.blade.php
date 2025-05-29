@@ -55,8 +55,8 @@
                     @endif
 
                     <div class="mt-4">
-                        <a href="{{ route('alumni.payments.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left me-1"></i> Back to Payments
+                        <a href="{{ route('alumni.dashboard') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
                         </a>
                     </div>
                 </div>
