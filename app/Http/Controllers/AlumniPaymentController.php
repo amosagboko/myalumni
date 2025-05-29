@@ -337,69 +337,61 @@ class AlumniPaymentController extends Controller
                         ->with('error', 'Transaction not found. Please contact support.');
                 }
 
-                // Handle different status codes according to Credo Central's documentation
-                switch ($request->status) {
-                    case '0': // Success
-                        try {
-                            $result = $this->credocentral->verifyPayment($transaction);
-                            
-                            if ($result['paid']) {
-                                // Update transaction status immediately
-                                $transaction->update([
-                                    'status' => 'paid',
-                                    'paid_at' => $result['paid_at'] ?? now(),
-                                    'payment_details' => array_merge(
-                                        $transaction->payment_details ?? [],
-                                        [
-                                            'verified_at' => now(),
-                                            'verification_data' => $result
-                                        ]
-                                    )
-                                ]);
-                                
-                                // Clear any cached data
-                                $transaction->refresh();
-                                $transaction->feeTemplate->refresh();
+                // Always verify payment status through API regardless of redirect status
+                try {
+                    $result = $this->credocentral->verifyPayment($transaction);
+                    
+                    if ($result['paid']) {
+                        // Update transaction status immediately
+                        $transaction->update([
+                            'status' => 'paid',
+                            'paid_at' => $result['paid_at'] ?? now(),
+                            'payment_details' => array_merge(
+                                $transaction->payment_details ?? [],
+                                [
+                                    'verified_at' => now(),
+                                    'verification_data' => $result
+                                ]
+                            )
+                        ]);
+                        
+                        // Clear any cached data
+                        $transaction->refresh();
+                        $transaction->feeTemplate->refresh();
 
-                                return redirect()->route('alumni.payments.success', $transaction)
-                                    ->with('success', 'Payment completed successfully.');
-                            }
-                        } catch (\Exception $e) {
-                            Log::warning('Payment verification failed during webhook redirect', [
-                                'transaction_id' => $transaction->id,
-                                'error' => $e->getMessage()
-                            ]);
-                        }
-                        // If verification fails, show pending page
-                        return redirect()->route('alumni.payments.pending', $transaction)
-                            ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
-                        break;
+                        return redirect()->route('alumni.payments.success', $transaction)
+                            ->with('success', 'Payment completed successfully.');
+                    }
 
-                    case '1': // Failed
+                    // If not paid, check if it's explicitly failed
+                    if (strtolower($result['status']) === 'failed') {
                         $transaction->update([
                             'status' => 'failed',
                             'payment_details' => array_merge(
                                 $transaction->payment_details ?? [],
                                 [
-                                    'status' => $request->status,
-                                    'provider_reference' => $request->transRef,
-                                    'failed_at' => now()
+                                    'status' => $result['status'],
+                                    'failed_at' => now(),
+                                    'verification_data' => $result
                                 ]
                             )
                         ]);
 
-                        Log::info('Payment marked as failed from webhook redirect', [
-                            'transaction_id' => $transaction->id,
-                            'status' => $request->status
-                        ]);
-
                         return redirect()->route('alumni.payments.failed', $transaction)
                             ->with('error', 'Payment was not successful. Please try again.');
-                        break;
+                    }
 
-                    default: // Pending or other states
-                        return redirect()->route('alumni.payments.pending', $transaction)
-                            ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
+                    // If neither paid nor failed, show pending page
+                    return redirect()->route('alumni.payments.pending', $transaction)
+                        ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
+
+                } catch (\Exception $e) {
+                    Log::warning('Payment verification failed during webhook redirect', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return redirect()->route('alumni.payments.pending', $transaction)
+                        ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
                 }
             }
 

@@ -196,13 +196,17 @@ class CredoCentralService
 
                 // Normalize the status from Credo
                 $status = strtolower($data['data']['status'] ?? '');
-                $isPaid = in_array($status, ['success', 'paid', 'completed']);
-
-                // Log the normalized status
-                Log::info('Payment status normalized', [
+                
+                // Consider a payment as paid if the status indicates success
+                $isPaid = in_array($status, ['success', 'paid', 'completed', '0']);
+                
+                // Log the normalized status and decision
+                Log::info('Payment status verification result', [
                     'transaction_id' => $transaction->id,
                     'original_status' => $status,
-                    'is_paid' => $isPaid
+                    'is_paid' => $isPaid,
+                    'provider_reference' => $transaction->payment_provider_reference,
+                    'payment_reference' => $transaction->payment_reference
                 ]);
 
                 return [
