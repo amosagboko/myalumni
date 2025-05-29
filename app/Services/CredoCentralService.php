@@ -92,20 +92,35 @@ class CredoCentralService
 
             $requestData = [
                 'amount' => $transaction->amount * 100, // Convert to kobo
+                'email' => $transaction->alumni->user->email,
+                'bearer' => 0,
+                'callbackUrl' => route('alumni.payments.webhook'),
+                'channels' => ['card', 'bank'],
                 'currency' => 'NGN',
+                'customerFirstName' => explode(' ', $transaction->alumni->user->name)[0] ?? '',
+                'customerLastName' => explode(' ', $transaction->alumni->user->name)[1] ?? '',
+                'customerPhoneNumber' => $transaction->alumni->phone_number,
                 'reference' => $transaction->payment_reference,
-                'callback_url' => route('alumni.payments.webhook'),
-                'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT'),
-                'customer' => [
-                    'name' => $transaction->alumni->user->name,
-                    'email' => $transaction->alumni->user->email,
-                    'phone' => $transaction->alumni->phone_number
-                ],
+                'serviceCode' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT'),
                 'metadata' => [
-                    'transaction_id' => $transaction->id,
-                    'fee_type' => $transaction->feeTemplate->feeType->code,
-                    'alumni_id' => $transaction->alumni_id,
-                    // 'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT')
+                    'customFields' => [
+                        [
+                            'variable_name' => 'fee_type',
+                            'value' => $transaction->feeTemplate->feeType->code,
+                            'display_name' => 'Fee Type'
+                        ],
+                        [
+                            'variable_name' => 'alumni_id',
+                                'value' => $transaction->alumni_id,
+                                'display_name' => 'Alumni ID'
+                        ],
+                        [
+                            'variable_name' => 'transaction_id',
+                                'value' => $transaction->id
+                                'display_name' => 'Transaction ID'
+                        ]
+                        
+                    ]
                 ]
             ];
 
