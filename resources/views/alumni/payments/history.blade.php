@@ -55,7 +55,7 @@
                     @endif
 
                     <div class="mt-4">
-                        <a href="{{ route('alumni.dashboard') }}" class="btn btn-secondary btn-sm">
+                        <a href="{{ route('alumni.home') }}" class="btn btn-secondary btn-sm">
                             <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
                         </a>
                     </div>
