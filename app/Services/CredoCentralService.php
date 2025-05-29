@@ -184,11 +184,15 @@ class CredoCentralService
                     'response' => $data
                 ]);
 
+                // Check if the payment is successful based on Credo's response
+                $isPaid = isset($data['data']['status']) && 
+                         ($data['data']['status'] === 'success' || $data['data']['status'] === 'paid');
+
                 return [
                     'status' => $data['data']['status'],
-                    'paid' => $data['data']['status'] === 'success',
+                    'paid' => $isPaid,
                     'amount' => $data['data']['amount'] / 100, // Convert from kobo to naira
-                    'paid_at' => $data['data']['paid_at'] ?? null
+                    'paid_at' => $data['data']['paid_at'] ?? $data['data']['created_at'] ?? null
                 ];
             }
 
@@ -281,9 +285,15 @@ class CredoCentralService
     {
         try {
             $transaction->update([
-                'status' => 'completed',
-                'paid_at' => now(),
-                'payment_details' => json_encode($data)
+                'status' => 'paid',
+                'paid_at' => $data['paid_at'] ?? now(),
+                'payment_details' => array_merge(
+                    $transaction->payment_details ?? [],
+                    [
+                        'webhook_received_at' => now(),
+                        'webhook_data' => $data
+                    ]
+                )
             ]);
 
             // Handle any post-payment actions (e.g., update candidate status for screening fees)
@@ -300,7 +310,8 @@ class CredoCentralService
 
             Log::info('Payment completed successfully', [
                 'transaction_id' => $transaction->id,
-                'reference' => $transaction->payment_reference
+                'reference' => $transaction->payment_reference,
+                'paid_at' => $transaction->paid_at
             ]);
 
         } catch (\Exception $e) {

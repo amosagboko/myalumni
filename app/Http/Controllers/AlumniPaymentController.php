@@ -344,6 +344,20 @@ class AlumniPaymentController extends Controller
                             $result = $this->credocentral->verifyPayment($transaction);
                             
                             if ($result['paid']) {
+                                // Update transaction status immediately
+                                $transaction->update([
+                                    'status' => 'paid',
+                                    'paid_at' => $result['paid_at'] ?? now(),
+                                    'payment_details' => array_merge(
+                                        $transaction->payment_details ?? [],
+                                        ['verified_at' => now()]
+                                    )
+                                ]);
+                                
+                                // Clear any cached data
+                                $transaction->refresh();
+                                $transaction->feeTemplate->refresh();
+
                                 return redirect()->route('alumni.payments.success', $transaction)
                                     ->with('success', 'Payment completed successfully.');
                             }
@@ -360,11 +374,14 @@ class AlumniPaymentController extends Controller
                     case '1': // Failure
                         $transaction->update([
                             'status' => 'failed',
-                            'payment_details' => json_encode([
-                                'status' => $request->status,
-                                'provider_reference' => $request->transRef,
-                                'redirected_at' => now()
-                            ])
+                            'payment_details' => array_merge(
+                                $transaction->payment_details ?? [],
+                                [
+                                    'status' => $request->status,
+                                    'provider_reference' => $request->transRef,
+                                    'failed_at' => now()
+                                ]
+                            )
                         ]);
 
                         Log::info('Payment marked as failed from webhook redirect', [
@@ -412,6 +429,20 @@ class AlumniPaymentController extends Controller
             $result = $this->credocentral->verifyPayment($transaction);
 
             if ($result['paid']) {
+                // Update transaction status immediately
+                $transaction->update([
+                    'status' => 'paid',
+                    'paid_at' => $result['paid_at'] ?? now(),
+                    'payment_details' => array_merge(
+                        $transaction->payment_details ?? [],
+                        ['verified_at' => now()]
+                    )
+                ]);
+                
+                // Clear any cached data
+                $transaction->refresh();
+                $transaction->feeTemplate->refresh();
+
                 return redirect()->route('alumni.payments.success', $transaction)
                     ->with('success', 'Payment verified successfully.');
             }
@@ -435,20 +466,7 @@ class AlumniPaymentController extends Controller
      */
     public function paymentSuccess(Transaction $transaction)
     {
-        if ($transaction->status !== 'paid') {
-            // Update the transaction status to ensure it's marked as paid
-            $transaction->update([
-                'status' => 'paid',
-                'paid_at' => now()
-            ]);
-
-            // Clear any cached data for this transaction
-            $transaction->refresh();
-            
-            // Clear the cache for the fee template's isPaid check
-            $transaction->feeTemplate->refresh();
-        }
-
+        // No need to update status here as it should be updated during verification
         return view('payments.success', compact('transaction'));
     }
 
