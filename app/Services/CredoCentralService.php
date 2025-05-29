@@ -111,15 +111,14 @@ class CredoCentralService
                         ],
                         [
                             'variable_name' => 'alumni_id',
-                                'value' => $transaction->alumni_id,
-                                'display_name' => 'Alumni ID'
+                            'value' => $transaction->alumni_id,
+                            'display_name' => 'Alumni ID'
                         ],
                         [
                             'variable_name' => 'transaction_id',
-                                'value' => $transaction->id
-                                'display_name' => 'Transaction ID'
+                            'value' => $transaction->id,
+                            'display_name' => 'Transaction ID'
                         ]
-                        
                     ]
                 ]
             ];
