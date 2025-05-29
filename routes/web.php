@@ -181,6 +181,9 @@ Route::middleware(['auth'])->group(function () {
 // Payment webhook route (no auth middleware)
 Route::post('/payments/webhook', [AlumniPaymentController::class, 'handleWebhook'])->name('alumni.payments.webhook');
 
+// Payment redirect route (no auth middleware)
+Route::get('/payments/redirect', [AlumniPaymentController::class, 'handleRedirect'])->name('alumni.payments.redirect');
+
 // Alumni routes
 Route::middleware(['auth', 'role:alumni'])->group(function () {
     // Alumni Home Route

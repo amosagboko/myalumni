@@ -62,7 +62,7 @@ class CredoCentralService
         'amount' => $transaction->amount * 100,
         'email' => $transaction->alumni->user->email,
         'bearer' => 0,
-        'callbackUrl' => route('alumni.payments.webhook'),
+        'callbackUrl' => route('alumni.payments.redirect'),
         'channels' => ['card', 'bank'],
         'currency' => 'NGN',
         'customerFirstName' => explode(' ', $transaction->alumni->user->name)[0] ?? '',

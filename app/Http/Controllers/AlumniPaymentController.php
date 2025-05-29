@@ -612,4 +612,69 @@ class AlumniPaymentController extends Controller
             throw $e;
         }
     }
+
+    /**
+     * Handle payment redirect after successful payment
+     */
+    public function handleRedirect(Request $request)
+    {
+        try {
+            Log::info('Payment redirect received', [
+                'reference' => $request->reference,
+                'transRef' => $request->transRef,
+                'status' => $request->status,
+                'all_params' => $request->all()
+            ]);
+
+            // Find the transaction by payment reference
+            $transaction = Transaction::where('payment_reference', $request->reference)
+                ->orWhere('payment_provider_reference', $request->transRef)
+                ->first();
+
+            if (!$transaction) {
+                Log::error('Transaction not found for redirect', [
+                    'reference' => $request->reference,
+                    'transRef' => $request->transRef
+                ]);
+                return redirect()->route('alumni.payments.index')
+                    ->with('error', 'Transaction not found. Please contact support.');
+            }
+
+            // Update transaction with provider reference if not set
+            if (!$transaction->payment_provider_reference && $request->transRef) {
+                $transaction->update([
+                    'payment_provider_reference' => $request->transRef
+                ]);
+            }
+
+            // Verify payment status
+            try {
+                $result = $this->credocentral->verifyPayment($transaction);
+                
+                if ($result['paid']) {
+                    return redirect()->route('alumni.payments.success', $transaction)
+                        ->with('success', 'Payment completed successfully.');
+                }
+            } catch (\Exception $e) {
+                Log::warning('Payment verification failed during redirect', [
+                    'transaction_id' => $transaction->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            // If verification fails or payment is still pending, show pending page
+            return redirect()->route('alumni.payments.pending', $transaction)
+                ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
+
+        } catch (\Exception $e) {
+            Log::error('Payment redirect handling failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
+            return redirect()->route('alumni.payments.index')
+                ->with('error', 'Failed to process payment redirect. Please contact support.');
+        }
+    }
 }
