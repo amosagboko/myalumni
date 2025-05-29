@@ -337,44 +337,48 @@ class AlumniPaymentController extends Controller
                         ->with('error', 'Transaction not found. Please contact support.');
                 }
 
-                // If status is 0, mark as failed
-                if ($request->status === '0') {
-                    $transaction->update([
-                        'status' => 'failed',
-                        'payment_details' => json_encode([
-                            'status' => $request->status,
-                            'provider_reference' => $request->transRef,
-                            'redirected_at' => now()
-                        ])
-                    ]);
+                // Handle different status codes according to Credo Central's documentation
+                switch ($request->status) {
+                    case '0': // Success
+                        try {
+                            $result = $this->credocentral->verifyPayment($transaction);
+                            
+                            if ($result['paid']) {
+                                return redirect()->route('alumni.payments.success', $transaction)
+                                    ->with('success', 'Payment completed successfully.');
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning('Payment verification failed during webhook redirect', [
+                                'transaction_id' => $transaction->id,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                        // If verification fails, show pending page
+                        return redirect()->route('alumni.payments.pending', $transaction)
+                            ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
+                        
+                    case '1': // Failure
+                        $transaction->update([
+                            'status' => 'failed',
+                            'payment_details' => json_encode([
+                                'status' => $request->status,
+                                'provider_reference' => $request->transRef,
+                                'redirected_at' => now()
+                            ])
+                        ]);
 
-                    Log::info('Payment marked as failed from webhook redirect', [
-                        'transaction_id' => $transaction->id,
-                        'status' => $request->status
-                    ]);
+                        Log::info('Payment marked as failed from webhook redirect', [
+                            'transaction_id' => $transaction->id,
+                            'status' => $request->status
+                        ]);
 
-                    return redirect()->route('alumni.payments.failed', $transaction)
-                        ->with('error', 'Payment was not successful. Please try again.');
+                        return redirect()->route('alumni.payments.failed', $transaction)
+                            ->with('error', 'Payment was not successful. Please try again.');
+                        
+                    default: // Pending or other states
+                        return redirect()->route('alumni.payments.pending', $transaction)
+                            ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
                 }
-
-                // For successful payments, verify and redirect
-                try {
-                    $result = $this->credocentral->verifyPayment($transaction);
-                    
-                    if ($result['paid']) {
-                        return redirect()->route('alumni.payments.success', $transaction)
-                            ->with('success', 'Payment completed successfully.');
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('Payment verification failed during webhook redirect', [
-                        'transaction_id' => $transaction->id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-
-                // If verification fails or payment is still pending
-                return redirect()->route('alumni.payments.pending', $transaction)
-                    ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
             }
 
             // For POST requests (webhooks), process normally
@@ -431,8 +435,16 @@ class AlumniPaymentController extends Controller
      */
     public function paymentSuccess(Transaction $transaction)
     {
-        if ($transaction->status !== 'completed') {
+        if ($transaction->status !== 'paid') {
             return redirect()->route('alumni.payments.pending', $transaction);
+        }
+
+        // Update the transaction status to ensure it's marked as paid
+        if (!$transaction->paid_at) {
+            $transaction->update([
+                'paid_at' => now(),
+                'status' => 'paid'
+            ]);
         }
 
         return view('payments.success', compact('transaction'));
