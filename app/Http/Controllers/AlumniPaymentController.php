@@ -436,15 +436,17 @@ class AlumniPaymentController extends Controller
     public function paymentSuccess(Transaction $transaction)
     {
         if ($transaction->status !== 'paid') {
-            return redirect()->route('alumni.payments.pending', $transaction);
-        }
-
-        // Update the transaction status to ensure it's marked as paid
-        if (!$transaction->paid_at) {
+            // Update the transaction status to ensure it's marked as paid
             $transaction->update([
-                'paid_at' => now(),
-                'status' => 'paid'
+                'status' => 'paid',
+                'paid_at' => now()
             ]);
+
+            // Clear any cached data for this transaction
+            $transaction->refresh();
+            
+            // Clear the cache for the fee template's isPaid check
+            $transaction->feeTemplate->refresh();
         }
 
         return view('payments.success', compact('transaction'));
