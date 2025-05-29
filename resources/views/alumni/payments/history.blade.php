@@ -20,12 +20,10 @@
                                     <tr>
                                         <th class="small">Date</th>
                                         <th class="small">Fee Type</th>
-                                        <th class="small">Category</th>
                                         <th class="small">Year</th>
                                         <th class="small">Amount</th>
                                         <th class="small">Reference</th>
                                         <th class="small">Status</th>
-                                        <th class="small">Paid At</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -33,7 +31,6 @@
                                         <tr>
                                             <td class="small">{{ $transaction->created_at->format('M d, Y H:i A') }}</td>
                                             <td class="small">{{ $transaction->feeTemplate->feeType->name }}</td>
-                                            <td class="small">{{ $transaction->feeTemplate->category->name ?? 'N/A' }}</td>
                                             <td class="small">{{ $transaction->feeTemplate->graduation_year }}</td>
                                             <td class="small">₦{{ number_format($transaction->amount, 2) }}</td>
                                             <td class="small">{{ $transaction->payment_reference }}</td>
@@ -46,7 +43,6 @@
                                                     <span class="badge bg-danger small">Failed</span>
                                                 @endif
                                             </td>
-                                            <td class="small">{{ $transaction->paid_at ? $transaction->paid_at->format('M d, Y H:i A') : 'N/A' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
