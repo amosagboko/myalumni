@@ -717,97 +717,95 @@ class AlumniPaymentController extends Controller
     public function handleRedirect(Request $request)
     {
         try {
-            Log::info('Payment redirect received', [
+            Log::info('Received payment redirect', [
                 'reference' => $request->reference,
                 'transRef' => $request->transRef,
                 'status' => $request->status,
-                'all_params' => $request->all()
+                'params' => $request->all()
             ]);
-
-            // Find the transaction by payment reference
+    
+            // Locate the transaction using either reference
             $transaction = Transaction::where('payment_reference', $request->reference)
                 ->orWhere('payment_provider_reference', $request->transRef)
                 ->first();
-
+    
             if (!$transaction) {
-                Log::error('Transaction not found for redirect', [
+                Log::error('Transaction not found on redirect', [
                     'reference' => $request->reference,
                     'transRef' => $request->transRef
                 ]);
+    
                 return redirect()->route('alumni.payments.index')
                     ->with('error', 'Transaction not found. Please contact support.');
             }
-
-            // Update transaction with provider reference if not set
+    
+            // Set payment provider reference if missing
             if (!$transaction->payment_provider_reference && $request->transRef) {
                 $transaction->update([
                     'payment_provider_reference' => $request->transRef
                 ]);
             }
-
-            // Verify payment status
-            $result = $this->credocentral->verifyPayment($transaction);
-            
-            // Log the verification result
-            Log::info('Payment verification result in redirect', [
+    
+            // Verify payment with provider
+            $verification = $this->credocentral->verifyPayment($transaction);
+    
+            Log::info('Verification result received', [
                 'transaction_id' => $transaction->id,
-                'is_paid' => $result['paid'],
-                'status' => $result['status'],
+                'is_paid' => $verification['paid'],
+                'status' => $verification['status'],
                 'reference' => $transaction->payment_reference
             ]);
-
-            // Handle based on verification result
-            if ($result['paid']) {
-                // Update transaction status if not already paid
+    
+            if ($verification['paid']) {
+                // Mark as paid only if not already done
                 if ($transaction->status !== 'paid') {
                     $transaction->update([
                         'status' => 'paid',
-                        'paid_at' => $result['paid_at'] ?? now(),
+                        'paid_at' => $verification['paid_at'] ?? now(),
                         'payment_details' => array_merge(
                             $transaction->payment_details ?? [],
                             [
                                 'verified_at' => now(),
-                                'verification_data' => $result
+                                'verification_data' => $verification
                             ]
                         )
                     ]);
                 }
-                
+    
                 return redirect()->route('alumni.payments.success', $transaction)
                     ->with('success', 'Payment completed successfully.');
             }
-
-            // If not paid, check if it's explicitly failed
-            if (strtolower($result['status']) === 'failed') {
+    
+            if (strtolower($verification['status']) === 'failed') {
                 $transaction->update([
                     'status' => 'failed',
                     'payment_details' => array_merge(
                         $transaction->payment_details ?? [],
                         [
-                            'status' => $result['status'],
+                            'status' => $verification['status'],
                             'failed_at' => now(),
-                            'verification_data' => $result
+                            'verification_data' => $verification
                         ]
                     )
                 ]);
-
+    
                 return redirect()->route('alumni.payments.failed', $transaction)
                     ->with('error', 'Payment was not successful. Please try again.');
             }
-
-            // If neither paid nor failed, show pending page
+    
+            // If not paid or failed → mark as pending
             return redirect()->route('alumni.payments.pending', $transaction)
-                ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
-
+                ->with('info', 'Your payment is still being processed. Please wait while we confirm it.');
+    
         } catch (\Exception $e) {
-            Log::error('Payment redirect handling failed', [
+            Log::error('Error while handling payment redirect', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
+                'request' => $request->all()
             ]);
-
+    
             return redirect()->route('alumni.payments.index')
-                ->with('error', 'Failed to process payment redirect. Please contact support.');
+                ->with('error', 'Failed to handle payment response. Please contact support.');
         }
     }
 }

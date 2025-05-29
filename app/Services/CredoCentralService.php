@@ -180,52 +180,69 @@ class CredoCentralService
                 'provider_reference' => $transaction->payment_provider_reference,
                 'current_status' => $transaction->status
             ]);
-
+    
             $response = $this->getHttpClient()->get($this->baseUrl . '/transaction/' . $transaction->payment_provider_reference);
-
+    
             if ($response->successful()) {
                 $data = $response->json();
-                
-                // Log the raw response for debugging
+    
                 Log::info('Credo Central payment verification response', [
                     'transaction_id' => $transaction->id,
                     'reference' => $transaction->payment_reference,
                     'raw_response' => $data,
                     'status_from_provider' => $data['data']['status'] ?? 'unknown'
                 ]);
-
-                // Normalize the status from Credo
-                $status = strtolower($data['data']['status'] ?? '');
-                
-                // Consider a payment as paid if the status indicates success
-                $isPaid = in_array($status, ['success', 'paid', 'completed', '0']);
-                
-                // Log the normalized status and decision
+    
+                // Normalize status
+                $rawStatus = $data['data']['status'] ?? '';
+                $status = strtolower((string) $rawStatus);
+    
+                // Debug status type
+                Log::debug('Payment status normalization', [
+                    'transaction_id' => $transaction->id,
+                    'raw_status' => $rawStatus,
+                    'normalized_status' => $status,
+                    'status_type' => gettype($rawStatus)
+                ]);
+    
+                // Define valid success values
+                $successStatuses = ['success', 'paid', 'completed', '0'];
+    
+                // Use strict comparison to avoid false positives
+                $isPaid = in_array($status, $successStatuses, true);
+    
+                // Optional: Confirm amount matches expected
+                $returnedAmount = ($data['data']['amount'] ?? 0) / 100;
+                $amountMatches = $returnedAmount == $transaction->amount;
+    
                 Log::info('Payment status verification result', [
                     'transaction_id' => $transaction->id,
                     'original_status' => $status,
                     'is_paid' => $isPaid,
+                    'amount_matches' => $amountMatches,
+                    'returned_amount' => $returnedAmount,
+                    'expected_amount' => $transaction->amount,
                     'provider_reference' => $transaction->payment_provider_reference,
                     'payment_reference' => $transaction->payment_reference
                 ]);
-
+    
                 return [
                     'status' => $status,
-                    'paid' => $isPaid,
-                    'amount' => $data['data']['amount'] / 100,
+                    'paid' => $isPaid && $amountMatches, // mark as paid only if status and amount match
+                    'amount' => $returnedAmount,
                     'paid_at' => $data['data']['paid_at'] ?? $data['data']['created_at'] ?? null,
-                    'raw_data' => $data['data'] // Include raw data for debugging
+                    'raw_data' => $data['data']
                 ];
             }
-
+    
             Log::error('Credo Central payment verification failed', [
                 'transaction_id' => $transaction->id,
                 'status_code' => $response->status(),
                 'response' => $response->json()
             ]);
-
+    
             throw new \Exception('Failed to verify payment: ' . ($response->json()['message'] ?? 'Unknown error'));
-
+    
         } catch (\Exception $e) {
             Log::error('Credo Central payment verification error', [
                 'transaction_id' => $transaction->id,
