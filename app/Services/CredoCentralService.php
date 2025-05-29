@@ -55,209 +55,117 @@ class CredoCentralService
      */
     public function initializePayment(Transaction $transaction)
     {
+        $endpoint = '/transaction/initialize';
+    $fullUrl = $this->baseUrl . $endpoint;
+
+    $requestData = [
+        'amount' => $transaction->amount * 100,
+        'email' => $transaction->alumni->user->email,
+        'bearer' => 0,
+        'callbackUrl' => route('alumni.payments.webhook'),
+        'channels' => ['card', 'bank'],
+        'currency' => 'NGN',
+        'customerFirstName' => explode(' ', $transaction->alumni->user->name)[0] ?? '',
+        'customerLastName' => explode(' ', $transaction->alumni->user->name)[1] ?? '',
+        'customerPhoneNumber' => $transaction->alumni->phone_number,
+        'reference' => $transaction->payment_reference,
+        'serviceCode' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT'),
+        'metadata' => [
+            'customFields' => [
+                [
+                    'variable_name' => 'fee_type',
+                    'value' => $transaction->feeTemplate->feeType->code,
+                    'display_name' => 'Fee Type'
+                ],
+                [
+                    'variable_name' => 'alumni_id',
+                    'value' => $transaction->alumni_id,
+                    'display_name' => 'Alumni ID'
+                ],
+                [
+                    'variable_name' => 'transaction_id',
+                    'value' => $transaction->id,
+                    'display_name' => 'Transaction ID'
+                ]
+            ]
+        ]
+    ];
+
+    try {
+        // Optional health check — skip 404 logging
         try {
-            // First verify API is accessible
-            try {
-                $healthCheck = $this->getHttpClient()->get($this->baseUrl . '/health');
+            $healthCheck = $this->getHttpClient()->get($this->baseUrl . '/health');
+            if ($healthCheck->successful()) {
                 Log::info('Credo Central API health check', [
                     'status' => $healthCheck->status(),
                     'body' => $healthCheck->body()
                 ]);
-            } catch (\Exception $e) {
+            }
+        } catch (\Throwable $e) {
+            if (!str_contains($e->getMessage(), '404')) {
                 Log::warning('Credo Central API health check failed', [
                     'error' => $e->getMessage(),
                     'url' => $this->baseUrl . '/health'
                 ]);
             }
-
-            $endpoint = '/transaction/initialize';
-            $fullUrl = $this->baseUrl . $endpoint;
-            
-            // Log the exact URL and request details
-            Log::info('Credo Central API Request Details', [
-                'base_url' => $this->baseUrl,
-                'endpoint' => $endpoint,
-                'full_url' => $fullUrl,
-                'method' => 'POST',
-                'headers' => [
-                    'Authorization' => 'Bearer ' . substr($this->secretKey, 0, 10) . '...',
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ],
-                'has_public_key' => !empty($this->publicKey),
-                'has_secret_key' => !empty($this->secretKey),
-                'service_code' => config('services.credocentral.service_code'),
-                'environment' => app()->environment()
-            ]);
-
-            $requestData = [
-                'amount' => $transaction->amount * 100, // Convert to kobo
-                'email' => $transaction->alumni->user->email,
-                'bearer' => 0,
-                'callbackUrl' => route('alumni.payments.webhook'),
-                'channels' => ['card', 'bank'],
-                'currency' => 'NGN',
-                'customerFirstName' => explode(' ', $transaction->alumni->user->name)[0] ?? '',
-                'customerLastName' => explode(' ', $transaction->alumni->user->name)[1] ?? '',
-                'customerPhoneNumber' => $transaction->alumni->phone_number,
-                'reference' => $transaction->payment_reference,
-                'serviceCode' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT'),
-                'metadata' => [
-                    'customFields' => [
-                        [
-                            'variable_name' => 'fee_type',
-                            'value' => $transaction->feeTemplate->feeType->code,
-                            'display_name' => 'Fee Type'
-                        ],
-                        [
-                            'variable_name' => 'alumni_id',
-                            'value' => $transaction->alumni_id,
-                            'display_name' => 'Alumni ID'
-                        ],
-                        [
-                            'variable_name' => 'transaction_id',
-                            'value' => $transaction->id,
-                            'display_name' => 'Transaction ID'
-                        ]
-                    ]
-                ]
-            ];
-
-            // Log the complete request data
-            Log::info('Credo Central API Request Payload', [
-                'url' => $fullUrl,
-                'request_data' => $requestData,
-                'transaction_id' => $transaction->id,
-                'payment_reference' => $transaction->payment_reference,
-                'amount' => $transaction->amount,
-                'fee_type' => $transaction->feeTemplate->feeType->code
-            ]);
-
-            try {
-                $response = $this->getHttpClient()->post($fullUrl, $requestData);
-                
-                // Log the complete response details
-                Log::info('Credo Central API Response Details', [
-                    'transaction_id' => $transaction->id,
-                    'status_code' => $response->status(),
-                    'raw_body' => $response->body(),
-                    'headers' => $response->headers(),
-                    'request_url' => $fullUrl,
-                    'request_data' => $requestData,
-                    'response_time' => $response->handlerStats()['total_time'] ?? null,
-                    'has_public_key' => !empty($this->publicKey),
-                    'has_secret_key' => !empty($this->secretKey),
-                    'service_code' => config('services.credocentral.service_code'),
-                    'environment' => app()->environment(),
-                    'effective_url' => $response->effectiveUri() ?? $fullUrl
-                ]);
-
-                if ($response->failed()) {
-                    Log::error('Credo Central API request failed', [
-                        'transaction_id' => $transaction->id,
-                        'status_code' => $response->status(),
-                        'body' => $response->body(),
-                        'request_url' => $fullUrl,
-                        'effective_url' => $response->effectiveUri() ?? $fullUrl
-                    ]);
-                }
-
-                // Try to parse JSON response
-                $responseData = null;
-                try {
-                    $responseData = $response->json();
-                    Log::info('Credo Central API Response JSON', [
-                        'transaction_id' => $transaction->id,
-                        'parsed_response' => $responseData
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('Failed to parse JSON response', [
-                        'transaction_id' => $transaction->id,
-                        'error' => $e->getMessage(),
-                        'raw_body' => $response->body()
-                    ]);
-                }
-
-                if ($response->successful()) {
-                    if (!$responseData) {
-                        throw new \Exception('Invalid response format from payment provider');
-                    }
-
-                    Log::info('Credo Central payment initialized', [
-                        'transaction_id' => $transaction->id,
-                        'reference' => $transaction->payment_reference,
-                        'service_code' => config('services.credocentral.service_code', 'ALUMNI_PAYMENT'),
-                        'response' => $responseData
-                    ]);
-
-                    // Update transaction with payment link
-                    if (!isset($responseData['data']['authorization_url'])) {
-                        throw new \Exception('Payment authorization URL not found in response');
-                    }
-
-                    $transaction->update([
-                        'payment_link' => $responseData['data']['authorization_url'],
-                        'payment_provider' => 'credocentral',
-                        'payment_provider_reference' => $responseData['data']['reference'] ?? null
-                    ]);
-
-                    return $responseData['data']['authorization_url'];
-                }
-
-                // Handle error response
-                $errorMessage = 'Unknown error';
-                if ($responseData) {
-                    if (isset($responseData['message'])) {
-                        $errorMessage = $responseData['message'];
-                    } elseif (isset($responseData['error'])) {
-                        $errorMessage = $responseData['error'];
-                    } elseif (isset($responseData['errors'])) {
-                        $errorMessage = is_array($responseData['errors']) ? implode(', ', $responseData['errors']) : $responseData['errors'];
-                    }
-                } else {
-                    // If we couldn't parse JSON, use the raw response
-                    $errorMessage = $response->body() ?: 'Empty response from payment provider';
-                }
-
-                Log::error('Credo Central payment initialization failed', [
-                    'transaction_id' => $transaction->id,
-                    'status_code' => $response->status(),
-                    'error_message' => $errorMessage,
-                    'raw_response' => $response->body(),
-                    'request_data' => $requestData,
-                    'request_url' => $this->baseUrl . $endpoint,
-                    'headers' => $response->headers()
-                ]);
-
-                throw new \Exception('Failed to initialize payment: ' . $errorMessage);
-
-            } catch (\Illuminate\Http\Client\ConnectionException $e) {
-                Log::error('Failed to connect to Credo Central API', [
-                    'error' => $e->getMessage(),
-                    'url' => $this->baseUrl . $endpoint,
-                    'transaction_id' => $transaction->id,
-                    'request_data' => $requestData
-                ]);
-                throw new \Exception('Unable to connect to payment provider. Please try again later.');
-            } catch (\Exception $e) {
-                Log::error('Credo Central payment initialization error', [
-                    'transaction_id' => $transaction->id,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                    'request_data' => $requestData ?? null
-                ]);
-                throw $e;
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Credo Central payment initialization error', [
-                'transaction_id' => $transaction->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $requestData ?? null
-            ]);
-            throw $e;
         }
+
+        Log::info('Credo Central API Request', [
+            'url' => $fullUrl,
+            'request_data' => $requestData,
+            'transaction_id' => $transaction->id,
+        ]);
+
+        $response = $this->getHttpClient()->post($fullUrl, $requestData);
+        $responseData = $response->json();
+
+        Log::info('Credo Central API Response', [
+            'transaction_id' => $transaction->id,
+            'status' => $response->status(),
+            'response' => $responseData
+        ]);
+
+        if ($response->failed() || empty($responseData)) {
+            throw new \Exception('Payment provider returned a failed response or empty payload.');
+        }
+
+        // Correct key: check `authorizationUrl` not `authorization_url`
+        $authUrl = $responseData['data']['authorizationUrl'] ?? null;
+
+        if (!$authUrl) {
+            throw new \Exception('Payment authorization URL not found in response');
+        }
+
+        $transaction->update([
+            'payment_link' => $authUrl,
+            'payment_provider' => 'credocentral',
+            'payment_provider_reference' => $responseData['data']['reference'] ?? null
+        ]);
+
+        Log::info('Credo Central payment initialized successfully', [
+            'transaction_id' => $transaction->id,
+            'payment_link' => $authUrl
+        ]);
+
+        return $authUrl;
+
+    } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        Log::error('Connection error with Credo Central API', [
+            'transaction_id' => $transaction->id,
+            'error' => $e->getMessage(),
+            'url' => $fullUrl,
+            'request_data' => $requestData
+        ]);
+        throw new \Exception('Unable to connect to payment provider. Please try again later.');
+    } catch (\Throwable $e) {
+        Log::error('Credo Central payment initialization error', [
+            'transaction_id' => $transaction->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $requestData
+        ]);
+        throw $e;
+    }
     }
 
     /**
