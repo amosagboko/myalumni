@@ -31,6 +31,8 @@ use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Agent\CandidateController;
 use App\Http\Controllers\Candidate\AgentController;
 use App\Http\Controllers\ARODashboardController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminStatisticsController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -38,16 +40,16 @@ Route::get('/', function () {
 
 // Admin routes - moved outside auth group
 Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', function () {
-        return view('admin.dashboard');
-    })->name('home');
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('home');
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/users', ManageUsers::class)->name('users');
     Route::get('/users/create', function () {
         return view('admin.users.create');
     })->name('users.create');
+    
+    // Statistics Routes
+    Route::get('/statistics/transactions', [AdminStatisticsController::class, 'transactions'])->name('statistics.transactions');
+    Route::get('/statistics/alumni-distribution', [AdminStatisticsController::class, 'alumniDistribution'])->name('statistics.alumni-distribution');
     
     // Fee Type Management
     Route::resource('fee-types', FeeTypeController::class);

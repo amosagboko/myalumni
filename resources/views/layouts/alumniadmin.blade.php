@@ -210,6 +210,18 @@
                         </ul>
                     </div>
 
+                    <div class="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2 mt-2">
+                        <div class="nav-caption fw-600 font-xssss text-grey-500"><span>Statistics</span></div>
+                        <ul class="mb-1 top-content">
+                            <li><a href="{{ route('admin.statistics.transactions') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.statistics.transactions') ? 'active' : '' }}">
+                                <i class="feather-bar-chart-2 btn-round-md bg-blue-gradiant me-3"></i><span>Transactions</span>
+                            </a></li>
+                            <li><a href="{{ route('admin.statistics.alumni-distribution') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.statistics.alumni-distribution') ? 'active' : '' }}">
+                                <i class="feather-pie-chart btn-round-md bg-red-gradiant me-3"></i><span>Alumni Distribution</span>
+                            </a></li>
+                        </ul>
+                    </div>
+
                     <div class="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2">
                         <div class="nav-caption fw-600 font-xssss text-grey-500"><span>More </span>Pages</div>
                         <ul class="mb-3">

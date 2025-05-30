@@ -90,6 +90,25 @@
                             </li>
                         </ul>
                     </div>
+
+                    <!-- Statistics Section -->
+                    <div class="nav-wrap bg-white bg-transparent-card rounded-3 shadow-sm ps-3 pe-3 pt-0 pb-3 mb-2">
+                        <div class="nav-caption fw-600 font-xssss text-grey-500 mb-2">Statistics</div>
+                        <ul class="mb-1 pt-0">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.statistics.transactions') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.statistics.transactions') ? 'active' : '' }}">
+                                    <i data-feather="bar-chart-2" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Transactions</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.statistics.alumni-distribution') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.statistics.alumni-distribution') ? 'active' : '' }}">
+                                    <i data-feather="pie-chart" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Alumni Distribution</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </nav>

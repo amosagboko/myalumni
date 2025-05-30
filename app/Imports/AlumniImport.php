@@ -22,12 +22,16 @@ use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\BeforeImport;
 use Maatwebsite\Excel\Events\AfterImport;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use Illuminate\Support\Facades\Password;
 use App\Jobs\SendAlumniWelcomeEmails;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Role;
 
-class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsOnError, WithEvents
+class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsOnError, WithEvents, WithCustomValueBinder
 {
     use Importable, SkipsErrors;
 
@@ -35,10 +39,23 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
     protected $processedRows = 0;
     protected $errors = [];
     protected $importId;
+    protected $invalidMatricIds = [];
+    protected $skippedMatricIds = [];  // Add this to collect skipped matric IDs
 
     public function __construct()
     {
         $this->importId = uniqid('import_');
+    }
+
+    public function bindValue(Cell $cell, $value)
+    {
+        // Force matriculation_id column to be treated as string
+        if ($cell->getColumn() === 'C') { // Assuming matriculation_id is in column C
+            $cell->setValueExplicit($value, DataType::TYPE_STRING);
+            return true;
+        }
+
+        return (new DefaultValueBinder)->bindValue($cell, $value);
     }
 
     public function model(array $row)
@@ -49,28 +66,69 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
                 throw new \Exception("Required fields are missing in row: " . json_encode($row));
             }
 
-            // Convert matriculation_id to string and validate format
-            $matriculationId = (string) $row['matriculation_id'];
+            // Convert matriculation_id to string and ensure proper formatting
+            $matriculationId = trim((string) $row['matriculation_id']);
+            $rowNumber = $this->processedRows + 1;
+            
+            // If it's a numeric value, pad with leading zeros to ensure 10 digits
+            if (is_numeric($matriculationId)) {
+                $matriculationId = str_pad($matriculationId, 10, '0', STR_PAD_LEFT);
+            }
             
             // Validate matriculation ID format
             if (!preg_match('/^(\d{10}|(\d{4}\/[A-Z]+\/[A-Z]+\/\d{4}))$/', $matriculationId)) {
-                throw new \Exception("Invalid matriculation ID format: {$matriculationId}. Must be either 10 digits (e.g., 1011700028) or in format YYYY/DEPT/PROG/XXXX (e.g., 2018/BIO/HCP/0001)");
+                // Collect the invalid matric ID with its details
+                $this->invalidMatricIds[] = [
+                    'row' => $rowNumber,
+                    'matric_id' => $matriculationId,
+                    'name' => trim($row['firstname']) . ' ' . trim($row['surname'])
+                ];
+                
+                // If we have collected 5 examples, throw the error
+                if (count($this->invalidMatricIds) >= 5) {
+                    $examples = collect($this->invalidMatricIds)
+                        ->map(function($item) {
+                            return "Row {$item['row']}: '{$item['matric_id']}' (for {$item['name']})";
+                        })
+                        ->join("\n");
+                    
+                    throw new \Exception(
+                        "Invalid matriculation ID format. Here are some examples:\n" . $examples . 
+                        "\n\nAll matriculation IDs must be either:\n" .
+                        "1. 10 digits (e.g., 1011700028)\n" .
+                        "2. In format YYYY/DEPT/PROG/XXXX (e.g., 2018/BIO/HCP/0001)"
+                    );
+                }
+                
+                // Skip this row but continue processing others
+                return null;
             }
 
             // Check if alumni with this matric number already exists
             $existingAlumni = Alumni::where('matric_number', $matriculationId)->first();
             if ($existingAlumni) {
-                throw new \Exception("Alumni with matriculation number {$matriculationId} already exists");
+                // Collect the skipped matric ID with its details
+                $this->skippedMatricIds[] = [
+                    'row' => $rowNumber,
+                    'matric_id' => $matriculationId,
+                    'name' => trim($row['firstname']) . ' ' . trim($row['surname']),
+                    'existing_name' => $existingAlumni->user->name
+                ];
+                
+                // Skip this row but continue processing others
+                return null;
             }
 
             // Create user account
             $user = new User();
+            $user->uuid = Str::uuid();
             $user->name = trim($row['firstname']) . ' ' . trim($row['surname']);
-            // For email generation, remove slashes and convert to lowercase
             $emailMatric = strtolower(str_replace('/', '', $matriculationId));
             $user->email = $emailMatric . '@alumni.fulafia.edu.ng';
             $user->password = Hash::make(Str::random(12));
             $user->gender = trim($row['gender']);
+            $user->status = 'active';
+            $user->created_by = Auth::id();
             $user->save();
 
             // Assign alumni role
@@ -198,7 +256,10 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
 
     public function onError(\Throwable $e)
     {
-        Log::error('Alumni Import Error: ' . $e->getMessage());
+        Log::error('Alumni Import Error', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
     }
 
     public function registerEvents(): array
@@ -208,6 +269,8 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
                 $this->totalRows = $event->getReader()->getTotalRows()['Worksheet'] ?? 0;
                 $this->processedRows = 0;
                 $this->errors = [];
+                $this->invalidMatricIds = [];
+                $this->skippedMatricIds = [];
                 
                 // Initialize progress tracking
                 Cache::put("import_progress_{$this->importId}", [
@@ -219,19 +282,71 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
                 ], now()->addHours(1));
             },
             AfterImport::class => function(AfterImport $event) {
-                Log::info("Import completed. Processed {$this->processedRows} of {$this->totalRows} rows.");
+                // Calculate actual total rows processed
+                $totalProcessed = $this->processedRows + count($this->skippedMatricIds) + count($this->invalidMatricIds);
+                
+                Log::info("Import completed. Processed {$totalProcessed} of {$this->totalRows} rows.");
 
-                // Update final progress
+                // Log skipped matric IDs
+                if (!empty($this->skippedMatricIds)) {
+                    $skipped = collect($this->skippedMatricIds)
+                        ->map(function($item) {
+                            return "Row {$item['row']}: '{$item['matric_id']}' (for {$item['name']}) - Already exists as {$item['existing_name']}";
+                        })
+                        ->join("\n");
+                    
+                    Log::info("Skipped existing matriculation IDs:", ['skipped' => $skipped]);
+                }
+
+                // Log invalid matric IDs
+                if (!empty($this->invalidMatricIds)) {
+                    $examples = collect($this->invalidMatricIds)
+                        ->map(function($item) {
+                            return "Row {$item['row']}: '{$item['matric_id']}' (for {$item['name']})";
+                        })
+                        ->join("\n");
+                    
+                    Log::error("Invalid matriculation IDs found:", ['examples' => $examples]);
+                }
+
+                // Update final progress with summary
+                $summary = [
+                    'total_rows' => $totalProcessed,  // Use actual total processed
+                    'processed' => $this->processedRows,
+                    'skipped' => count($this->skippedMatricIds),
+                    'invalid' => count($this->invalidMatricIds),
+                    'successful' => $this->processedRows
+                ];
+
                 Cache::put("import_progress_{$this->importId}", [
                     'progress' => 100,
                     'processed' => $this->processedRows,
-                    'total' => $this->totalRows,
+                    'total' => $totalProcessed,  // Use actual total processed
                     'errors' => $this->errors,
+                    'skipped' => $this->skippedMatricIds,
+                    'invalid' => $this->invalidMatricIds,
+                    'summary' => $summary,
                     'completed' => true
                 ], now()->addHours(1));
 
-                if (!empty($this->errors)) {
-                    Log::error("Import errors: " . implode("\n", $this->errors));
+                // If we have skipped records, throw a warning
+                if (!empty($this->skippedMatricIds)) {
+                    $skippedExamples = collect($this->skippedMatricIds)
+                        ->take(5)
+                        ->map(function($item) {
+                            return "Row {$item['row']}: '{$item['matric_id']}' (for {$item['name']}) - Already exists as {$item['existing_name']}";
+                        })
+                        ->join("\n");
+                    
+                    throw new \Exception(
+                        "Import completed with some skipped records. {$summary['skipped']} records were skipped because they already exist.\n\n" .
+                        "Here are some examples of skipped records:\n" . $skippedExamples . "\n\n" .
+                        "Summary:\n" .
+                        "- Total rows processed: {$summary['total_rows']}\n" .
+                        "- Successfully imported: {$summary['successful']}\n" .
+                        "- Skipped (already exist): {$summary['skipped']}\n" .
+                        "- Invalid format: {$summary['invalid']}"
+                    );
                 }
             },
         ];
