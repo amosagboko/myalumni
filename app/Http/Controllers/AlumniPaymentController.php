@@ -422,35 +422,110 @@ class AlumniPaymentController extends Controller
     public function verifyPayment(Request $request, Transaction $transaction)
     {
         try {
-            // Verify payment with Credo Central
-            $result = $this->credocentral->verifyPayment($transaction);
+            Log::info('Starting manual payment verification', [
+                'transaction_id' => $transaction->id,
+                'reference' => $transaction->payment_reference,
+                'provider_reference' => $transaction->payment_provider_reference,
+                'current_status' => $transaction->status
+            ]);
 
-            if ($result['paid']) {
-                // Update transaction status immediately
+            // Start a database transaction to ensure atomicity
+            DB::beginTransaction();
+            try {
+                // Lock the transaction row to prevent race conditions
+                $transaction = Transaction::where('id', $transaction->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                // Verify payment with Credo Central
+                $verification = $this->credocentral->verifyPayment($transaction);
+
+                Log::info('Verification result received', [
+                    'transaction_id' => $transaction->id,
+                    'is_paid' => $verification['paid'],
+                    'status' => $verification['status'],
+                    'reference' => $transaction->payment_reference,
+                    'current_status' => $transaction->status
+                ]);
+
+                // Handle based on verification result
+                if ($verification['paid']) {
+                    // Always update the transaction status for paid payments
+                    $transaction->update([
+                        'status' => 'paid',
+                        'paid_at' => $verification['paid_at'] ?? now(),
+                        'payment_details' => array_merge(
+                            $transaction->payment_details ?? [],
+                            [
+                                'verified_at' => now(),
+                                'verification_data' => $verification,
+                                'manual_verification_at' => now()
+                            ]
+                        )
+                    ]);
+
+                    // Refresh the transaction to ensure we have the latest data
+                    $transaction->refresh();
+
+                    // Log the successful update
+                    Log::info('Transaction marked as paid through manual verification', [
+                        'transaction_id' => $transaction->id,
+                        'status' => $transaction->status,
+                        'paid_at' => $transaction->paid_at,
+                        'reference' => $transaction->payment_reference
+                    ]);
+
+                    DB::commit();
+
+                    return redirect()->route('alumni.payments.success', $transaction)
+                        ->with('success', 'Payment verified successfully.');
+                }
+
+                // Handle failed payments
+                if (strtolower($verification['status']) === 'failed') {
+                    $transaction->update([
+                        'status' => 'failed',
+                        'payment_details' => array_merge(
+                            $transaction->payment_details ?? [],
+                            [
+                                'status' => $verification['status'],
+                                'failed_at' => now(),
+                                'verification_data' => $verification,
+                                'manual_verification_at' => now()
+                            ]
+                        )
+                    ]);
+
+                    DB::commit();
+                    return redirect()->route('alumni.payments.failed', $transaction)
+                        ->with('error', 'Payment verification failed. Please contact support.');
+                }
+
+                // If neither paid nor failed, update payment details but keep status as pending
                 $transaction->update([
-                    'status' => 'paid',
-                    'paid_at' => $result['paid_at'] ?? now(),
                     'payment_details' => array_merge(
                         $transaction->payment_details ?? [],
-                        ['verified_at' => now()]
+                        [
+                            'verification_data' => $verification,
+                            'manual_verification_at' => now()
+                        ]
                     )
                 ]);
-                
-                // Clear any cached data
-                $transaction->refresh();
-                $transaction->feeTemplate->refresh();
 
-                return redirect()->route('alumni.payments.success', $transaction)
-                    ->with('success', 'Payment verified successfully.');
+                DB::commit();
+                return redirect()->route('alumni.payments.pending', $transaction)
+                    ->with('info', 'Payment is still pending. Please wait while we confirm your payment.');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
             }
-
-            return redirect()->route('alumni.payments.pending', $transaction)
-                ->with('info', 'Payment is still pending. Please complete the payment process.');
 
         } catch (\Exception $e) {
             Log::error('Payment verification failed', [
                 'transaction_id' => $transaction->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return redirect()->route('alumni.payments.failed', $transaction)
@@ -723,42 +798,47 @@ class AlumniPaymentController extends Controller
                 'status' => $request->status,
                 'params' => $request->all()
             ]);
-    
-            // Locate the transaction using either reference
-            $transaction = Transaction::where('payment_reference', $request->reference)
-                ->orWhere('payment_provider_reference', $request->transRef)
-                ->first();
-    
-            if (!$transaction) {
-                Log::error('Transaction not found on redirect', [
-                    'reference' => $request->reference,
-                    'transRef' => $request->transRef
+
+            // Start a database transaction to ensure atomicity
+            DB::beginTransaction();
+            try {
+                // Locate the transaction using either reference
+                $transaction = Transaction::where('payment_reference', $request->reference)
+                    ->orWhere('payment_provider_reference', $request->transRef)
+                    ->lockForUpdate() // Lock the row to prevent race conditions
+                    ->first();
+
+                if (!$transaction) {
+                    Log::error('Transaction not found on redirect', [
+                        'reference' => $request->reference,
+                        'transRef' => $request->transRef
+                    ]);
+                    DB::rollBack();
+                    return redirect()->route('alumni.payments.index')
+                        ->with('error', 'Transaction not found. Please contact support.');
+                }
+
+                // Set payment provider reference if missing
+                if (!$transaction->payment_provider_reference && $request->transRef) {
+                    $transaction->update([
+                        'payment_provider_reference' => $request->transRef
+                    ]);
+                }
+
+                // Verify payment with provider
+                $verification = $this->credocentral->verifyPayment($transaction);
+
+                Log::info('Verification result received', [
+                    'transaction_id' => $transaction->id,
+                    'is_paid' => $verification['paid'],
+                    'status' => $verification['status'],
+                    'reference' => $transaction->payment_reference,
+                    'current_status' => $transaction->status
                 ]);
-    
-                return redirect()->route('alumni.payments.index')
-                    ->with('error', 'Transaction not found. Please contact support.');
-            }
-    
-            // Set payment provider reference if missing
-            if (!$transaction->payment_provider_reference && $request->transRef) {
-                $transaction->update([
-                    'payment_provider_reference' => $request->transRef
-                ]);
-            }
-    
-            // Verify payment with provider
-            $verification = $this->credocentral->verifyPayment($transaction);
-    
-            Log::info('Verification result received', [
-                'transaction_id' => $transaction->id,
-                'is_paid' => $verification['paid'],
-                'status' => $verification['status'],
-                'reference' => $transaction->payment_reference
-            ]);
-    
-            if ($verification['paid']) {
-                // Mark as paid only if not already done
-                if ($transaction->status !== 'paid') {
+
+                // Handle based on verification result
+                if ($verification['paid']) {
+                    // Always update the transaction status for paid payments
                     $transaction->update([
                         'status' => 'paid',
                         'paid_at' => $verification['paid_at'] ?? now(),
@@ -766,44 +846,77 @@ class AlumniPaymentController extends Controller
                             $transaction->payment_details ?? [],
                             [
                                 'verified_at' => now(),
-                                'verification_data' => $verification
+                                'verification_data' => $verification,
+                                'redirect_handled_at' => now()
                             ]
                         )
                     ]);
+
+                    // Refresh the transaction to ensure we have the latest data
+                    $transaction->refresh();
+
+                    // Log the successful update
+                    Log::info('Transaction marked as paid', [
+                        'transaction_id' => $transaction->id,
+                        'status' => $transaction->status,
+                        'paid_at' => $transaction->paid_at,
+                        'reference' => $transaction->payment_reference
+                    ]);
+
+                    DB::commit();
+
+                    // Redirect to success page with the updated transaction
+                    return redirect()->route('alumni.payments.success', $transaction)
+                        ->with('success', 'Payment completed successfully.');
                 }
-    
-                return redirect()->route('alumni.payments.success', $transaction)
-                    ->with('success', 'Payment completed successfully.');
-            }
-    
-            if (strtolower($verification['status']) === 'failed') {
+
+                // Handle failed payments
+                if (strtolower($verification['status']) === 'failed') {
+                    $transaction->update([
+                        'status' => 'failed',
+                        'payment_details' => array_merge(
+                            $transaction->payment_details ?? [],
+                            [
+                                'status' => $verification['status'],
+                                'failed_at' => now(),
+                                'verification_data' => $verification,
+                                'redirect_handled_at' => now()
+                            ]
+                        )
+                    ]);
+
+                    DB::commit();
+                    return redirect()->route('alumni.payments.failed', $transaction)
+                        ->with('error', 'Payment was not successful. Please try again.');
+                }
+
+                // If neither paid nor failed, mark as pending
                 $transaction->update([
-                    'status' => 'failed',
                     'payment_details' => array_merge(
                         $transaction->payment_details ?? [],
                         [
-                            'status' => $verification['status'],
-                            'failed_at' => now(),
-                            'verification_data' => $verification
+                            'verification_data' => $verification,
+                            'redirect_handled_at' => now()
                         ]
                     )
                 ]);
-    
-                return redirect()->route('alumni.payments.failed', $transaction)
-                    ->with('error', 'Payment was not successful. Please try again.');
+
+                DB::commit();
+                return redirect()->route('alumni.payments.pending', $transaction)
+                    ->with('info', 'Your payment is still being processed. Please wait while we confirm it.');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
             }
-    
-            // If not paid or failed → mark as pending
-            return redirect()->route('alumni.payments.pending', $transaction)
-                ->with('info', 'Your payment is still being processed. Please wait while we confirm it.');
-    
+
         } catch (\Exception $e) {
             Log::error('Error while handling payment redirect', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all()
             ]);
-    
+
             return redirect()->route('alumni.payments.index')
                 ->with('error', 'Failed to handle payment response. Please contact support.');
         }
