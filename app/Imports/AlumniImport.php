@@ -25,6 +25,7 @@ use Maatwebsite\Excel\Events\AfterImport;
 use Illuminate\Support\Facades\Password;
 use App\Jobs\SendAlumniWelcomeEmails;
 use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\Models\Role;
 
 class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsOnError, WithEvents
 {
@@ -48,39 +49,48 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
                 throw new \Exception("Required fields are missing in row: " . json_encode($row));
             }
 
-            // Get category based on the category name in the import
-            $category = null;
-            if (!empty($row['category'])) {
-                $category = AlumniCategory::where('name', trim($row['category']))->first();
-                if (!$category) {
-                    $validCategories = AlumniCategory::pluck('name')->join(', ');
-                    throw new \Exception("Invalid category: '{$row['category']}'. Valid categories are: {$validCategories}");
-                }
+            // Convert matriculation_id to string and validate format
+            $matriculationId = (string) $row['matriculation_id'];
+            
+            // Validate matriculation ID format
+            if (!preg_match('/^(\d{10}|(\d{4}\/[A-Z]+\/[A-Z]+\/\d{4}))$/', $matriculationId)) {
+                throw new \Exception("Invalid matriculation ID format: {$matriculationId}. Must be either 10 digits (e.g., 1011700028) or in format YYYY/DEPT/PROG/XXXX (e.g., 2018/BIO/HCP/0001)");
             }
 
-            // Generate temporary email
-            $tempEmail = strtolower(str_replace('/', '', $row['matriculation_id'])) . '@alumni.fulafia.edu.ng';
-            $tempPassword = Str::random(10);
+            // Check if alumni with this matric number already exists
+            $existingAlumni = Alumni::where('matric_number', $matriculationId)->first();
+            if ($existingAlumni) {
+                throw new \Exception("Alumni with matriculation number {$matriculationId} already exists");
+            }
 
-            // Create user account with temporary email
+            // Create user account
             $user = new User();
-            $user->uuid = Str::uuid();
-            $user->name = trim($row['firstname'] . ' ' . $row['surname']);
-            $user->email = $tempEmail;
-            $user->password = Hash::make($tempPassword);
-            $user->status = 'active';
-            $user->created_by = Auth::id();
-            $user->email_verified_at = null;
+            $user->name = trim($row['firstname']) . ' ' . trim($row['surname']);
+            // For email generation, remove slashes and convert to lowercase
+            $emailMatric = strtolower(str_replace('/', '', $matriculationId));
+            $user->email = $emailMatric . '@alumni.fulafia.edu.ng';
+            $user->password = Hash::make(Str::random(12));
+            $user->gender = trim($row['gender']);
             $user->save();
 
             // Assign alumni role
-            $user->assignRole('alumni');
+            $alumniRole = Role::findByName('alumni');
+            $user->assignRole($alumniRole);
+
+            // Get or create alumni category
+            $category = AlumniCategory::where('name', trim($row['category']))->first();
+            if (!$category) {
+                $category = AlumniCategory::create([
+                    'name' => trim($row['category']),
+                    'status' => 'active'
+                ]);
+            }
 
             // Create alumni record
             $alumni = new Alumni();
             $alumni->user_id = $user->id;
             $alumni->category_id = $category ? $category->id : null;
-            $alumni->matric_number = trim($row['matriculation_id']);
+            $alumni->matric_number = $matriculationId;  // Use the processed matriculation ID
             $alumni->programme = trim($row['programme']);
             $alumni->department = trim($row['department']);
             $alumni->faculty = trim($row['faculty']);
@@ -125,7 +135,13 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
         return [
             'firstname' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
-            'matriculation_id' => 'required|string|max:255|unique:alumni,matric_number',
+            'matriculation_id' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:alumni,matric_number',
+                'regex:/^(\d{10}|(\d{4}\/[A-Z]+\/[A-Z]+\/\d{4}))$/'
+            ],
             'programme' => 'required|string|max:255',
             'department' => 'required|string|max:255',
             'faculty' => 'required|string|max:255',
@@ -146,6 +162,7 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
             'surname.required' => 'The surname field is required.',
             'matriculation_id.required' => 'The matriculation ID field is required.',
             'matriculation_id.unique' => 'This matriculation ID has already been registered.',
+            'matriculation_id.regex' => 'The matriculation ID must be either 10 digits (e.g., 1011700028) or in format YYYY/DEPT/PROG/XXXX (e.g., 2018/BIO/HCP/0001)',
             'programme.required' => 'The programme field is required.',
             'department.required' => 'The department field is required.',
             'faculty.required' => 'The faculty field is required.',
