@@ -61,8 +61,8 @@
 <body>
     <div class="header">
         <div class="logo-container">
-            <img src="{{ asset('images/logo-left.png') }}" alt="Left Logo" class="logo">
-            <img src="{{ asset('images/logo-right.png') }}" alt="Right Logo" class="logo">
+            <img src="{{ asset('images/fulafia-logo.jpg') }}" alt="Left Logo" class="logo">
+            <img src="{{ asset('images/alumni-logo.jpg') }}" alt="Right Logo" class="logo">
         </div>
         <div class="title">FEDERAL UNIVERSITY OF LAFIA</div>
         <div class="title">ALUMNI CLEARANCE FORM</div>

@@ -154,12 +154,12 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <img src="{{ asset('images/fulafia-logo.JPG') }}" alt="FULAFIA Logo">
+            <img src="{{ asset('images/fulafia-logo.jpg') }}" alt="FULAFIA Logo">
             <div class="header-text">
                 <h2>Federal University of Lafia</h2>
                 <h3>Alumni Personal Data Registration Form</h3>
             </div>
-            <img src="{{ asset('images/alumni-logo.JPG') }}" alt="ALUMNI Logo">
+            <img src="{{ asset('images/alumni-logo.jpg') }}" alt="ALUMNI Logo">
         </div>
 
         <!-- Personal Information -->

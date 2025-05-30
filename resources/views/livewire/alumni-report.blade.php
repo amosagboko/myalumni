@@ -18,12 +18,12 @@
         <div class="container" style="max-width: 800px; margin: 100px 0 0 300px; padding: 10px;">
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <img src="{{ asset('images/fulafia-logo.JPG') }}" alt="FULAFIA Logo" style="width: 60px; height: 60px;">
+                <img src="{{ asset('images/fulafia-logo.jpg') }}" alt="FULAFIA Logo" style="width: 60px; height: 60px;">
                 <div class="text-center">
                     <h2 class="mb-0" style="font-size: 1rem;">Federal University of Lafia</h2>
                     <h3 class="mb-0" style="font-size: 0.9rem;">Alumni Personal Data Registration Form</h3>
                 </div>
-                <img src="{{ asset('images/alumni-logo.JPG') }}" alt="ALUMNI Logo" style="width: 60px; height: 60px;">
+                <img src="{{ asset('images/alumni-logo.jpg') }}" alt="ALUMNI Logo" style="width: 60px; height: 60px;">
             </div>
 
             <!-- Personal Information -->
