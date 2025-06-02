@@ -44,16 +44,6 @@
                     <div class="card-body rounded-0 text-left">
                         <h2 class="fw-700 display1-size display2-md-size mb-3">Login into <br>your account</h2>
                         
-                        <!-- Alumni Information Box -->
-                        <div class="alert alert-info mb-4">
-                            <h6 class="font-weight-bold">For Alumni:</h6>
-                            <p class="mb-0">If you're a newly registered alumni, use your temporary credentials:</p>
-                            <ul class="mb-0">
-                                <li>Email: Your matriculation number + @alumni.fulafia.edu.ng</li>
-                                <li>Password: Check your email for the temporary password</li>
-                            </ul>
-                        </div>
-
                         <!-- Session Status -->
                         <x-auth-session-status class="mb-4" :status="session('status')" />
 
