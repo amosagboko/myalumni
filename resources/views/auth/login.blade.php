@@ -83,10 +83,10 @@
                             </div>
                         </form>
                          
-                        <div class="col-sm-12 p-0 text-left">
+                        {{-- <div class="col-sm-12 p-0 text-left">
                             
                             <h6 class="text-grey-500 font-xsss fw-500 mt-0 mb-0 lh-32">Dont have account <a href="{{ route('register') }}" class="fw-700 ms-1">Register</a></h6>
-                        </div>
+                        </div> --}}
                         
                     </div>
                 </div> 
