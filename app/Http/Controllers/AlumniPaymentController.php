@@ -868,52 +868,29 @@ class AlumniPaymentController extends Controller
                         )
                     ]);
 
-                    // EOI candidate creation logic (session-based)
+                    // EOI candidate creation logic (metadata-based)
                     if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
-                        $sessionKey = 'eoi_candidate_' . $transaction->payment_reference;
-                        $eoiData = session($sessionKey);
-                        if ($eoiData) {
-                            $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                                ->where('election_id', $eoiData['election_id'])
-                                ->where('election_office_id', $eoiData['office_id'])
-                                ->first();
-                            if (!$candidate) {
-                                \App\Models\Candidate::create([
-                                    'election_id' => $eoiData['election_id'],
-                                    'election_office_id' => $eoiData['office_id'],
-                                    'alumni_id' => $transaction->alumni_id,
-                                    'has_paid_screening_fee' => true,
-                                    'manifesto' => $eoiData['manifesto'] ?? null,
-                                    'passport' => $eoiData['passport'] ?? null,
-                                    'documents' => $eoiData['documents'] ?? [],
-                                    'status' => 'pending',
-                                ]);
-                            }
-                            session()->forget($sessionKey);
-                        } else {
-                            // fallback to transaction metadata
-                            $meta = $transaction->metadata ? (is_array($transaction->metadata) ? $transaction->metadata : json_decode($transaction->metadata, true)) : [];
-                            $electionId = $meta['election_id'] ?? null;
-                            $officeId = $meta['office_id'] ?? null;
-                            $manifesto = $meta['manifesto'] ?? null;
-                            $passport = $meta['passport'] ?? null;
-                            $documents = $meta['documents'] ?? [];
-                            $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                                ->where('election_id', $electionId)
-                                ->where('election_office_id', $officeId)
-                                ->first();
-                            if (!$candidate && $electionId && $officeId) {
-                                \App\Models\Candidate::create([
-                                    'election_id' => $electionId,
-                                    'election_office_id' => $officeId,
-                                    'alumni_id' => $transaction->alumni_id,
-                                    'has_paid_screening_fee' => true,
-                                    'manifesto' => $manifesto,
-                                    'passport' => $passport,
-                                    'documents' => $documents,
-                                    'status' => 'pending',
-                                ]);
-                            }
+                        $meta = $transaction->metadata ? (is_array($transaction->metadata) ? $transaction->metadata : json_decode($transaction->metadata, true)) : [];
+                        $electionId = $meta['election_id'] ?? null;
+                        $officeId = $meta['office_id'] ?? null;
+                        $manifesto = $meta['manifesto'] ?? null;
+                        $passport = $meta['passport'] ?? null;
+                        $documents = $meta['documents'] ?? [];
+                        $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
+                            ->where('election_id', $electionId)
+                            ->where('election_office_id', $officeId)
+                            ->first();
+                        if (!$candidate && $electionId && $officeId) {
+                            \App\Models\Candidate::create([
+                                'election_id' => $electionId,
+                                'election_office_id' => $officeId,
+                                'alumni_id' => $transaction->alumni_id,
+                                'has_paid_screening_fee' => true,
+                                'manifesto' => $manifesto,
+                                'passport' => $passport,
+                                'documents' => $documents,
+                                'status' => 'pending',
+                            ]);
                         }
                     }
 

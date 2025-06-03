@@ -323,6 +323,14 @@ class AlumniElectionController extends Controller
             }
 
             // Create a pending transaction for the screening fee
+            $metadata = [
+                'election_id' => $election->id,
+                'office_id' => $office->id,
+                'passport' => $passportPath,
+                'documents' => $documentPaths,
+                'manifesto' => $data['manifesto'] ?? null,
+                'is_eoi' => true, // Flag to identify EOI transactions
+            ];
             $transaction = Transaction::create([
                 'alumni_id' => $alumni->id,
                 'fee_template_id' => $screeningFee->id,
@@ -331,24 +339,11 @@ class AlumniElectionController extends Controller
                 'payment_reference' => 'EOI-' . strtoupper(uniqid()),
                 'is_test_mode' => true, // Force test mode for screening fees
                 'payment_provider' => 'credo',
-                'metadata' => json_encode([
-                    'election_id' => $election->id,
-                    'office_id' => $office->id,
-                    'passport' => $passportPath,
-                    'documents' => $documentPaths,
-                    'manifesto' => $data['manifesto'] ?? null,
-                    'is_eoi' => true, // Flag to identify EOI transactions
-                ])
+                'metadata' => json_encode($metadata)
             ]);
 
-            // Store EOI candidate details in session, keyed by payment_reference
-            session(['eoi_candidate_' . $transaction->payment_reference => [
-                'election_id' => $election->id,
-                'office_id' => $office->id,
-                'passport' => $passportPath,
-                'documents' => $documentPaths,
-                'manifesto' => $data['manifesto'] ?? null,
-            ]]);
+            // Store EOI candidate details in session, keyed by payment_reference (for redundancy)
+            session(['eoi_candidate_' . $transaction->payment_reference => $metadata]);
 
             // Clear the preview session BEFORE committing the transaction
             session()->forget('eoi_preview');
