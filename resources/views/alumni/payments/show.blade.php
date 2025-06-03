@@ -56,12 +56,9 @@
 
                     @if($transaction->status === 'pending')
                         <div class="mt-4">
-                            <form action="{{ route('alumni.payments.confirm', $transaction) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn btn-primary">
-                                    Confirm Payment
-                                </button>
-                            </form>
+                            <a href="{{ route('alumni.payments.process', $transaction) }}" class="btn btn-success">
+                                Proceed to Payment
+                            </a>
                         </div>
                     @endif
 
