@@ -29,7 +29,9 @@ class SyncEoiCandidatePayments extends Command
      */
     public function handle()
     {
-        $candidates = Candidate::where('has_paid_screening_fee', false)->get();
+        $candidates = Candidate::where('status', 'pending')
+            ->orWhere('has_paid_screening_fee', false)
+            ->get();
 
         $updated = 0;
 
@@ -49,7 +51,6 @@ class SyncEoiCandidatePayments extends Command
             if ($transaction) {
                 $candidate->update([
                     'has_paid_screening_fee' => true,
-                    'status' => 'paid',
                 ]);
                 $updated++;
                 Log::info('EOI candidate payment synced', [
