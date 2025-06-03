@@ -8,13 +8,13 @@ use App\Models\Candidate;
 use App\Models\ElectionResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\CategoryTransactionFee;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use Spatie\Activitylog\Facades\Activity;
+use App\Models\FeeTemplate;
 
 class AlumniElectionController extends Controller
 {
@@ -120,8 +120,12 @@ class AlumniElectionController extends Controller
         }
 
         // Get the screening fee for this office
-        $screeningFee = CategoryTransactionFee::where('fee_type_id', $office->fee_type_id)
+        $screeningFee = FeeTemplate::where('fee_type_id', $office->fee_type_id)
             ->where('is_active', true)
+            ->where('valid_from', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>', now());
+            })
             ->first();
 
         if (!$screeningFee) {
@@ -156,8 +160,12 @@ class AlumniElectionController extends Controller
         ]);
 
         // Get the screening fee
-        $screeningFee = CategoryTransactionFee::where('fee_type_id', $office->fee_type_id)
+        $screeningFee = FeeTemplate::where('fee_type_id', $office->fee_type_id)
             ->where('is_active', true)
+            ->where('valid_from', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>', now());
+            })
             ->first();
 
         if (!$screeningFee) {
@@ -259,8 +267,12 @@ class AlumniElectionController extends Controller
         }
 
         // Get the screening fee
-        $screeningFee = CategoryTransactionFee::where('fee_type_id', $office->fee_type_id)
+        $screeningFee = FeeTemplate::where('fee_type_id', $office->fee_type_id)
             ->where('is_active', true)
+            ->where('valid_from', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>', now());
+            })
             ->first();
 
         if (!$screeningFee) {

@@ -21,7 +21,7 @@
                                 </tr>
                                 <tr>
                                     <th>Fee Type:</th>
-                                    <td>{{ $transaction->categoryTransactionFee->feeType->name }}</td>
+                                    <td>{{ $transaction->feeTemplate->feeType->name }}</td>
                                 </tr>
                                 <tr>
                                     <th>Reference:</th>
