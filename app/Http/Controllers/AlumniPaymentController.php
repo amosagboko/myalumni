@@ -732,8 +732,21 @@ class AlumniPaymentController extends Controller
             abort(403, 'You are not authorized to process this payment.');
         }
 
-        // Show the payment confirmation page
-        return view('alumni.payments.show', compact('transaction'));
+        try {
+            // Initialize payment with Credo Central and get the payment link
+            $paymentLink = $this->credocentral->initializePayment($transaction);
+            return redirect()->away($paymentLink);
+        } catch (\Exception $e) {
+            Log::error('Failed to initialize payment with Credo Central (processPayment)', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payment_reference' => $transaction->payment_reference,
+                'amount' => $transaction->amount
+            ]);
+            return redirect()->route('alumni.payments.show', $transaction)
+                ->with('error', 'Failed to initiate payment. Please try again.');
+        }
     }
 
     /**
