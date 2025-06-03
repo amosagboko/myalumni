@@ -203,6 +203,7 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
         Route::get('/history', [AlumniPaymentController::class, 'history'])->name('history');
         Route::post('/initiate', [AlumniPaymentController::class, 'initiatePayment'])->name('initiate');
         Route::get('/{transaction}', [AlumniPaymentController::class, 'show'])->name('show');
+        Route::get('/{transaction}/process', [AlumniPaymentController::class, 'processPayment'])->name('process');
         Route::post('/{transaction}/confirm', [AlumniPaymentController::class, 'confirmPayment'])->name('confirm');
         Route::post('/{transaction}/verify', [AlumniPaymentController::class, 'verifyPayment'])->name('verify');
         Route::get('/{transaction}/success', [AlumniPaymentController::class, 'paymentSuccess'])->name('success');
