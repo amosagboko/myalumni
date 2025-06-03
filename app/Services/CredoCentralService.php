@@ -351,20 +351,30 @@ class CredoCentralService
             // Handle any post-payment actions (e.g., update candidate status for screening fees)
             if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
                 $meta = $transaction->metadata ? (is_array($transaction->metadata) ? $transaction->metadata : json_decode($transaction->metadata, true)) : [];
+                $candidateId = $meta['candidate_id'] ?? null;
                 $electionId = $meta['election_id'] ?? null;
                 $officeId = $meta['office_id'] ?? null;
                 $manifesto = $meta['manifesto'] ?? null;
                 $passport = $meta['passport'] ?? null;
                 $documents = $meta['documents'] ?? [];
-
-                $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                    ->where('election_id', $electionId)
-                    ->where('election_office_id', $officeId)
-                    ->first();
-
+                $candidate = null;
+                if ($candidateId) {
+                    $candidate = \App\Models\Candidate::find($candidateId);
+                }
+                if (!$candidate && $electionId && $officeId) {
+                    // fallback for legacy/edge cases
+                    $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
+                        ->where('election_id', $electionId)
+                        ->where('election_office_id', $officeId)
+                        ->first();
+                }
                 if ($candidate) {
-                    $candidate->update(['has_paid_screening_fee' => true]);
+                    $candidate->update([
+                        'has_paid_screening_fee' => true,
+                        'status' => 'paid',
+                    ]);
                 } else if ($electionId && $officeId) {
+                    // fallback: create if not found (should not happen)
                     \App\Models\Candidate::create([
                         'election_id' => $electionId,
                         'election_office_id' => $officeId,
@@ -373,7 +383,7 @@ class CredoCentralService
                         'manifesto' => $manifesto,
                         'passport' => $passport,
                         'documents' => $documents,
-                        'status' => 'pending',
+                        'status' => 'paid',
                     ]);
                 }
             }

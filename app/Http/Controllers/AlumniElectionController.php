@@ -322,10 +322,23 @@ class AlumniElectionController extends Controller
                 }
             }
 
-            // Create a pending transaction for the screening fee
+            // Create the candidate record immediately (before payment)
+            $candidate = Candidate::create([
+                'election_id' => $election->id,
+                'election_office_id' => $office->id,
+                'alumni_id' => $alumni->id,
+                'has_paid_screening_fee' => false,
+                'manifesto' => $data['manifesto'] ?? null,
+                'passport' => $passportPath,
+                'documents' => $documentPaths,
+                'status' => 'pending',
+            ]);
+
+            // Create a pending transaction for the screening fee, store candidate_id in metadata
             $metadata = [
                 'election_id' => $election->id,
                 'office_id' => $office->id,
+                'candidate_id' => $candidate->id,
                 'passport' => $passportPath,
                 'documents' => $documentPaths,
                 'manifesto' => $data['manifesto'] ?? null,
