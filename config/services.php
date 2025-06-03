@@ -53,6 +53,8 @@ return [
             'eoi-nat-wel-off'          => '003486S7AGAT',
             'eoi-nat-provost'          => '003486S7AGAT',
             'eoi-sudo'                 => '003486S7AGAT',
+            'subscription'             => '003486S7AGAT',
+
 
             // Add more as needed
         ],
