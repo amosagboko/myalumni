@@ -317,7 +317,7 @@ class AlumniElectionController extends Controller
             // Create a pending transaction for the screening fee
             $transaction = Transaction::create([
                 'alumni_id' => $alumni->id,
-                'category_transaction_fee_id' => $screeningFee->id,
+                'fee_template_id' => $screeningFee->id,
                 'amount' => $screeningFee->amount,
                 'status' => 'pending',
                 'payment_reference' => 'EOI-' . strtoupper(uniqid()),
