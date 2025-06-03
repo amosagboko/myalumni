@@ -322,6 +322,7 @@ class AlumniElectionController extends Controller
                 'status' => 'pending',
                 'payment_reference' => 'EOI-' . strtoupper(uniqid()),
                 'is_test_mode' => true, // Force test mode for screening fees
+                'payment_provider' => 'credo', // Add payment provider
             ]);
 
             // Clear the preview session BEFORE committing the transaction
