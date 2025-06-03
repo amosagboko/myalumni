@@ -868,75 +868,35 @@ class AlumniPaymentController extends Controller
                         )
                     ]);
 
-                                        // === EOI Candidate Creation Logic (Refactored) ===
+                    // EOI candidate creation logic (metadata-based)
                     if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
-                        // Parse metadata safely
-                        $meta = [];
-
-                        if (is_array($transaction->metadata)) {
-                            $meta = $transaction->metadata;
-                        } elseif (is_string($transaction->metadata)) {
-                            $meta = json_decode($transaction->metadata, true) ?? [];
-                        }
-
+                        $meta = $transaction->metadata ? (is_array($transaction->metadata) ? $transaction->metadata : json_decode($transaction->metadata, true)) : [];
                         $electionId = $meta['election_id'] ?? null;
-                        $officeId   = $meta['office_id'] ?? null;
-                        $manifesto  = $meta['manifesto'] ?? '';
-                        $passport   = $meta['passport'] ?? '';
-                        $documents  = is_array($meta['documents'] ?? null) ? $meta['documents'] : [];
-
-                        Log::info('Attempting EOI candidate creation', [
-                            'transaction_id' => $transaction->id,
-                            'alumni_id' => $transaction->alumni_id,
-                            'election_id' => $electionId,
-                            'office_id' => $officeId,
-                            'manifesto' => $manifesto,
-                            'passport' => $passport,
-                            'documents' => $documents,
-                        ]);
-
-                        if ($electionId && $officeId && $transaction->alumni_id) {
-                            $existing = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                                ->where('election_id', $electionId)
-                                ->where('election_office_id', $officeId)
-                                ->first();
-
-                            if (!$existing) {
-                                try {
-                                    \App\Models\Candidate::create([
-                                        'election_id' => $electionId,
-                                        'election_office_id' => $officeId,
-                                        'alumni_id' => $transaction->alumni_id,
-                                        'has_paid_screening_fee' => true,
-                                        'manifesto' => $manifesto,
-                                        'passport' => $passport,
-                                        'documents' => $documents,
-                                        'status' => 'pending',
-                                    ]);
-
-                                    Log::info('EOI candidate successfully created', [
-                                        'transaction_id' => $transaction->id
-                                    ]);
-                                } catch (\Exception $e) {
-                                    Log::error('Failed to create EOI candidate', [
-                                        'transaction_id' => $transaction->id,
-                                        'error' => $e->getMessage(),
-                                        'trace' => $e->getTraceAsString(),
-                                    ]);
-                                }
-                            } else {
-                                Log::info('EOI candidate already exists, skipping creation', [
-                                    'transaction_id' => $transaction->id,
-                                    'candidate_id' => $existing->id,
-                                ]);
-                            }
-                        } else {
-                            Log::warning('Missing EOI data; skipping candidate creation', [
-                                'transaction_id' => $transaction->id,
-                                'metadata' => $meta
+                        $officeId = $meta['office_id'] ?? null;
+                        $manifesto = $meta['manifesto'] ?? null;
+                        $passport = $meta['passport'] ?? null;
+                        $documents = $meta['documents'] ?? [];
+                        $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
+                            ->where('election_id', $electionId)
+                            ->where('election_office_id', $officeId)
+                            ->first();
+                        if (!$candidate && $electionId && $officeId) {
+                            \App\Models\Candidate::create([
+                                'election_id' => $electionId,
+                                'election_office_id' => $officeId,
+                                'alumni_id' => $transaction->alumni_id,
+                                'has_paid_screening_fee' => true,
+                                'manifesto' => $manifesto,
+                                'passport' => $passport,
+                                'documents' => $documents,
+                                'status' => 'pending',
                             ]);
                         }
-}
+                    }
+
+                    DB::commit();
+                    return redirect()->route('alumni.payments.success', $transaction)
+                        ->with('success', 'Payment completed successfully.');
                 }
 
                 // If redirect status is not 0, try verification
