@@ -19,6 +19,7 @@ class Kernel extends ConsoleKernel
     {
         // ... existing scheduled tasks ...
         $schedule->command('content:cleanup')->daily();
+        $schedule->command('eoi:sync-candidate-payments')->everyTwoMinutes();
     }
 
     /**
@@ -37,6 +38,7 @@ class Kernel extends ConsoleKernel
             Commands\SimulateVoting::class,
             Commands\ListElections::class,
             Commands\ExportDatabase::class,
+            \App\Console\Commands\SyncEoiCandidatePayments::class,
         ];
     }
 } 
