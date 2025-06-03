@@ -341,6 +341,15 @@ class AlumniElectionController extends Controller
                 ])
             ]);
 
+            // Store EOI candidate details in session, keyed by payment_reference
+            session(['eoi_candidate_' . $transaction->payment_reference => [
+                'election_id' => $election->id,
+                'office_id' => $office->id,
+                'passport' => $passportPath,
+                'documents' => $documentPaths,
+                'manifesto' => $data['manifesto'] ?? null,
+            ]]);
+
             // Clear the preview session BEFORE committing the transaction
             session()->forget('eoi_preview');
 
@@ -390,13 +399,24 @@ class AlumniElectionController extends Controller
         $alumni = Auth::user()->alumni;
         $expressionOfInterest = $alumni->getCurrentExpressionOfInterest();
 
-        if (!$expressionOfInterest) {
-            return redirect()
-                ->route('alumni.elections')
-                ->with('info', 'You have not expressed interest in any position yet.');
+        if ($expressionOfInterest) {
+            // Show EOI details/status view
+            return view('alumni.elections.expression-of-interest-status', compact('expressionOfInterest'));
         }
 
-        return view('alumni.elections.expression-of-interest-status', compact('expressionOfInterest'));
+        // If no EOI found, redirect to EOI form for the current election/office if possible
+        // Try to find an active election and office for EOI
+        $activeElection = \App\Models\Election::where('status', 'eoi')->orderBy('accreditation_start', 'desc')->first();
+        if ($activeElection) {
+            $office = $activeElection->offices()->first();
+            if ($office) {
+                return redirect()->route('alumni.elections.expression-of-interest.form', ['election' => $activeElection->id, 'office' => $office->id])
+                    ->with('info', 'You have not expressed interest yet. Please complete the EOI form.');
+            }
+        }
+        // Fallback: redirect to elections list
+        return redirect()->route('alumni.elections')
+            ->with('info', 'You have not expressed interest in any position yet.');
     }
 
     /**
