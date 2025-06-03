@@ -40,7 +40,22 @@ return [
         'public_key' => env('CREDOCENTRAL_PUBLIC_KEY'),
         'secret_key' => env('CREDOCENTRAL_SECRET_KEY'),
         'test_mode' => env('CREDOCENTRAL_TEST_MODE', false),
-        'service_code' => env('CREDOCENTRAL_SERVICE_CODE', 'ALUMNI_PAYMENT'),
+        'service_codes' => [
+            'subscription-fee-all' => '003486S7AGAT',
+            'eoi-nat-president'        => '003486S7AGAT',
+            'eoi-deputy-national'      => '003486S7AGAT',
+            'eoi-nat-sec-gen'          => '003486S7AGAT',
+            'eoi-deputy-nat-sec-gen'   => '003486S7AGAT',
+            'eoi-nat-treasurer'        => '003486S7AGAT',
+            'eoi-nat-fin-sec'          => '003486S7AGAT',
+            'eoi-nat-pro'              => '003486S7AGAT',
+            'eoi-nat-org-sec'          => '003486S7AGAT',
+            'eoi-nat-wel-off'          => '003486S7AGAT',
+            'eoi-nat-provost'          => '003486S7AGAT',
+            'eoi-sudo'                 => '003486S7AGAT',
+
+            // Add more as needed
+        ],
     ],
 
 ];
