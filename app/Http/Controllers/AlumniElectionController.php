@@ -229,6 +229,30 @@ class AlumniElectionController extends Controller
                 ->with('error', 'You have already expressed interest for ' . $currentInterest->office->title . '. You can only express interest in one position at a time.');
         }
 
+        // Check for any pending or successful EOI transactions
+        $existingTransaction = Transaction::where('alumni_id', $alumni->id)
+            ->whereHas('feeTemplate', function($query) use ($office) {
+                $query->where('fee_type_id', $office->fee_type_id);
+            })
+            ->whereIn('status', ['pending', 'success'])
+            ->first();
+
+        if ($existingTransaction) {
+            if ($existingTransaction->status === 'pending') {
+                // Clear any preview data
+                session()->forget('eoi_preview');
+                return redirect()
+                    ->route('alumni.payments.process', $existingTransaction)
+                    ->with('info', 'You have a pending payment for this position. Please complete the payment to continue.');
+            } else {
+                // Clear any preview data
+                session()->forget('eoi_preview');
+                return redirect()
+                    ->route('alumni.elections')
+                    ->with('error', 'You have already paid for this position. Please wait for the screening process.');
+            }
+        }
+
         // Then check other eligibility criteria
         if (!$alumni->getActiveFees()->every(fn($fee) => $fee->isPaid())) {
             session()->forget('eoi_preview');
@@ -285,12 +309,7 @@ class AlumniElectionController extends Controller
         try {
             DB::beginTransaction();
 
-            // Double-check eligibility one final time before creating records
-            if ($alumni->hasExpressedInterest()) {
-                throw new \Exception('You have already expressed interest in a position.');
-            }
-
-            // Move files from temp to permanent storage
+            // Store the files temporarily
             $passportPath = str_replace('temp/', '', $data['passport']);
             Storage::disk('public')->move($data['passport'], $passportPath);
 
@@ -303,17 +322,6 @@ class AlumniElectionController extends Controller
                 }
             }
 
-            // Create the candidate record
-            $candidate = $office->candidates()->create([
-                'election_id' => $election->id,
-                'alumni_id' => $alumni->id,
-                'status' => 'pending',
-                'passport' => $passportPath,
-                'manifesto' => $data['manifesto'] ?? null,
-                'documents' => !empty($documentPaths) ? json_encode($documentPaths) : null,
-                'has_paid_screening_fee' => false,
-            ]);
-
             // Create a pending transaction for the screening fee
             $transaction = Transaction::create([
                 'alumni_id' => $alumni->id,
@@ -322,7 +330,15 @@ class AlumniElectionController extends Controller
                 'status' => 'pending',
                 'payment_reference' => 'EOI-' . strtoupper(uniqid()),
                 'is_test_mode' => true, // Force test mode for screening fees
-                'payment_provider' => 'credo', // Add payment provider
+                'payment_provider' => 'credo',
+                'metadata' => json_encode([
+                    'election_id' => $election->id,
+                    'office_id' => $office->id,
+                    'passport' => $passportPath,
+                    'documents' => $documentPaths,
+                    'manifesto' => $data['manifesto'] ?? null,
+                    'is_eoi' => true, // Flag to identify EOI transactions
+                ])
             ]);
 
             // Clear the preview session BEFORE committing the transaction
@@ -333,7 +349,7 @@ class AlumniElectionController extends Controller
             // Redirect to payment page
             return redirect()
                 ->route('alumni.payments.process', $transaction)
-                ->with('success', 'Expression of interest submitted. Please complete the payment to finalize your application.');
+                ->with('success', 'Please complete the payment to finalize your application.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -359,13 +375,6 @@ class AlumniElectionController extends Controller
 
             // Clear the preview session
             session()->forget('eoi_preview');
-
-            // Return appropriate error message based on the exception
-            if ($e->getMessage() === 'You have already expressed interest in a position.') {
-                return redirect()
-                    ->route('alumni.elections')
-                    ->with('error', $e->getMessage());
-            }
 
             return redirect()
                 ->route('alumni.elections.expression-of-interest.form', ['election' => $election, 'office' => $office])
