@@ -350,13 +350,31 @@ class CredoCentralService
 
             // Handle any post-payment actions (e.g., update candidate status for screening fees)
             if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
+                $meta = $transaction->metadata ? (is_array($transaction->metadata) ? $transaction->metadata : json_decode($transaction->metadata, true)) : [];
+                $electionId = $meta['election_id'] ?? null;
+                $officeId = $meta['office_id'] ?? null;
+                $manifesto = $meta['manifesto'] ?? null;
+                $passport = $meta['passport'] ?? null;
+                $documents = $meta['documents'] ?? [];
+
                 $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                    ->where('has_paid_screening_fee', false)
-                    ->latest()
+                    ->where('election_id', $electionId)
+                    ->where('election_office_id', $officeId)
                     ->first();
 
                 if ($candidate) {
                     $candidate->update(['has_paid_screening_fee' => true]);
+                } else if ($electionId && $officeId) {
+                    \App\Models\Candidate::create([
+                        'election_id' => $electionId,
+                        'election_office_id' => $officeId,
+                        'alumni_id' => $transaction->alumni_id,
+                        'has_paid_screening_fee' => true,
+                        'manifesto' => $manifesto,
+                        'passport' => $passport,
+                        'documents' => $documents,
+                        'status' => 'pending',
+                    ]);
                 }
             }
 
