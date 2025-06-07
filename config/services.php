@@ -41,7 +41,7 @@ return [
         'secret_key' => env('CREDOCENTRAL_SECRET_KEY'),
         'test_mode' => env('CREDOCENTRAL_TEST_MODE', false),
         'service_codes' => [
-            'subscription-fee-all' => '003486U9Q446',
+            'subscription' => '003486U9Q446',
             'eoi-nat-president'        => '0034865MAOAN',
             'eoi-deputy-national'      => '0034865MAOAN',
             'eoi-nat-sec-gen'          => '0034865MAOAN',
@@ -53,7 +53,6 @@ return [
             'eoi-nat-wel-off'          => '0034865MAOAN',
             'eoi-nat-provost'          => '0034865MAOAN',
             'eoi-sudo'                 => '0034865MAOAN',
-            'subscription'             => '0034865MAOAN',
 
 
             // Add more as needed
