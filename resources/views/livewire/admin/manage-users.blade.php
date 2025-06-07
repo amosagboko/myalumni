@@ -4,6 +4,11 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-current d-flex justify-content-between align-items-center py-2">
                     <h6 class="mb-0 text-white">Manage Users</h6>
+                    @if($isAdmin)
+                        <a href="{{ route('admin.users.create') }}" class="btn btn-success btn-sm">
+                            <i class="feather-user-plus me-1"></i> Add User
+                        </a>
+                    @endif
                 </div>
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
