@@ -27,7 +27,7 @@ class AlumniBioDataController extends Controller
                 ->with('error', 'Your alumni record needs to be set up by an administrator first.');
         }
 
-        $titles = ['Prof', 'Dr', 'Mr', 'Mrs', 'Alh', 'Chief', 'Mal'];
+        $titles = ['Prof', 'Dr', 'Mr', 'Mrs', 'Miss', 'Alh', 'Hajj', 'Chief', 'Mal'];
         $qualificationTypes = ['Degree', 'Diploma', 'Certificate'];
         
         return view('alumni.bio-data', compact('alumni', 'titles', 'qualificationTypes'));
@@ -43,7 +43,7 @@ class AlumniBioDataController extends Controller
         }
 
         $request->validate([
-            'title' => 'required|string|in:Prof,Dr,Mr,Mrs,Alh,Chief,Mal',
+            'title' => 'required|string|in:Prof,Dr,Mr,Mrs,Miss,Alh,Hajj,Chief,Mal',
             'nationality' => 'required|string|max:255',
             'contact_address' => 'required|string',
             'phone_number' => 'required|string|max:20',
