@@ -76,7 +76,7 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
             }
             
             // Validate matriculation ID format
-            if (!preg_match('/^(\d{10}|(\d{4}(?:\/[A-Z]+)+\/[A-Z0-9]{4,6}))$/i', $matriculationId)) {
+            if (!preg_match('/^(\d{10}|(\d{4}(?:\/[A-Z]+)+\/[A-Z0-9]{3,6}))$/i', $matriculationId)) {
                 // Collect the invalid matric ID with its details
                 $this->invalidMatricIds[] = [
                     'row' => $rowNumber,
@@ -198,7 +198,7 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
                 'string',
                 'max:255',
                 'unique:alumni,matric_number',
-                'regex:/^(\d{10}|(\d{4}(?:\/[A-Z]+)+\/[A-Z0-9]{4,6}))$/i'
+                'regex:/^(\d{10}|(\d{4}(?:\/[A-Z]+)+\/[A-Z0-9]{3,6}))$/i'
             ],
             'programme' => 'required|string|max:255',
             'department' => 'required|string|max:255',
@@ -220,7 +220,7 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
             'surname.required' => 'The surname field is required.',
             'matriculation_id.required' => 'The matriculation ID field is required.',
             'matriculation_id.unique' => 'This matriculation ID has already been registered.',
-            'matriculation_id.regex' => 'The matriculation ID must be one of the following formats: 10 digits (e.g., 1011700028), YYYY/DEPT/PROG/XXXX (e.g., 2018/BIO/HCP/0001), YYYY/DEPT/DEPT/XXXXXX (e.g., 2020/SC/BCH/0155DE), or YYYY/PGD/PG/SC/CSC/XXXX (e.g., 2021/PGD/PG/SC/CSC/0011)',
+            'matriculation_id.regex' => 'The matriculation ID must be one of the following formats: 10 digits (e.g., 1011700028), YYYY/DEPT/PROG/XXXX (e.g., 2018/BIO/HCP/0001), YYYY/DEPT/DEPT/XXXXXX (e.g., 2020/SC/BCH/0155DE), YYYY/PGD/PG/SC/CSC/XXXX (e.g., 2021/PGD/PG/SC/CSC/0011), or YYYY/PGD/PG/SS/SOC/003 (e.g., 2021/PGD/PG/SS/SOC/003)',
             'programme.required' => 'The programme field is required.',
             'department.required' => 'The department field is required.',
             'faculty.required' => 'The faculty field is required.',
