@@ -137,7 +137,7 @@ class Election extends Model
             
         // Validate that total votes don't exceed accredited voters
         if ($totalVotes > $this->getTotalAccreditedVoters()) {
-            \Log::error("Election {$this->id}: Total votes ({$totalVotes}) exceed total accredited voters ({$this->getTotalAccreditedVoters()})");
+            Log::error("Election {$this->id}: Total votes ({$totalVotes}) exceed total accredited voters ({$this->getTotalAccreditedVoters()})");
         }
         
         return $totalVotes;
@@ -259,6 +259,11 @@ class Election extends Model
      */
     public function isEoiPeriodActive(): bool
     {
+        // If election status is 'eoi', the period is active regardless of time
+        if ($this->status === 'eoi') {
+            return true;
+        }
+
         if (!$this->eoi_start || !$this->eoi_end) {
             return false;
         }
