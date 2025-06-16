@@ -63,8 +63,8 @@
                     @endif
 
                     <div class="mt-4">
-                        <a href="{{ route('alumni.payments.index') }}" class="btn btn-secondary">
-                            Back to Payments
+                        <a href="{{ route('alumni.payments.history') }}" class="btn btn-secondary">
+                            Back to Payment History
                         </a>
                     </div>
                 </div>
