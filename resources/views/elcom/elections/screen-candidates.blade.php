@@ -140,7 +140,7 @@
                                                             <div class="col-md-6">
                                                                 <h6>Supporting Documents</h6>
                                                                 @if($candidate->documents)
-                                                                    @foreach(json_decode($candidate->documents) as $document)
+                                                                    @foreach($candidate->documents as $document)
                                                                         <a href="{{ asset('storage/' . $document) }}" 
                                                                            class="d-block mb-2" 
                                                                            target="_blank">

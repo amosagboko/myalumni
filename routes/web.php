@@ -271,6 +271,10 @@ Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('
         ->name('elections.start-eoi');
     Route::post('/elections/{election}/end-eoi', [ElectionController::class, 'endEoi'])
         ->name('elections.end-eoi');
+    Route::post('/elections/{election}/extend-eoi', [ElectionController::class, 'extendEoi'])
+        ->name('elections.extend-eoi');
+    Route::get('/elections/{election}/eoi-payment-status', [ElectionController::class, 'eoiPaymentStatus'])
+        ->name('elections.eoi-payment-status');
     
     // Election Results Routes
     Route::get('/elections/{election}/basic-results', [ElectionController::class, 'basicResults'])->name('elections.basic-results');

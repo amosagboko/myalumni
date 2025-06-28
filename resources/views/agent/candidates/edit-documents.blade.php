@@ -52,7 +52,7 @@
                                 <div class="mt-3">
                                     <h6>Current Documents</h6>
                                     <div class="list-group">
-                                        @foreach(json_decode($candidate->documents) as $document)
+                                        @foreach($candidate->documents as $document)
                                             <div class="list-group-item d-flex justify-content-between align-items-center">
                                                 <a href="{{ asset('storage/' . $document) }}" 
                                                    target="_blank" 

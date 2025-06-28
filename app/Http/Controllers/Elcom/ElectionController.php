@@ -627,6 +627,45 @@ class ElectionController extends Controller
     }
 
     /**
+     * Extend the EOI period for an election.
+     */
+    public function extendEoi(Request $request, Election $election)
+    {
+        if (!$election->canExtendEoiPeriod()) {
+            return back()->with('error', 'Cannot extend EOI period at this time.');
+        }
+
+        $validated = $request->validate([
+            'extension_days' => 'required|integer|min:1|max:30',
+        ]);
+
+        $days = $validated['extension_days'];
+        
+        if ($election->extendEoiPeriod($days)) {
+            return back()->with('success', "EOI period has been extended by {$days} days.");
+        } else {
+            return back()->with('error', 'Failed to extend EOI period. Please check the dates.');
+        }
+    }
+
+    /**
+     * Show EOI payment status and extension options.
+     */
+    public function eoiPaymentStatus(Election $election)
+    {
+        $pendingPayments = $election->getPendingEoiPaymentsCount();
+        $paidApplications = $election->getPaidEoiApplicationsCount();
+        $totalApplications = $election->getTotalEoiApplicationsCount();
+        
+        return view('elcom.elections.eoi-payment-status', compact(
+            'election', 
+            'pendingPayments', 
+            'paidApplications', 
+            'totalApplications'
+        ));
+    }
+
+    /**
      * Display the list of accredited voters for an election.
      */
     public function accreditedVoters(Election $election)

@@ -177,12 +177,9 @@
                                             <div class="col-md-4">
                                                 <div class="document-section h-100">
                                                     <p class="x-small fw-medium text-muted mb-1">Supporting Documents</p>
-                                                    @php
-                                                        $documents = $expressionOfInterest->documents ? json_decode($expressionOfInterest->documents) : [];
-                                                    @endphp
-                                                    @if(!empty($documents))
+                                                    @if($expressionOfInterest->documents)
                                                         <div class="d-flex flex-wrap gap-1" style="max-height: 80px; overflow-y: auto;">
-                                                            @foreach($documents as $document)
+                                                            @foreach($expressionOfInterest->documents as $document)
                                                                 <a href="{{ Storage::url($document) }}" 
                                                                    target="_blank"
                                                                    class="btn btn-light btn-xs">

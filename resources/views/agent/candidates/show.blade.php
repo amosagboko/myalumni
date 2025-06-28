@@ -98,7 +98,7 @@
                                 <div class="card-body">
                                     @if($candidate->documents)
                                         <div class="list-group">
-                                            @foreach(json_decode($candidate->documents) as $document)
+                                            @foreach($candidate->documents as $document)
                                                 <a href="{{ asset('storage/' . $document) }}" 
                                                    class="list-group-item list-group-item-action d-flex align-items-center"
                                                    target="_blank">

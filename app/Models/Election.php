@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class Election extends Model
 {
@@ -333,6 +334,87 @@ class Election extends Model
 
         $this->update(['status' => 'draft']);
         return true;
+    }
+
+    /**
+     * Extend the EOI period by a specified number of days.
+     */
+    public function extendEoiPeriod(int $days = 7): bool
+    {
+        if (!$this->eoi_end) {
+            return false;
+        }
+
+        $newEndDate = $this->eoi_end->addDays($days);
+        
+        // Ensure the new end date doesn't conflict with accreditation period
+        if ($this->accreditation_start && $newEndDate >= $this->accreditation_start) {
+            return false;
+        }
+
+        $this->update(['eoi_end' => $newEndDate]);
+        
+        // Log the extension for audit purposes
+        \Illuminate\Support\Facades\Log::info('EOI period extended', [
+            'election_id' => $this->getKey(),
+            'old_end_date' => $this->eoi_end->subDays($days),
+            'new_end_date' => $newEndDate,
+            'extension_days' => $days,
+            'extended_by' => Auth::id()
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Check if EOI period can be extended.
+     */
+    public function canExtendEoiPeriod(): bool
+    {
+        // Can extend if EOI has ended but accreditation hasn't started
+        return $this->hasEoiEnded() && 
+               (!$this->accreditation_start || now() < $this->accreditation_start);
+    }
+
+    /**
+     * Get pending EOI payments count.
+     */
+    public function getPendingEoiPaymentsCount(): int
+    {
+        return $this->candidates()
+            ->where('has_paid_screening_fee', false)
+            ->where('status', 'pending')
+            ->count();
+    }
+
+    /**
+     * Get paid EOI applications count.
+     */
+    public function getPaidEoiApplicationsCount(): int
+    {
+        return $this->candidates()
+            ->where('has_paid_screening_fee', true)
+            ->count();
+    }
+
+    /**
+     * Get total EOI applications count.
+     */
+    public function getTotalEoiApplicationsCount(): int
+    {
+        return $this->candidates()->count();
+    }
+
+    /**
+     * Check if EOI period should be extended based on payment status.
+     */
+    public function shouldExtendEoiPeriod(): bool
+    {
+        // Extend if EOI has ended but there are pending payments
+        // and we haven't reached accreditation period
+        return $this->hasEoiEnded() && 
+               $this->getPendingEoiPaymentsCount() > 0 &&
+               (!$this->accreditation_start || now() < $this->accreditation_start);
     }
 
     public function hasAccreditationStarted(): bool
