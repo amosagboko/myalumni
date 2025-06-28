@@ -372,49 +372,94 @@ class Election extends Model
     public function canExtendEoiPeriod(): bool
     {
         // Can extend if EOI has ended but accreditation hasn't started
-        return $this->hasEoiEnded() && 
-               (!$this->accreditation_start || now() < $this->accreditation_start);
+        if ($this->hasEoiEnded() && (!$this->accreditation_start || now() < $this->accreditation_start)) {
+            return true;
+        }
+        
+        // Can extend if EOI is active and ending soon (within 3 days) - for all offices
+        if ($this->isEoiPeriodActive()) {
+            $daysUntilEnd = now()->diffInDays($this->eoi_end, false);
+            return $daysUntilEnd <= 3 && $daysUntilEnd > 0;
+        }
+        
+        return false;
     }
 
     /**
-     * Get pending EOI payments count.
+     * Check if there are offices with no candidates.
      */
-    public function getPendingEoiPaymentsCount(): int
+    public function hasOfficesWithNoCandidates(): bool
     {
-        return $this->candidates()
-            ->where('has_paid_screening_fee', false)
-            ->where('status', 'pending')
-            ->count();
+        return $this->offices()->whereDoesntHave('candidates')->exists();
     }
 
     /**
-     * Get paid EOI applications count.
+     * Get offices with no candidates.
      */
-    public function getPaidEoiApplicationsCount(): int
+    public function getOfficesWithNoCandidates()
     {
-        return $this->candidates()
-            ->where('has_paid_screening_fee', true)
-            ->count();
+        return $this->offices()->whereDoesntHave('candidates')->get();
     }
 
     /**
-     * Get total EOI applications count.
+     * Get count of offices with no candidates.
      */
-    public function getTotalEoiApplicationsCount(): int
+    public function getOfficesWithNoCandidatesCount(): int
     {
-        return $this->candidates()->count();
+        return $this->offices()->whereDoesntHave('candidates')->count();
     }
 
     /**
-     * Check if EOI period should be extended based on payment status.
+     * Get offices with candidates count.
+     */
+    public function getOfficesWithCandidatesCount(): int
+    {
+        return $this->offices()->whereHas('candidates')->count();
+    }
+
+    /**
+     * Check if EOI period should be extended based on various criteria.
      */
     public function shouldExtendEoiPeriod(): bool
     {
         // Extend if EOI has ended but there are pending payments
-        // and we haven't reached accreditation period
-        return $this->hasEoiEnded() && 
-               $this->getPendingEoiPaymentsCount() > 0 &&
-               (!$this->accreditation_start || now() < $this->accreditation_start);
+        if ($this->hasEoiEnded() && $this->getPendingEoiPaymentsCount() > 0) {
+            return (!$this->accreditation_start || now() < $this->accreditation_start);
+        }
+        
+        // Extend if EOI is active and ending soon - for all offices
+        if ($this->isEoiPeriodActive()) {
+            $daysUntilEnd = now()->diffInDays($this->eoi_end, false);
+            return $daysUntilEnd <= 3 && $daysUntilEnd > 0;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get EOI extension reasons.
+     */
+    public function getEoiExtensionReasons(): array
+    {
+        $reasons = [];
+        
+        if ($this->hasEoiEnded() && $this->getPendingEoiPaymentsCount() > 0) {
+            $reasons[] = "Pending payments: {$this->getPendingEoiPaymentsCount()} applications";
+        }
+        
+        if ($this->isEoiPeriodActive()) {
+            $daysUntilEnd = now()->diffInDays($this->eoi_end, false);
+            if ($daysUntilEnd <= 3 && $daysUntilEnd > 0) {
+                $reasons[] = "EOI period ending soon: {$daysUntilEnd} days remaining";
+            }
+        }
+        
+        // Add information about offices with no candidates as additional context
+        if ($this->hasOfficesWithNoCandidates()) {
+            $reasons[] = "Offices with no candidates: {$this->getOfficesWithNoCandidatesCount()} offices";
+        }
+        
+        return $reasons;
     }
 
     public function hasAccreditationStarted(): bool
@@ -470,5 +515,34 @@ class Election extends Model
     public function hasVotingEnded(): bool
     {
         return $this->voting_end && now()->greaterThan($this->voting_end);
+    }
+
+    /**
+     * Get pending EOI payments count.
+     */
+    public function getPendingEoiPaymentsCount(): int
+    {
+        return $this->candidates()
+            ->where('has_paid_screening_fee', false)
+            ->where('status', 'pending')
+            ->count();
+    }
+
+    /**
+     * Get paid EOI applications count.
+     */
+    public function getPaidEoiApplicationsCount(): int
+    {
+        return $this->candidates()
+            ->where('has_paid_screening_fee', true)
+            ->count();
+    }
+
+    /**
+     * Get total EOI applications count.
+     */
+    public function getTotalEoiApplicationsCount(): int
+    {
+        return $this->candidates()->count();
     }
 }

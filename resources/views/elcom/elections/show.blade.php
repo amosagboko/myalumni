@@ -100,6 +100,42 @@
                         </div>
                     </div>
 
+                    <!-- EOI Extension Alert -->
+                    @if($election->canExtendEoiPeriod())
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">EOI Period Extension Available</h6>
+                                    <p class="mb-2">
+                                        @php
+                                            $extensionReasons = $election->getEoiExtensionReasons();
+                                            $officesWithNoCandidates = $election->getOfficesWithNoCandidatesCount();
+                                            $totalOffices = $election->offices->count();
+                                        @endphp
+                                        
+                                        @if($election->isEoiPeriodActive())
+                                            @php
+                                                $daysUntilEnd = now()->diffInDays($election->eoi_end, false);
+                                            @endphp
+                                            <strong>Grace Period:</strong> EOI period ends in <strong>{{ $daysUntilEnd }}</strong> days.
+                                            @if($officesWithNoCandidates > 0)
+                                                <br><strong>Note:</strong> {{ $officesWithNoCandidates }} out of {{ $totalOffices }} office(s) have no candidates yet.
+                                            @endif
+                                        @else
+                                            <strong>Extension Available:</strong> EOI period has ended but can be extended.
+                                        @endif
+                                    </p>
+                                    <a href="{{ route('elcom.elections.eoi-payment-status', $election) }}" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-clock me-1"></i>
+                                        Extend EOI Period
+                                    </a>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
                     <hr>
 
                     <!-- Expression of Interest Period Card -->
@@ -148,6 +184,13 @@
                                                                 End EOI Period
                                                             </button>
                                                         </form>
+                                                    @endif
+
+                                                    @if($election->canExtendEoiPeriod())
+                                                        <a href="{{ route('elcom.elections.eoi-payment-status', $election) }}" class="btn btn-sm btn-info">
+                                                            <i class="bi bi-clock me-1"></i>
+                                                            Extend EOI Period
+                                                        </a>
                                                     @endif
                                                 </div>
                                             @endif

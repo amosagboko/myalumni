@@ -61,7 +61,7 @@
                     </div>
 
                     <!-- Extension Options -->
-                    @if($election->canExtendEoiPeriod() && $pendingPayments > 0)
+                    @if($election->canExtendEoiPeriod())
                         <div class="card border-warning">
                             <div class="card-header bg-warning text-dark">
                                 <h5 class="mb-0">
@@ -70,10 +70,48 @@
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <p class="mb-3">
-                                    <strong>{{ $pendingPayments }}</strong> applications have pending payments. 
-                                    You can extend the EOI period to allow more time for payments to be completed.
-                                </p>
+                                @php
+                                    $extensionReasons = $election->getEoiExtensionReasons();
+                                    $officesWithNoCandidates = $election->getOfficesWithNoCandidates();
+                                    $totalOffices = $election->offices->count();
+                                @endphp
+                                
+                                <div class="mb-3">
+                                    <h6>Extension Reasons:</h6>
+                                    <ul class="list-unstyled">
+                                        @foreach($extensionReasons as $reason)
+                                            <li><i class="bi bi-arrow-right me-2"></i>{{ $reason }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+
+                                @if($election->isEoiPeriodActive())
+                                    <div class="alert alert-info">
+                                        <h6><i class="bi bi-info-circle me-2"></i>Grace Period Extension</h6>
+                                        <p class="mb-0">
+                                            This extension applies to <strong>all {{ $totalOffices }} offices</strong> regardless of current candidate status. 
+                                            It provides additional time for all potential candidates to submit their applications.
+                                        </p>
+                                    </div>
+                                @endif
+
+                                @if($officesWithNoCandidates->count() > 0)
+                                    <div class="mb-3">
+                                        <h6>Offices with No Candidates ({{ $officesWithNoCandidates->count() }} out of {{ $totalOffices }}):</h6>
+                                        <div class="row">
+                                            @foreach($officesWithNoCandidates as $office)
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="alert alert-info py-2 mb-0">
+                                                        <i class="bi bi-briefcase me-2"></i>
+                                                        <strong>{{ $office->title }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">{{ $office->description }}</small>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                                 
                                 <form action="{{ route('elcom.elections.extend-eoi', $election) }}" method="POST" class="row g-3">
                                     @csrf

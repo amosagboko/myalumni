@@ -642,9 +642,12 @@ class ElectionController extends Controller
         $days = $validated['extension_days'];
         
         if ($election->extendEoiPeriod($days)) {
-            return back()->with('success', "EOI period has been extended by {$days} days.");
+            $extensionReasons = $election->getEoiExtensionReasons();
+            $reasonText = implode(', ', $extensionReasons);
+            
+            return back()->with('success', "EOI period has been extended by {$days} days. Reasons: {$reasonText}");
         } else {
-            return back()->with('error', 'Failed to extend EOI period. Please check the dates.');
+            return back()->with('error', 'Failed to extend EOI period. Please check the dates and ensure the new end date does not conflict with the accreditation period.');
         }
     }
 
