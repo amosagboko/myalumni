@@ -84,6 +84,12 @@
                                         <i class="fas fa-plus-circle me-2"></i> Create Election
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('elcom.transactions.index') ? 'active' : '' }}" 
+                                       href="{{ route('elcom.transactions.index') }}">
+                                        <i class="fas fa-credit-card me-2"></i> Transactions
+                                    </a>
+                                </li>
                                 
                                 @if(auth()->user()->hasRole('elcom-chairman'))
                                     <li class="nav-item">

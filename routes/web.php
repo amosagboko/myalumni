@@ -242,6 +242,9 @@ Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('
     Route::get('/elections/{election}/edit', [ElectionController::class, 'edit'])->name('elections.edit');
     Route::put('/elections/{election}', [ElectionController::class, 'update'])->name('elections.update');
     
+    // Transaction Management Routes
+    Route::get('/transactions', [\App\Http\Controllers\Elcom\TransactionController::class, 'index'])->name('transactions.index');
+    
     // Election Office Routes
     Route::get('/elections/{election}/offices/create', [ElectionController::class, 'createOffice'])->name('election-offices.create');
     Route::post('/elections/{election}/offices', [ElectionController::class, 'storeOffice'])->name('election-offices.store');
