@@ -101,24 +101,17 @@
                                         <table class="table table-hover mb-0">
                                             <thead class="table-light">
                                                 <tr>
-                                                    <th>Date</th>
                                                     <th>Alumni</th>
                                                     <th>Fee Type</th>
                                                     <th>Amount</th>
                                                     <th>Status</th>
                                                     <th>Payment Reference</th>
+                                                    <th>Date</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @forelse($recentTransactions as $transaction)
                                                     <tr>
-                                                        <td>
-                                                            <small>
-                                                                {{ $transaction->created_at->format('M d, Y') }}
-                                                                <br>
-                                                                <span class="text-muted">{{ $transaction->created_at->format('H:i A') }}</span>
-                                                            </small>
-                                                        </td>
                                                         <td>
                                                             @if($transaction->alumni && $transaction->alumni->user)
                                                                 {{ $transaction->alumni->user->name }}
@@ -141,6 +134,13 @@
                                                         </td>
                                                         <td>
                                                             <small class="text-muted">{{ $transaction->payment_reference ?? 'N/A' }}</small>
+                                                        </td>
+                                                        <td>
+                                                            <small>
+                                                                {{ $transaction->created_at->format('M d, Y') }}
+                                                                <br>
+                                                                <span class="text-muted">{{ $transaction->created_at->format('H:i A') }}</span>
+                                                            </small>
                                                         </td>
                                                     </tr>
                                                 @empty
