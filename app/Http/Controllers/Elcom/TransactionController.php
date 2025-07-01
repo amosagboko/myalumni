@@ -31,11 +31,10 @@ class TransactionController extends Controller
             'total_amount_paid' => Transaction::where('status', 'paid')->sum('amount'),
         ];
         
-        // Get recent transactions
+        // Get recent transactions with pagination
         $recentTransactions = Transaction::with(['alumni.user', 'feeTemplate.feeType'])
             ->latest()
-            ->take(10)
-            ->get();
+            ->paginate(20);
             
         return view('elcom.transactions.index', compact(
             'totalUsers',

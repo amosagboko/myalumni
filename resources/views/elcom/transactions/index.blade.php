@@ -158,6 +158,9 @@
                                         </table>
                                     </div>
                                 </div>
+                                <div class="card-footer bg-white">
+                                    {{ $recentTransactions->links() }}
+                                </div>
                             </div>
                         </div>
                     </div>
