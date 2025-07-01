@@ -30,19 +30,39 @@ class RouteServiceProvider extends ServiceProvider
 
         $user = auth()->user();
         
+        // Administrator
         if ($user->hasRole('administrator')) {
             return 'admin.dashboard';
         }
         
+        // ELCOM Chairman
+        if ($user->hasRole('elcom-chairman')) {
+            return 'elcom-chairman.dashboard';
+        }
+        
+        // ELCOM Member
+        if ($user->hasRole('elcom')) {
+            return 'elcom.elections.index';
+        }
+        
+        // Alumni Relations Officer
         if ($user->hasRole('alumni-relations-officer')) {
             return 'alumni-relations-officer.home';
         }
         
+        // Alumni Agent
+        if ($user->hasRole('alumni-agent')) {
+            return 'agent.dashboard';
+        }
+        
+        // Alumni
         if ($user->hasRole('alumni')) {
             return 'alumni.home';
         }
         
-        return self::HOME;
+        // If user has no role or unknown role, redirect to login
+        // This prevents the fallback to non-existent dashboard
+        return 'login';
     }
 
     /**
