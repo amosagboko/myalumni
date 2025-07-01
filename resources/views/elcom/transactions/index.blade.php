@@ -32,16 +32,16 @@
                         <div class="col-md-3 mb-3">
                             <div class="card bg-primary text-white">
                                 <div class="card-body">
-                                    <h6 class="card-title">Total Users</h6>
-                                    <h3 class="mb-0">{{ number_format($totalUsers) }}</h3>
+                                    <h6 class="card-title text-white">Total Users</h6>
+                                    <h3 class="mb-0 text-white">{{ number_format($totalUsers) }}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card bg-success text-white">
                                 <div class="card-body">
-                                    <h6 class="card-title">Total Onboarded Users</h6>
-                                    <h3 class="mb-0">{{ number_format($totalOnboardedUsers) }}</h3>
+                                    <h6 class="card-title text-white">Total Onboarded Users</h6>
+                                    <h3 class="mb-0 text-white">{{ number_format($totalOnboardedUsers) }}</h3>
                                 </div>
                             </div>
                         </div>
@@ -50,40 +50,40 @@
                         <div class="col-md-3 mb-3">
                             <div class="card bg-info text-white">
                                 <div class="card-body">
-                                    <h6 class="card-title">Total Transactions</h6>
-                                    <h3 class="mb-0">{{ number_format($transactionStats['total_transactions']) }}</h3>
+                                    <h6 class="card-title text-white">Total Transactions</h6>
+                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['total_transactions']) }}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card bg-success text-white">
                                 <div class="card-body">
-                                    <h6 class="card-title">Paid Transactions</h6>
-                                    <h3 class="mb-0">{{ number_format($transactionStats['paid_transactions']) }}</h3>
+                                    <h6 class="card-title text-white">Paid Transactions</h6>
+                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['paid_transactions']) }}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card bg-warning text-white">
                                 <div class="card-body">
-                                    <h6 class="card-title">Pending Transactions</h6>
-                                    <h3 class="mb-0">{{ number_format($transactionStats['pending_transactions']) }}</h3>
+                                    <h6 class="card-title text-white">Pending Transactions</h6>
+                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['pending_transactions']) }}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card bg-danger text-white">
                                 <div class="card-body">
-                                    <h6 class="card-title">Failed Transactions</h6>
-                                    <h3 class="mb-0">{{ number_format($transactionStats['failed_transactions']) }}</h3>
+                                    <h6 class="card-title text-white">Failed Transactions</h6>
+                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['failed_transactions']) }}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card bg-dark text-white">
                                 <div class="card-body">
-                                    <h6 class="card-title">Total Amount Paid</h6>
-                                    <h3 class="mb-0">₦{{ number_format($transactionStats['total_amount_paid'], 2) }}</h3>
+                                    <h6 class="card-title text-white">Total Amount Paid</h6>
+                                    <h3 class="mb-0 text-white">₦{{ number_format($transactionStats['total_amount_paid'], 2) }}</h3>
                                 </div>
                             </div>
                         </div>
