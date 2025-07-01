@@ -120,6 +120,9 @@
                                         <select name="extension_days" id="extension_days" class="form-select" required>
                                             <option value="">Select days</option>
                                             <option value="3">3 days</option>
+                                            <option value="4">4 days</option>
+                                            <option value="5">5 days</option>
+                                            <option value="6">6 days</option>
                                             <option value="7" selected>7 days</option>
                                             <option value="14">14 days</option>
                                             <option value="21">21 days</option>
