@@ -202,10 +202,10 @@
                                         <div class="card-body">
                                             <h6 class="card-subtitle mb-2">EOI Statistics</h6>
                                             <ul class="list-unstyled">
-                                                <li>Total Expressions: {{ $election->candidates()->count() }}</li>
-                                                <li>Pending Review: {{ $election->candidates()->where('status', 'pending')->count() }}</li>
-                                                <li>Approved: {{ $election->candidates()->where('status', 'approved')->count() }}</li>
-                                                <li>Rejected: {{ $election->candidates()->where('status', 'rejected')->count() }}</li>
+                                                <li>Total Expressions: {{ $election->getPaidEoiApplicationsCount() }}</li>
+                                                <li>Pending Review: {{ $election->candidates()->where('has_paid_screening_fee', true)->where('status', 'pending')->count() }}</li>
+                                                <li>Approved: {{ $election->candidates()->where('has_paid_screening_fee', true)->where('status', 'approved')->count() }}</li>
+                                                <li>Rejected: {{ $election->candidates()->where('has_paid_screening_fee', true)->where('status', 'rejected')->count() }}</li>
                                             </ul>
                                         </div>
                                     </div>
