@@ -28,6 +28,13 @@ class DashboardController extends Controller
         // Total Votes Cast: Count accredited voters who have voted
         $totalVotes = AccreditedVoter::where('has_voted', true)->count();
         
+        // Special Exemption: Count 2024 graduates who have completed bio data and are exempted from all fees
+        $specialExemption = \App\Models\Alumni::where('year_of_graduation', 2024)
+            ->whereNotNull('contact_address')
+            ->whereNotNull('phone_number')
+            ->whereNotNull('qualification_type')
+            ->count();
+        
         // Recent Elections: Get latest elections for display
         $recentElections = Election::latest()->take(5)->get();
         
@@ -41,6 +48,7 @@ class DashboardController extends Controller
             'activeElections',
             'totalCandidates',
             'totalVotes',
+            'specialExemption',
             'recentElections',
             'totalElections',
             'completedElections',
