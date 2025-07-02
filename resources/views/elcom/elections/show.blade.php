@@ -55,7 +55,7 @@
                                     <h6 class="card-subtitle mb-2 mt-3">Statistics</h6>
                                     <ul class="list-unstyled">
                                         <li>Total Offices: {{ $election->offices->count() }}</li>
-                                        <li>Total Candidates: {{ $election->candidates->count() }}</li>
+                                        <li>Total EOI: {{ $election->getPaidEoiApplicationsCount() }}</li>
                                         <li>Total Accredited: {{ $election->getTotalAccreditedVoters() }}</li>
                                     </ul>
 
