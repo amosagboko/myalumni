@@ -117,8 +117,20 @@
                                         @if($election->isEoiPeriodActive())
                                             @php
                                                 $daysUntilEnd = now()->diffInDays($election->eoi_end, false);
+                                                $hoursUntilEnd = now()->diffInHours($election->eoi_end, false);
+                                                
+                                                if ($daysUntilEnd >= 1) {
+                                                    $remainingHours = $hoursUntilEnd % 24;
+                                                    if ($remainingHours > 0) {
+                                                        $timeRemaining = $daysUntilEnd . ' day' . ($daysUntilEnd > 1 ? 's' : '') . ' and ' . $remainingHours . ' hour' . ($remainingHours > 1 ? 's' : '');
+                                                    } else {
+                                                        $timeRemaining = $daysUntilEnd . ' day' . ($daysUntilEnd > 1 ? 's' : '');
+                                                    }
+                                                } else {
+                                                    $timeRemaining = $hoursUntilEnd . ' hour' . ($hoursUntilEnd > 1 ? 's' : '');
+                                                }
                                             @endphp
-                                            <strong>Grace Period:</strong> EOI period ends in <strong>{{ $daysUntilEnd }}</strong> days.
+                                            <strong>Grace Period:</strong> EOI period ends in <strong>{{ $timeRemaining }}</strong>.
                                             @if($officesWithNoCandidates > 0)
                                                 <br><strong>Note:</strong> {{ $officesWithNoCandidates }} out of {{ $totalOffices }} office(s) have no candidates yet.
                                             @endif
