@@ -14,7 +14,6 @@ class DashboardController extends Controller
     {
         // Active Elections: Elections that are in progress (not draft or completed)
         $activeElections = Election::whereIn('status', ['accreditation', 'voting'])
-            ->where('is_active', true)
             ->count();
         
         // Total Candidates: Count all candidates across all elections
