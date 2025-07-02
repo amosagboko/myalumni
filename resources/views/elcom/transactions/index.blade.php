@@ -2,180 +2,248 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-lg-12">
-            <div class="card mt-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Transaction Management</h4>
-                    <div>
-                        <a href="{{ route('elcom.elections.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to Elections
-                        </a>
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="{{ route('elcom.elections.index') }}">ELCOM</a></li>
+                        <li class="breadcrumb-item active">Transaction Management</li>
+                    </ol>
+                </div>
+                <h4 class="page-title">Transaction Management</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <!-- 1. Total Uploaded Users -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Total Uploaded Users">Total Uploaded Users</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalUploadedUsers) }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-primary rounded">
+                                <i class="fe-users font-20 text-primary"></i>
+                            </span>
+                        </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 2. Total Subscribed Users -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
                 <div class="card-body">
-                    @if(session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="alert alert-danger">{{ session('error') }}</div>
-                    @endif
-
-                    <!-- Statistics Section -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h5 class="mb-3">Transaction Statistics</h5>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Total Subscribed Users">Total Subscribed Users</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalSubscribedUsers) }}</h3>
                         </div>
-                        
-                        <!-- User Statistics -->
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title text-white">Total Users</h6>
-                                    <h3 class="mb-0 text-white">{{ number_format($totalUsers) }}</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title text-white">Total Onboarded Users</h6>
-                                    <h3 class="mb-0 text-white">{{ number_format($totalOnboardedUsers) }}</h3>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Transaction Statistics -->
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-info text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title text-white">Total Transactions</h6>
-                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['total_transactions']) }}</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title text-white">Paid Transactions</h6>
-                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['paid_transactions']) }}</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title text-white">Pending Transactions</h6>
-                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['pending_transactions']) }}</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-danger text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title text-white">Failed Transactions</h6>
-                                    <h3 class="mb-0 text-white">{{ number_format($transactionStats['failed_transactions']) }}</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-dark text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title text-white">Total Amount Paid</h6>
-                                    <h3 class="mb-0 text-white">₦{{ number_format($transactionStats['total_amount_paid'], 2) }}</h3>
-                                </div>
-                            </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-success rounded">
+                                <i class="fe-check-circle font-20 text-success"></i>
+                            </span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <hr>
-
-                    <!-- Recent Transactions Section -->
-                    <div class="row">
-                        <div class="col-12">
-                            <h5 class="mb-3">Recent Transactions</h5>
-                            <div class="card">
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Alumni</th>
-                                                    <th>Fee Type</th>
-                                                    <th>Amount</th>
-                                                    <th>Status</th>
-                                                    <th>Payment Reference</th>
-                                                    <th>Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @forelse($recentTransactions as $transaction)
-                                                    <tr>
-                                                        <td>
-                                                            @if($transaction->alumni && $transaction->alumni->user)
-                                                                {{ $transaction->alumni->user->name }}
-                                                            @else
-                                                                <span class="text-muted">N/A</span>
-                                                            @endif
-                                                        </td>
-                                                        <td>
-                                                            @if($transaction->feeTemplate && $transaction->feeTemplate->feeType)
-                                                                {{ $transaction->feeTemplate->feeType->name }}
-                                                            @else
-                                                                <span class="text-muted">N/A</span>
-                                                            @endif
-                                                        </td>
-                                                        <td>₦{{ number_format($transaction->amount, 2) }}</td>
-                                                        <td>
-                                                            <span class="badge bg-{{ $transaction->status === 'paid' ? 'success' : ($transaction->status === 'pending' ? 'warning' : 'danger') }}">
-                                                                {{ ucfirst($transaction->status) }}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <small class="text-muted">{{ $transaction->payment_reference ?? 'N/A' }}</small>
-                                                        </td>
-                                                        <td>
-                                                            <small>
-                                                                {{ $transaction->created_at->format('M d, Y') }}
-                                                                <br>
-                                                                <span class="text-muted">{{ $transaction->created_at->format('H:i A') }}</span>
-                                                            </small>
-                                                        </td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="6" class="text-center py-4">
-                                                            <div class="text-muted">
-                                                                <i class="fas fa-inbox fa-2x mb-2"></i>
-                                                                <br>
-                                                                No transactions found
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="card-footer bg-white">
-                                    {{ $recentTransactions->links() }}
-                                </div>
-                            </div>
+        <!-- 3. Total EOI -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Total EOI">Total EOI</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalEOI) }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-info rounded">
+                                <i class="fe-file-text font-20 text-info"></i>
+                            </span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Summary Information -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <h6><i class="fas fa-info-circle me-2"></i>Transaction Overview</h6>
-                                <p class="mb-0">
-                                    This page shows all transactions across the system, including subscription fees and election/EOI fees. 
-                                    The statistics provide a comprehensive view of payment activities and user onboarding status.
-                                </p>
-                            </div>
+        <!-- 4. Total Transactions -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Total Transactions">Total Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalTransactions) }}</h3>
                         </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-warning rounded">
+                                <i class="fe-credit-card font-20 text-warning"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 5. Paid Transactions -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Paid Transactions">Paid Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($paidTransactions) }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-success rounded">
+                                <i class="fe-check font-20 text-success"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Pending Transactions -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Pending Transactions">Pending Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($pendingTransactions) }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-warning rounded">
+                                <i class="fe-clock font-20 text-warning"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Failed Transactions -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Failed Transactions">Failed Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($failedTransactions) }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-danger rounded">
+                                <i class="fe-x font-20 text-danger"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Total Amount Paid -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Total Amount Paid">Total Amount Paid</h5>
+                            <h3 class="mt-3 mb-3 text-white">₦{{ number_format($totalAmountPaid, 2) }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-primary rounded">
+                                <i class="fe-dollar-sign font-20 text-primary"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="header-title mb-3">Recent Transactions</h4>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-centered table-nowrap table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Transaction ID</th>
+                                    <th>Alumni</th>
+                                    <th>Fee Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recentTransactions as $transaction)
+                                <tr>
+                                    <td>
+                                        <span class="text-body fw-bold">{{ $transaction->transaction_id }}</span>
+                                    </td>
+                                    <td>
+                                        @if($transaction->alumni && $transaction->alumni->user)
+                                            <span class="text-body fw-bold">{{ $transaction->alumni->user->name }}</span>
+                                            <br>
+                                            <small class="text-muted">{{ $transaction->alumni->user->email }}</small>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($transaction->feeTemplate && $transaction->feeTemplate->feeType)
+                                            <span class="text-body">{{ $transaction->feeTemplate->feeType->name }}</span>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="text-body fw-bold">₦{{ number_format($transaction->amount, 2) }}</span>
+                                    </td>
+                                    <td>
+                                        @if($transaction->status === 'paid')
+                                            <span class="badge bg-success">Paid</span>
+                                        @elseif($transaction->status === 'pending')
+                                            <span class="badge bg-warning">Pending</span>
+                                        @elseif($transaction->status === 'failed')
+                                            <span class="badge bg-danger">Failed</span>
+                                        @else
+                                            <span class="badge bg-secondary">{{ ucfirst($transaction->status) }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ $transaction->created_at->format('M d, Y H:i') }}</span>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No transactions found</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="mt-3">
+                        {{ $recentTransactions->links() }}
                     </div>
                 </div>
             </div>

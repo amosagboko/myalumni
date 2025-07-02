@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Alumni;
 use App\Models\Transaction;
+use App\Models\FeeType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -16,30 +17,64 @@ class TransactionController extends Controller
      */
     public function index()
     {
-        // Get user statistics
-        $totalUsers = User::count();
-        $totalOnboardedUsers = User::whereHas('roles', function ($query) {
-            $query->where('name', 'alumni');
-        })->count();
+        // 1. Total Uploaded Users (all users in the system)
+        $totalUploadedUsers = User::count();
         
-        // Get transaction statistics
-        $transactionStats = [
-            'total_transactions' => Transaction::count(),
-            'paid_transactions' => Transaction::where('status', 'paid')->count(),
-            'pending_transactions' => Transaction::where('status', 'pending')->count(),
-            'failed_transactions' => Transaction::where('status', 'failed')->count(),
-            'total_amount_paid' => Transaction::where('status', 'paid')->sum('amount'),
-        ];
+        // 2. Total Subscribed Users (alumni who paid subscription fee during onboarding)
+        $subscriptionFeeType = FeeType::where('name', 'like', '%subscription%')
+            ->orWhere('name', 'like', '%onboarding%')
+            ->orWhere('amount', 2000.00)
+            ->first();
+            
+        $totalSubscribedUsers = 0;
+        if ($subscriptionFeeType) {
+            $totalSubscribedUsers = Transaction::where('fee_type_id', $subscriptionFeeType->id)
+                ->where('status', 'paid')
+                ->count();
+        }
         
-        // Get recent transactions with pagination
+        // 3. Total EOI (Expression of Interest payments)
+        $eoiFeeType = FeeType::where('name', 'like', '%EOI%')
+            ->orWhere('name', 'like', '%screening%')
+            ->orWhere('name', 'like', '%election%')
+            ->first();
+            
+        $totalEOI = 0;
+        if ($eoiFeeType) {
+            $totalEOI = Transaction::where('fee_type_id', $eoiFeeType->id)
+                ->where('status', 'paid')
+                ->count();
+        }
+        
+        // 4. Total Transactions
+        $totalTransactions = Transaction::count();
+        
+        // 5. Paid Transactions
+        $paidTransactions = Transaction::where('status', 'paid')->count();
+        
+        // 6. Pending Transactions
+        $pendingTransactions = Transaction::where('status', 'pending')->count();
+        
+        // 7. Failed Transactions
+        $failedTransactions = Transaction::where('status', 'failed')->count();
+        
+        // 8. Total Amount Paid
+        $totalAmountPaid = Transaction::where('status', 'paid')->sum('amount');
+        
+        // Get recent transactions
         $recentTransactions = Transaction::with(['alumni.user', 'feeTemplate.feeType'])
             ->latest()
             ->paginate(20);
             
         return view('elcom.transactions.index', compact(
-            'totalUsers',
-            'totalOnboardedUsers',
-            'transactionStats',
+            'totalUploadedUsers',
+            'totalSubscribedUsers',
+            'totalEOI',
+            'totalTransactions',
+            'paidTransactions',
+            'pendingTransactions',
+            'failedTransactions',
+            'totalAmountPaid',
             'recentTransactions'
         ));
     }
