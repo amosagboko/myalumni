@@ -66,6 +66,13 @@ class TransactionController extends Controller
         // 8. Total Amount Paid
         $totalAmountPaid = Transaction::where('status', 'paid')->sum('amount');
         
+        // 9. Special Exemption (2024 graduates who have completed bio data and are exempted from all fees)
+        $specialExemption = Alumni::where('year_of_graduation', 2024)
+            ->whereNotNull('contact_address')
+            ->whereNotNull('phone_number')
+            ->whereNotNull('qualification_type')
+            ->count();
+        
         // Get recent transactions
         $recentTransactions = Transaction::with(['alumni.user', 'feeTemplate.feeType'])
             ->latest()
@@ -82,6 +89,7 @@ class TransactionController extends Controller
             'pendingTransactions',
             'failedTransactions',
             'totalAmountPaid',
+            'specialExemption',
             'recentTransactions'
         ));
     }

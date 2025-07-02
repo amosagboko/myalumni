@@ -97,7 +97,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row mt-4">
         <!-- 5. Paid Transactions -->
         <div class="col-xl-3 col-md-6">
             <div class="card bg-secondary text-white">
@@ -167,6 +167,26 @@
                         <div class="avatar-sm">
                             <span class="avatar-title bg-white rounded">
                                 <i class="fe-dollar-sign font-20 text-primary"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Special Exemption -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-purple text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-white fw-normal mt-0" title="Special Exemption">Special Exemption</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($specialExemption) }}</h3>
+                            <p class="text-white-50 mb-0">2024 Graduates</p>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-white rounded">
+                                <i class="fe-award font-20 text-purple"></i>
                             </span>
                         </div>
                     </div>
