@@ -20,15 +20,15 @@
     <div class="row">
         <!-- 1. Total Uploaded Users -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Total Uploaded Users">Total Uploaded Users</h5>
-                            <h3 class="mt-3 mb-3">{{ number_format($totalUploadedUsers) }}</h3>
+                            <h5 class="text-white fw-normal mt-0" title="Total Uploaded Users">Total Uploaded Users</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalUploadedUsers) }}</h3>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-primary rounded">
+                            <span class="avatar-title bg-white rounded">
                                 <i class="fe-users font-20 text-primary"></i>
                             </span>
                         </div>
@@ -39,16 +39,16 @@
 
         <!-- 2. Total Subscribed Users -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Total Subscribed Users">Total Subscribed Users</h5>
-                            <h3 class="mt-3 mb-3">{{ number_format($totalSubscribedUsers) }}</h3>
-                            <p class="text-muted mb-0">₦{{ number_format($totalSubscribedAmount, 2) }}</p>
+                            <h5 class="text-white fw-normal mt-0" title="Total Subscribed Users">Total Subscribed Users</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalSubscribedUsers) }}</h3>
+                            <p class="text-white-50 mb-0">₦{{ number_format($totalSubscribedAmount, 2) }}</p>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-success rounded">
+                            <span class="avatar-title bg-white rounded">
                                 <i class="fe-check-circle font-20 text-success"></i>
                             </span>
                         </div>
@@ -59,16 +59,16 @@
 
         <!-- 3. Total EOI -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-info text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Total EOI">Total EOI</h5>
-                            <h3 class="mt-3 mb-3">{{ number_format($totalEOI) }}</h3>
-                            <p class="text-muted mb-0">₦{{ number_format($totalEOIAmount, 2) }}</p>
+                            <h5 class="text-white fw-normal mt-0" title="Total EOI">Total EOI</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalEOI) }}</h3>
+                            <p class="text-white-50 mb-0">₦{{ number_format($totalEOIAmount, 2) }}</p>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-info rounded">
+                            <span class="avatar-title bg-white rounded">
                                 <i class="fe-file-text font-20 text-info"></i>
                             </span>
                         </div>
@@ -79,15 +79,15 @@
 
         <!-- 4. Total Transactions -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-warning text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Total Transactions">Total Transactions</h5>
-                            <h3 class="mt-3 mb-3">{{ number_format($totalTransactions) }}</h3>
+                            <h5 class="text-white fw-normal mt-0" title="Total Transactions">Total Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-warning rounded">
+                            <span class="avatar-title bg-white rounded">
                                 <i class="fe-credit-card font-20 text-warning"></i>
                             </span>
                         </div>
@@ -100,16 +100,16 @@
     <div class="row">
         <!-- 5. Paid Transactions -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-secondary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Paid Transactions">Paid Transactions</h5>
-                            <h3 class="mt-3 mb-3">{{ number_format($paidTransactions) }}</h3>
+                            <h5 class="text-white fw-normal mt-0" title="Paid Transactions">Paid Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($paidTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-success rounded">
-                                <i class="fe-check font-20 text-success"></i>
+                            <span class="avatar-title bg-white rounded">
+                                <i class="fe-check font-20 text-secondary"></i>
                             </span>
                         </div>
                     </div>
@@ -119,16 +119,16 @@
 
         <!-- 6. Pending Transactions -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-dark text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Pending Transactions">Pending Transactions</h5>
-                            <h3 class="mt-3 mb-3">{{ number_format($pendingTransactions) }}</h3>
+                            <h5 class="text-white fw-normal mt-0" title="Pending Transactions">Pending Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($pendingTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-warning rounded">
-                                <i class="fe-clock font-20 text-warning"></i>
+                            <span class="avatar-title bg-white rounded">
+                                <i class="fe-clock font-20 text-dark"></i>
                             </span>
                         </div>
                     </div>
@@ -138,15 +138,15 @@
 
         <!-- 7. Failed Transactions -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-danger text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Failed Transactions">Failed Transactions</h5>
-                            <h3 class="mt-3 mb-3">{{ number_format($failedTransactions) }}</h3>
+                            <h5 class="text-white fw-normal mt-0" title="Failed Transactions">Failed Transactions</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($failedTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-danger rounded">
+                            <span class="avatar-title bg-white rounded">
                                 <i class="fe-x font-20 text-danger"></i>
                             </span>
                         </div>
@@ -157,15 +157,15 @@
 
         <!-- 8. Total Amount Paid -->
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card bg-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-muted fw-normal mt-0" title="Total Amount Paid">Total Amount Paid</h5>
-                            <h3 class="mt-3 mb-3">₦{{ number_format($totalAmountPaid, 2) }}</h3>
+                            <h5 class="text-white fw-normal mt-0" title="Total Amount Paid">Total Amount Paid</h5>
+                            <h3 class="mt-3 mb-3 text-white">₦{{ number_format($totalAmountPaid, 2) }}</h3>
                         </div>
                         <div class="avatar-sm">
-                            <span class="avatar-title bg-soft-primary rounded">
+                            <span class="avatar-title bg-white rounded">
                                 <i class="fe-dollar-sign font-20 text-primary"></i>
                             </span>
                         </div>
