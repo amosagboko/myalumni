@@ -16,8 +16,14 @@ class DashboardController extends Controller
         $activeElections = Election::whereIn('status', ['accreditation', 'voting'])
             ->count();
         
-        // Total Candidates: Count all candidates across all elections
-        $totalCandidates = Candidate::count();
+        // Total EOI: Count paid EOI transactions across all elections
+        $eoiFeeTypeIds = \App\Models\FeeType::where('code', 'like', 'eoi-%')->pluck('id');
+        $totalCandidates = 0;
+        if ($eoiFeeTypeIds->isNotEmpty()) {
+            $totalCandidates = \App\Models\Transaction::whereHas('feeTemplate', function ($query) use ($eoiFeeTypeIds) {
+                $query->whereIn('fee_type_id', $eoiFeeTypeIds);
+            })->where('status', 'paid')->count();
+        }
         
         // Total Votes Cast: Count accredited voters who have voted
         $totalVotes = AccreditedVoter::where('has_voted', true)->count();
