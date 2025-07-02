@@ -99,7 +99,7 @@
 
     <div class="row mt-4">
         <!-- 5. Paid Transactions -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card bg-secondary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -118,7 +118,7 @@
         </div>
 
         <!-- 6. Pending Transactions -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card bg-dark text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
