@@ -33,14 +33,11 @@ class TransactionController extends Controller
         }
         
         // 3. Total EOI (Expression of Interest payments)
-        $eoiFeeType = FeeType::where('code', 'eoi')
-            ->orWhere('name', 'like', '%Expression of Interest%')
-            ->first();
-            
+        $eoiFeeTypeIds = FeeType::where('code', 'like', 'eoi-%')->pluck('id');
         $totalEOI = 0;
-        if ($eoiFeeType) {
-            $totalEOI = Transaction::whereHas('feeTemplate', function ($query) use ($eoiFeeType) {
-                $query->where('fee_type_id', $eoiFeeType->id);
+        if ($eoiFeeTypeIds->isNotEmpty()) {
+            $totalEOI = Transaction::whereHas('feeTemplate', function ($query) use ($eoiFeeTypeIds) {
+                $query->whereIn('fee_type_id', $eoiFeeTypeIds);
             })->where('status', 'paid')->count();
         }
         
