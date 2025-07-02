@@ -8,27 +8,70 @@
                     </div>
                     <div class="card-body p-2">
                         <div class="row g-2">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-primary text-white mb-2">
                                     <div class="card-body p-2">
                                         <h5 class="card-title fs-6 mb-1">Active Elections</h5>
                                         <p class="card-text display-6 mb-0">{{ $activeElections ?? 0 }}</p>
+                                        <small class="text-white-50">In Progress</small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-success text-white mb-2">
                                     <div class="card-body p-2">
                                         <h5 class="card-title fs-6 mb-1">Total Candidates</h5>
                                         <p class="card-text display-6 mb-0">{{ $totalCandidates ?? 0 }}</p>
+                                        <small class="text-white-50">All Elections</small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-info text-white mb-2">
                                     <div class="card-body p-2">
                                         <h5 class="card-title fs-6 mb-1">Total Votes Cast</h5>
                                         <p class="card-text display-6 mb-0">{{ $totalVotes ?? 0 }}</p>
+                                        <small class="text-white-50">Voter Participation</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white mb-2">
+                                    <div class="card-body p-2">
+                                        <h5 class="card-title fs-6 mb-1">Total Elections</h5>
+                                        <p class="card-text display-6 mb-0">{{ $totalElections ?? 0 }}</p>
+                                        <small class="text-white-50">All Time</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Statistics Row -->
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-4">
+                                <div class="card bg-secondary text-white mb-2">
+                                    <div class="card-body p-2">
+                                        <h5 class="card-title fs-6 mb-1">Completed Elections</h5>
+                                        <p class="card-text display-6 mb-0">{{ $completedElections ?? 0 }}</p>
+                                        <small class="text-white-50">Finished</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-dark text-white mb-2">
+                                    <div class="card-body p-2">
+                                        <h5 class="card-title fs-6 mb-1">Pending Elections</h5>
+                                        <p class="card-text display-6 mb-0">{{ $pendingElections ?? 0 }}</p>
+                                        <small class="text-white-50">Draft Status</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-danger text-white mb-2">
+                                    <div class="card-body p-2">
+                                        <h5 class="card-title fs-6 mb-1">Accredited Voters</h5>
+                                        <p class="card-text display-6 mb-0">{{ $totalAccreditedVoters ?? 0 }}</p>
+                                        <small class="text-white-50">Total Registered</small>
                                     </div>
                                 </div>
                             </div>
