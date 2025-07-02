@@ -26,19 +26,29 @@ class TransactionController extends Controller
             ->first();
             
         $totalSubscribedUsers = 0;
+        $totalSubscribedAmount = 0;
         if ($subscriptionFeeType) {
             $totalSubscribedUsers = Transaction::whereHas('feeTemplate', function ($query) use ($subscriptionFeeType) {
                 $query->where('fee_type_id', $subscriptionFeeType->id);
             })->where('status', 'paid')->count();
+            
+            $totalSubscribedAmount = Transaction::whereHas('feeTemplate', function ($query) use ($subscriptionFeeType) {
+                $query->where('fee_type_id', $subscriptionFeeType->id);
+            })->where('status', 'paid')->sum('amount');
         }
         
         // 3. Total EOI (Expression of Interest payments)
         $eoiFeeTypeIds = FeeType::where('code', 'like', 'eoi-%')->pluck('id');
         $totalEOI = 0;
+        $totalEOIAmount = 0;
         if ($eoiFeeTypeIds->isNotEmpty()) {
             $totalEOI = Transaction::whereHas('feeTemplate', function ($query) use ($eoiFeeTypeIds) {
                 $query->whereIn('fee_type_id', $eoiFeeTypeIds);
             })->where('status', 'paid')->count();
+            
+            $totalEOIAmount = Transaction::whereHas('feeTemplate', function ($query) use ($eoiFeeTypeIds) {
+                $query->whereIn('fee_type_id', $eoiFeeTypeIds);
+            })->where('status', 'paid')->sum('amount');
         }
         
         // 4. Total Transactions
@@ -64,7 +74,9 @@ class TransactionController extends Controller
         return view('elcom.transactions.index', compact(
             'totalUploadedUsers',
             'totalSubscribedUsers',
+            'totalSubscribedAmount',
             'totalEOI',
+            'totalEOIAmount',
             'totalTransactions',
             'paidTransactions',
             'pendingTransactions',

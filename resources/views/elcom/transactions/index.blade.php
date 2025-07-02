@@ -45,6 +45,7 @@
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Total Subscribed Users">Total Subscribed Users</h5>
                             <h3 class="mt-3 mb-3">{{ number_format($totalSubscribedUsers) }}</h3>
+                            <p class="text-muted mb-0">₦{{ number_format($totalSubscribedAmount, 2) }}</p>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-success rounded">
@@ -64,6 +65,7 @@
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Total EOI">Total EOI</h5>
                             <h3 class="mt-3 mb-3">{{ number_format($totalEOI) }}</h3>
+                            <p class="text-muted mb-0">₦{{ number_format($totalEOIAmount, 2) }}</p>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-info rounded">
