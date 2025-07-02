@@ -176,7 +176,7 @@
 
         <!-- 9. Special Exemption -->
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-indigo text-white">
+            <div class="card" style="background-color: #6f42c1; color: white;">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
@@ -186,7 +186,7 @@
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-white rounded">
-                                <i class="fe-award font-20 text-indigo"></i>
+                                <i class="fe-award font-20" style="color: #6f42c1;"></i>
                             </span>
                         </div>
                     </div>
