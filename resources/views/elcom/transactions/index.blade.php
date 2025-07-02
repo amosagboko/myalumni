@@ -25,7 +25,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Total Uploaded Users">Total Uploaded Users</h5>
-                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalUploadedUsers) }}</h3>
+                            <h3 class="mt-3 mb-3">{{ number_format($totalUploadedUsers) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-primary rounded">
@@ -44,7 +44,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Total Subscribed Users">Total Subscribed Users</h5>
-                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalSubscribedUsers) }}</h3>
+                            <h3 class="mt-3 mb-3">{{ number_format($totalSubscribedUsers) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-success rounded">
@@ -63,7 +63,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Total EOI">Total EOI</h5>
-                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalEOI) }}</h3>
+                            <h3 class="mt-3 mb-3">{{ number_format($totalEOI) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-info rounded">
@@ -82,7 +82,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Total Transactions">Total Transactions</h5>
-                            <h3 class="mt-3 mb-3 text-white">{{ number_format($totalTransactions) }}</h3>
+                            <h3 class="mt-3 mb-3">{{ number_format($totalTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-warning rounded">
@@ -103,7 +103,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Paid Transactions">Paid Transactions</h5>
-                            <h3 class="mt-3 mb-3 text-white">{{ number_format($paidTransactions) }}</h3>
+                            <h3 class="mt-3 mb-3">{{ number_format($paidTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-success rounded">
@@ -122,7 +122,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Pending Transactions">Pending Transactions</h5>
-                            <h3 class="mt-3 mb-3 text-white">{{ number_format($pendingTransactions) }}</h3>
+                            <h3 class="mt-3 mb-3">{{ number_format($pendingTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-warning rounded">
@@ -141,7 +141,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Failed Transactions">Failed Transactions</h5>
-                            <h3 class="mt-3 mb-3 text-white">{{ number_format($failedTransactions) }}</h3>
+                            <h3 class="mt-3 mb-3">{{ number_format($failedTransactions) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-danger rounded">
@@ -160,7 +160,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="text-muted fw-normal mt-0" title="Total Amount Paid">Total Amount Paid</h5>
-                            <h3 class="mt-3 mb-3 text-white">₦{{ number_format($totalAmountPaid, 2) }}</h3>
+                            <h3 class="mt-3 mb-3">₦{{ number_format($totalAmountPaid, 2) }}</h3>
                         </div>
                         <div class="avatar-sm">
                             <span class="avatar-title bg-soft-primary rounded">
