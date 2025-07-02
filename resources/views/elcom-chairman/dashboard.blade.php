@@ -20,7 +20,7 @@
                             <div class="col-md-3">
                                 <div class="card bg-success text-white mb-2">
                                     <div class="card-body p-2">
-                                        <h5 class="card-title fs-6 mb-1 text-white">Total Candidates</h5>
+                                        <h5 class="card-title fs-6 mb-1 text-white">Total EOI</h5>
                                         <p class="card-text display-6 mb-0 text-white">{{ $totalCandidates ?? 0 }}</p>
                                         <small class="text-white-50">All Elections</small>
                                     </div>
