@@ -116,11 +116,11 @@
                                         
                                         @if($election->isEoiPeriodActive())
                                             @php
-                                                $daysUntilEnd = now()->diffInDays($election->eoi_end, false);
+                                                $daysUntilEnd = floor(now()->diffInDays($election->eoi_end, false));
                                                 $hoursUntilEnd = now()->diffInHours($election->eoi_end, false);
+                                                $remainingHours = $hoursUntilEnd % 24;
                                                 
                                                 if ($daysUntilEnd >= 1) {
-                                                    $remainingHours = $hoursUntilEnd % 24;
                                                     if ($remainingHours > 0) {
                                                         $timeRemaining = $daysUntilEnd . ' day' . ($daysUntilEnd > 1 ? 's' : '') . ' and ' . $remainingHours . ' hour' . ($remainingHours > 1 ? 's' : '');
                                                     } else {
