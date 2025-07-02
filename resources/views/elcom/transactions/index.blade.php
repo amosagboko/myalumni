@@ -175,7 +175,7 @@
         </div>
 
         <!-- 9. Special Exemption -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6" style="margin-left: 2rem;">
             <div class="card" style="background-color: #6f42c1; color: white;">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
