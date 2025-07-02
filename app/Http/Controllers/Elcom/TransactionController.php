@@ -73,6 +73,9 @@ class TransactionController extends Controller
             ->whereNotNull('qualification_type')
             ->count();
         
+        // 10. Voters Register (Total Subscribed Users + Special Exemption)
+        $votersRegister = $totalSubscribedUsers + $specialExemption;
+        
         // Get recent transactions
         $recentTransactions = Transaction::with(['alumni.user', 'feeTemplate.feeType'])
             ->latest()
@@ -90,6 +93,7 @@ class TransactionController extends Controller
             'failedTransactions',
             'totalAmountPaid',
             'specialExemption',
+            'votersRegister',
             'recentTransactions'
         ));
     }

@@ -193,6 +193,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- 10. Voters Register -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card" style="background-color: #fd7e14; color: white;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-white fw-normal mt-0" title="Voters Register">Voters Register</h5>
+                            <h3 class="mt-3 mb-3 text-white">{{ number_format($votersRegister) }}</h3>
+                            <p class="text-white-50 mb-0">Subscribed + Exempted</p>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-white rounded">
+                                <i class="fe-user-check font-20" style="color: #fd7e14;"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Recent Transactions Table -->
