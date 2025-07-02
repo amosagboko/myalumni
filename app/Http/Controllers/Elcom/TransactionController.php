@@ -21,29 +21,27 @@ class TransactionController extends Controller
         $totalUploadedUsers = User::count();
         
         // 2. Total Subscribed Users (alumni who paid subscription fee during onboarding)
-        $subscriptionFeeType = FeeType::where('name', 'like', '%subscription%')
-            ->orWhere('name', 'like', '%onboarding%')
-            ->orWhere('amount', 2000.00)
+        $subscriptionFeeType = FeeType::where('code', 'subscription')
+            ->orWhere('code', 'subscription_registration')
             ->first();
             
         $totalSubscribedUsers = 0;
         if ($subscriptionFeeType) {
-            $totalSubscribedUsers = Transaction::where('fee_type_id', $subscriptionFeeType->id)
-                ->where('status', 'paid')
-                ->count();
+            $totalSubscribedUsers = Transaction::whereHas('feeTemplate', function ($query) use ($subscriptionFeeType) {
+                $query->where('fee_type_id', $subscriptionFeeType->id);
+            })->where('status', 'paid')->count();
         }
         
         // 3. Total EOI (Expression of Interest payments)
-        $eoiFeeType = FeeType::where('name', 'like', '%EOI%')
-            ->orWhere('name', 'like', '%screening%')
-            ->orWhere('name', 'like', '%election%')
+        $eoiFeeType = FeeType::where('code', 'eoi')
+            ->orWhere('name', 'like', '%Expression of Interest%')
             ->first();
             
         $totalEOI = 0;
         if ($eoiFeeType) {
-            $totalEOI = Transaction::where('fee_type_id', $eoiFeeType->id)
-                ->where('status', 'paid')
-                ->count();
+            $totalEOI = Transaction::whereHas('feeTemplate', function ($query) use ($eoiFeeType) {
+                $query->where('fee_type_id', $eoiFeeType->id);
+            })->where('status', 'paid')->count();
         }
         
         // 4. Total Transactions
