@@ -123,7 +123,7 @@
                                         </table>
                                     </div>
 
-                                    <form action="{{ route('alumni.elections.submit-accreditation', $election) }}" method="POST">
+                                    <form action="{{ route('alumni.elections.accreditation.submit', $election) }}" method="POST">
                                         @csrf
                                         <button type="submit" class="btn btn-primary">
                                             Submit Accreditation Request
