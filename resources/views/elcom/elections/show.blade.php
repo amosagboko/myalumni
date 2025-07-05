@@ -70,7 +70,7 @@
                                         @endif
                                     @endif
 
-                                    @if($election->status === 'draft' && $election->hasAccreditationStarted() && !$election->hasAccreditationEnded())
+                                    @if($election->canStartAccreditation())
                                         <form action="{{ route('elcom.elections.start-accreditation', $election) }}" method="POST" class="mt-3">
                                             @csrf
                                             <button type="submit" class="btn btn-success btn-sm w-100" 
@@ -180,19 +180,6 @@
 
                                             @if(auth()->user()->hasRole(['administrator', 'elcom-chair']))
                                                 <div class="mt-2">
-                                                    <!-- EOI Debug Info -->
-                                                    <div class="alert alert-warning small">
-                                                        <strong>EOI Debug Info:</strong><br>
-                                                        Status: {{ $election->status }}<br>
-                                                        hasEoiStarted(): {{ $election->hasEoiStarted() ? 'true' : 'false' }}<br>
-                                                        hasEoiEnded(): {{ $election->hasEoiEnded() ? 'true' : 'false' }}<br>
-                                                        isEoiPeriodActive(): {{ $election->isEoiPeriodActive() ? 'true' : 'false' }}<br>
-                                                        canStartEoi(): {{ $election->canStartEoi() ? 'true' : 'false' }}<br>
-                                                        canEndEoi(): {{ $election->canEndEoi() ? 'true' : 'false' }}<br>
-                                                        EOI Start: {{ $election->eoi_start ? $election->eoi_start->format('Y-m-d H:i:s') : 'Not set' }}<br>
-                                                        EOI End: {{ $election->eoi_end ? $election->eoi_end->format('Y-m-d H:i:s') : 'Not set' }}
-                                                    </div>
-                                                    
                                                     @if(!$election->hasEoiStarted() && $election->canStartEoi())
                                                         <form action="{{ route('elcom.elections.start-eoi', $election) }}" method="POST" class="d-inline">
                                                             @csrf
@@ -267,21 +254,7 @@
 
                                     @if(auth()->user()->hasRole(['administrator', 'elcom-chair']))
                                         <div class="mt-2">
-                                            <!-- Debug Info -->
-                                            <div class="alert alert-info small">
-                                                <strong>Debug Info:</strong><br>
-                                                Status: {{ $election->status }}<br>
-                                                hasAccreditationStarted(): {{ $election->hasAccreditationStarted() ? 'true' : 'false' }}<br>
-                                                hasAccreditationEnded(): {{ $election->hasAccreditationEnded() ? 'true' : 'false' }}<br>
-                                                isAccreditationPeriodActive(): {{ $election->isAccreditationPeriodActive() ? 'true' : 'false' }}<br>
-                                                canStartAccreditation(): {{ $election->canStartAccreditation() ? 'true' : 'false' }}<br>
-                                                User Roles: {{ auth()->user()->roles->pluck('name')->implode(', ') }}<br>
-                                                Current Time: {{ now()->format('Y-m-d H:i:s') }}<br>
-                                                Accreditation Start: {{ $election->accreditation_start->format('Y-m-d H:i:s') }}<br>
-                                                Accreditation End: {{ $election->accreditation_end->format('Y-m-d H:i:s') }}
-                                            </div>
-                                            
-                                            @if($election->status === 'draft' && $election->hasAccreditationStarted() && !$election->hasAccreditationEnded())
+                                            @if($election->canStartAccreditation())
                                                 <form action="{{ route('elcom.elections.start-accreditation', $election) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-sm btn-success">

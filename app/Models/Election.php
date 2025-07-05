@@ -99,7 +99,12 @@ class Election extends Model
     // Methods
     public function canStartAccreditation(): bool
     {
-        return $this->status === 'draft' && $this->hasAccreditationStarted() && !$this->hasAccreditationEnded();
+        // Can start accreditation if:
+        // 1. Status is 'draft' OR (status is 'eoi' AND EOI has ended)
+        // 2. Accreditation time has started
+        // 3. Accreditation period hasn't ended
+        $validStatus = $this->status === 'draft' || ($this->status === 'eoi' && $this->hasEoiEnded());
+        return $validStatus && $this->hasAccreditationStarted() && !$this->hasAccreditationEnded();
     }
 
     public function canEndAccreditation(): bool
