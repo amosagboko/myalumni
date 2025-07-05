@@ -319,36 +319,54 @@ $(document).ready(function() {
     });
 
     
-    // Mobile menu handler with debugging
-    $(document).on('click', '.nav-menu', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('Nav menu clicked!');
+    // Mobile Navigation Toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const navMenu = document.querySelector('.nav-menu');
+        const navigation = document.querySelector('.navigation');
+        const overlay = document.querySelector('.mobile-menu-overlay');
         
-        const navigation = $('.navigation');
-        console.log('Navigation element:', navigation);
-        console.log('Navigation classes before:', navigation.attr('class'));
-        console.log('Navigation left position before:', navigation.css('left'));
-        console.log('Navigation z-index before:', navigation.css('z-index'));
-        
-        $(this).toggleClass('active');
-        navigation.toggleClass('nav-active');
-        $('.mobile-menu-overlay').toggleClass('active');
-        
-        console.log('Navigation classes after:', navigation.attr('class'));
-        console.log('Navigation left position after:', navigation.css('left'));
-        console.log('Navigation z-index after:', navigation.css('z-index'));
-        console.log('Navigation is visible:', navigation.is(':visible'));
+        if (navMenu && navigation && overlay) {
+            console.log('Vanilla JS: Mobile navigation elements found');
+            
+            // Debug: Log initial state
+            console.log('Initial navigation classes:', navigation.className);
+            console.log('Initial navigation left position:', window.getComputedStyle(navigation).left);
+            
+            navMenu.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Vanilla JS: Nav menu clicked!');
+                console.log('Before toggle - Navigation classes:', navigation.className);
+                console.log('Before toggle - Navigation left position:', window.getComputedStyle(navigation).left);
+                
+                // Toggle navigation
+                navigation.classList.toggle('nav-active');
+                
+                // Toggle overlay
+                overlay.classList.toggle('active');
+                
+                console.log('After toggle - Navigation classes:', navigation.className);
+                console.log('After toggle - Navigation left position:', window.getComputedStyle(navigation).left);
+                console.log('Overlay classes:', overlay.className);
+                
+                // Force a reflow to ensure the transition works
+                navigation.offsetHeight;
+            });
+            
+            // Close menu when clicking overlay
+            overlay.addEventListener('click', function() {
+                navigation.classList.remove('nav-active');
+                overlay.classList.remove('active');
+                console.log('Vanilla JS: Overlay clicked, menu closed');
+            });
+        } else {
+            console.log('Vanilla JS: Mobile navigation elements not found');
+            if (!navMenu) console.log('Nav menu missing');
+            if (!navigation) console.log('Navigation missing');
+            if (!overlay) console.log('Overlay missing');
+        }
     });
-
-    // Close mobile menu when clicking overlay
-    $('.mobile-menu-overlay').on('click', function () {
-        $('.nav-menu').removeClass('active');
-        $('.navigation').removeClass('nav-active');
-        $(this).removeClass('active');
-    });
-
-
 
     $('.model-popup-chat').on('click', function () {
         $('.modal-popup-chat').toggleClass('d-block');
