@@ -37,9 +37,8 @@
                 <a href="{{ route('alumni.home') }}"><i class="text-success display1-size me-2 ms-0"></i><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">{{ config('app.name') }}</span> </a>
                 <a href="#" class="mob-menu ms-auto me-2 chat-active-btn"><i data-feather="message-circle" class="text-grey-900 font-sm"></i></a>
                 <a href="#" class="me-2 menu-search-icon mob-menu"><i data-feather="search" class="text-grey-900 font-sm"></i></a>
-                <button class="nav-menu me-0 ms-2"></button>
-                <!-- Debug button -->
-                <button id="debug-nav" class="btn btn-sm btn-warning ms-2" style="display: none;">Debug Nav</button>
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="btn btn-sm btn-primary ms-2">Menu</button>
             </div>
             
             <form action="#" class="float-right header-search">

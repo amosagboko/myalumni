@@ -23,9 +23,16 @@
         transform: translateX(0) !important;
     }
     
-    /* Ensure hamburger menu is visible on mobile */
-    body .nav-header .nav-menu {
+    /* Ensure mobile menu button is visible on mobile */
+    body .nav-header #mobile-menu-btn {
         display: inline-block !important;
+    }
+    
+    /* Hide mobile menu button on desktop */
+    @media (min-width: 993px) {
+        body .nav-header #mobile-menu-btn {
+            display: none !important;
+        }
     }
     
     /* Mobile menu overlay */
