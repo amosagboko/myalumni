@@ -51,6 +51,8 @@
                 <a href="#" class="mob-menu ms-auto me-2 chat-active-btn"><i data-feather="message-circle" class="text-grey-900 font-sm"></i></a>
                 <a href="#" class="me-2 menu-search-icon mob-menu"><i data-feather="search" class="text-grey-900 font-sm"></i></a>
                 <button class="nav-menu me-0 ms-2"></button>
+                <!-- Debug button -->
+                <button id="debug-nav" class="btn btn-sm btn-warning ms-2" style="display: none;">Debug Nav</button>
             </div>
             
             <form action="#" class="float-right header-search">
@@ -241,6 +243,32 @@
                 const navMenu = document.querySelector('.nav-menu');
                 const navigation = document.querySelector('.navigation');
                 const mobileOverlay = document.querySelector('.mobile-menu-overlay');
+                
+                console.log('Vanilla JS Debug:');
+                console.log('Nav menu element:', navMenu);
+                console.log('Navigation element:', navigation);
+                console.log('Mobile overlay element:', mobileOverlay);
+                console.log('Navigation current left position:', navigation ? getComputedStyle(navigation).left : 'N/A');
+                
+                // Show debug button on mobile
+                if (window.innerWidth <= 992) {
+                    document.getElementById('debug-nav').style.display = 'inline-block';
+                }
+                
+                // Debug button handler
+                document.getElementById('debug-nav').addEventListener('click', function() {
+                    console.log('Debug button clicked!');
+                    console.log('Navigation element:', navigation);
+                    console.log('Navigation classes:', navigation.className);
+                    console.log('Navigation left:', getComputedStyle(navigation).left);
+                    console.log('Navigation z-index:', getComputedStyle(navigation).zIndex);
+                    console.log('Navigation display:', getComputedStyle(navigation).display);
+                    
+                    // Manually toggle
+                    navigation.classList.toggle('nav-active');
+                    console.log('After toggle - Navigation classes:', navigation.className);
+                    console.log('After toggle - Navigation left:', getComputedStyle(navigation).left);
+                });
                 
                 if (navMenu) {
                     navMenu.addEventListener('click', function(e) {

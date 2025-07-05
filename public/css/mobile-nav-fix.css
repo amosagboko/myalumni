@@ -5,12 +5,19 @@
         left: -280px !important;
         right: auto !important;
         transition: left 0.3s ease !important;
+        z-index: 1000 !important;
+        position: fixed !important;
     }
     
     /* Bring navigation on-screen when nav-active class is applied */
     .navigation.nav-active {
         left: 0 !important;
         right: auto !important;
+        z-index: 1001 !important;
+        /* Debug: Make sure it's visible */
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
     }
     
     /* Ensure hamburger menu is visible on mobile */

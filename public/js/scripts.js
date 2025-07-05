@@ -324,10 +324,21 @@ $(document).ready(function() {
         e.preventDefault();
         e.stopPropagation();
         console.log('Nav menu clicked!');
+        
+        const navigation = $('.navigation');
+        console.log('Navigation element:', navigation);
+        console.log('Navigation classes before:', navigation.attr('class'));
+        console.log('Navigation left position before:', navigation.css('left'));
+        console.log('Navigation z-index before:', navigation.css('z-index'));
+        
         $(this).toggleClass('active');
-        $('.navigation').toggleClass('nav-active');
+        navigation.toggleClass('nav-active');
         $('.mobile-menu-overlay').toggleClass('active');
-        console.log('Navigation classes:', $('.navigation').attr('class'));
+        
+        console.log('Navigation classes after:', navigation.attr('class'));
+        console.log('Navigation left position after:', navigation.css('left'));
+        console.log('Navigation z-index after:', navigation.css('z-index'));
+        console.log('Navigation is visible:', navigation.is(':visible'));
     });
 
     // Close mobile menu when clicking overlay
