@@ -260,11 +260,6 @@ class Election extends Model
      */
     public function isEoiPeriodActive(): bool
     {
-        // If election status is 'eoi', the period is active regardless of time
-        if ($this->status === 'eoi') {
-            return true;
-        }
-
         if (!$this->eoi_start || !$this->eoi_end) {
             return false;
         }
