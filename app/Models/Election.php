@@ -99,7 +99,7 @@ class Election extends Model
     // Methods
     public function canStartAccreditation(): bool
     {
-        return $this->status === 'draft' && now() >= $this->accreditation_start;
+        return $this->status === 'draft' && $this->hasAccreditationStarted() && !$this->hasAccreditationEnded();
     }
 
     public function canEndAccreditation(): bool

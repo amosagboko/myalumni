@@ -70,7 +70,7 @@
                                         @endif
                                     @endif
 
-                                    @if($election->status === 'draft')
+                                    @if($election->status === 'draft' && $election->hasAccreditationStarted() && !$election->hasAccreditationEnded())
                                         <form action="{{ route('elcom.elections.start-accreditation', $election) }}" method="POST" class="mt-3">
                                             @csrf
                                             <button type="submit" class="btn btn-success btn-sm w-100" 
@@ -254,7 +254,7 @@
 
                                     @if(auth()->user()->hasRole(['administrator', 'elcom-chair']))
                                         <div class="mt-2">
-                                            @if(!$election->hasAccreditationStarted() && $election->canStartAccreditation())
+                                            @if($election->status === 'draft' && $election->hasAccreditationStarted() && !$election->hasAccreditationEnded())
                                                 <form action="{{ route('elcom.elections.start-accreditation', $election) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-sm btn-success">
@@ -263,7 +263,7 @@
                                                 </form>
                                             @endif
 
-                                            @if($election->isAccreditationPeriodActive() && $election->canEndAccreditation())
+                                            @if($election->status === 'accreditation' && $election->isAccreditationPeriodActive() && $election->canEndAccreditation())
                                                 <form action="{{ route('elcom.elections.end-accreditation', $election) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-sm btn-warning">
