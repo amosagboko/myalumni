@@ -316,9 +316,17 @@ $(document).ready(function() {
 
     
     $('.nav-menu').on('click', function () {
+        console.log('Mobile menu clicked!');
+        console.log('Navigation element:', $('.navigation'));
+        console.log('Navigation classes before:', $('.navigation').attr('class'));
+        
         $(this).toggleClass('active');
         $('.navigation').toggleClass('nav-active');
         $('.mobile-menu-overlay').toggleClass('active');
+        
+        console.log('Navigation classes after:', $('.navigation').attr('class'));
+        console.log('Navigation left position:', $('.navigation').css('left'));
+        console.log('Navigation right position:', $('.navigation').css('right'));
     });
 
     // Close mobile menu when clicking overlay
@@ -326,6 +334,19 @@ $(document).ready(function() {
         $('.nav-menu').removeClass('active');
         $('.navigation').removeClass('nav-active');
         $(this).removeClass('active');
+    });
+
+    // Show test button on mobile
+    if ($(window).width() <= 992) {
+        $('#test-mobile-menu').show();
+    }
+
+    // Test mobile menu functionality
+    $('#test-mobile-menu').on('click', function() {
+        console.log('Test button clicked!');
+        $('.nav-menu').toggleClass('active');
+        $('.navigation').toggleClass('nav-active');
+        $('.mobile-menu-overlay').toggleClass('active');
     });
 
     $('.model-popup-chat').on('click', function () {
