@@ -18,20 +18,7 @@
     <link rel="stylesheet" href="/css/emoji.css">
     <link rel="stylesheet" href="/css/mobile-nav-fix.css">
     
-    <!-- Inline Mobile Navigation Fix -->
-    <style>
-        @media (max-width: 992px) {
-            .navigation {
-                left: -280px !important;
-                right: auto !important;
-                transition: left 0.3s ease !important;
-            }
-            .navigation.nav-active {
-                left: 0 !important;
-                right: auto !important;
-            }
-        }
-    </style>
+    <!-- Mobile Navigation Fix - Handled by external CSS -->
     
     <link rel="stylesheet" href="/css/lightbox.css">
     <!-- Select2 -->
