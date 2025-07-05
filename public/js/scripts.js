@@ -1,5 +1,9 @@
 $(document).ready(function() {
     "use strict";
+    
+    // Test if jQuery is working
+    console.log('jQuery version:', $.fn.jquery);
+    console.log('Document ready!');
 
     PageScroll();
 
@@ -315,10 +319,15 @@ $(document).ready(function() {
     });
 
     
-    $('.nav-menu').on('click', function () {
+    // Mobile menu handler with debugging
+    $(document).on('click', '.nav-menu', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Nav menu clicked!');
         $(this).toggleClass('active');
         $('.navigation').toggleClass('nav-active');
         $('.mobile-menu-overlay').toggleClass('active');
+        console.log('Navigation classes:', $('.navigation').attr('class'));
     });
 
     // Close mobile menu when clicking overlay

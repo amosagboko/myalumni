@@ -225,16 +225,47 @@
             @endif
         </main>
 
+        <!-- jQuery first -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="/js/plugin.js"></script>
         <script src="/js/lightbox.js"></script>
         <script src="/js/scripts.js"></script>
         <!-- Select2 -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
             // Initialize Feather Icons
             document.addEventListener('DOMContentLoaded', function() {
                 feather.replace();
+                
+                // Vanilla JavaScript fallback for mobile menu
+                const navMenu = document.querySelector('.nav-menu');
+                const navigation = document.querySelector('.navigation');
+                const mobileOverlay = document.querySelector('.mobile-menu-overlay');
+                
+                if (navMenu) {
+                    navMenu.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Vanilla JS: Nav menu clicked!');
+                        
+                        this.classList.toggle('active');
+                        navigation.classList.toggle('nav-active');
+                        if (mobileOverlay) {
+                            mobileOverlay.classList.toggle('active');
+                        }
+                        
+                        console.log('Navigation classes:', navigation.className);
+                    });
+                }
+                
+                // Close menu when clicking overlay
+                if (mobileOverlay) {
+                    mobileOverlay.addEventListener('click', function() {
+                        navMenu.classList.remove('active');
+                        navigation.classList.remove('nav-active');
+                        this.classList.remove('active');
+                    });
+                }
             });
         </script>
         @push('scripts')
