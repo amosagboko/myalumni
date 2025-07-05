@@ -38,8 +38,8 @@
                 <a href="#" class="mob-menu ms-auto me-2 chat-active-btn"><i data-feather="message-circle" class="text-grey-900 font-sm"></i></a>
                 <a href="#" class="me-2 menu-search-icon mob-menu"><i data-feather="search" class="text-grey-900 font-sm"></i></a>
                 <button class="nav-menu me-0 ms-2"></button>
-                <!-- Debug button -->
-                <button id="debug-nav" class="btn btn-sm btn-warning ms-2" style="display: none;">Debug Nav</button>
+                <!-- Menu button -->
+                <button id="debug-nav" class="btn btn-sm btn-primary ms-2" style="display: none;">Menu</button>
             </div>
             
             <form action="#" class="float-right header-search">
