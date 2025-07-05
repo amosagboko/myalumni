@@ -22,29 +22,13 @@
     <style>
         @media (max-width: 992px) {
             .navigation {
-                left: -320px !important;
+                left: -280px !important;
                 right: auto !important;
                 transition: left 0.3s ease !important;
             }
             .navigation.nav-active {
                 left: 0 !important;
                 right: auto !important;
-            }
-            .nav-menu {
-                display: block !important;
-            }
-            .mobile-menu-overlay {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                background-color: rgba(0, 0, 0, 0.5) !important;
-                z-index: 999 !important;
-                display: none !important;
-            }
-            .mobile-menu-overlay.active {
-                display: block !important;
             }
         }
     </style>
@@ -67,8 +51,6 @@
                 <a href="#" class="mob-menu ms-auto me-2 chat-active-btn"><i data-feather="message-circle" class="text-grey-900 font-sm"></i></a>
                 <a href="#" class="me-2 menu-search-icon mob-menu"><i data-feather="search" class="text-grey-900 font-sm"></i></a>
                 <button class="nav-menu me-0 ms-2"></button>
-                <!-- Test button for debugging -->
-                <button id="test-mobile-menu" class="btn btn-sm btn-danger ms-2" style="display: none;">Test Mobile Menu</button>
             </div>
             
             <form action="#" class="float-right header-search">
