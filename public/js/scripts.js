@@ -318,6 +318,14 @@ $(document).ready(function() {
     $('.nav-menu').on('click', function () {
         $(this).toggleClass('active');
         $('.navigation').toggleClass('nav-active');
+        $('.mobile-menu-overlay').toggleClass('active');
+    });
+
+    // Close mobile menu when clicking overlay
+    $('.mobile-menu-overlay').on('click', function () {
+        $('.nav-menu').removeClass('active');
+        $('.navigation').removeClass('nav-active');
+        $(this).removeClass('active');
     });
 
     $('.model-popup-chat').on('click', function () {
@@ -335,6 +343,8 @@ $(document).ready(function() {
 
     $('.close-nav').on('click', function () {
         $('.navigation').removeClass('nav-active');
+        $('.nav-menu').removeClass('active');
+        $('.mobile-menu-overlay').removeClass('active');
         return false;
     });
 

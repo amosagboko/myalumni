@@ -172,6 +172,7 @@ body {
 
 @media (max-width: 992px){
 	.navigation	 {left: auto; right:-320px;}
+	.navigation.nav-active {right: 0; left: auto;}
 }
 @media (max-width: 990px){
 	.main-content .middle-sidebar-header {right: 0;}
@@ -180,7 +181,8 @@ body {
 }
 
 @media (max-width: 768px){
-	.navigation {right:-320px; left:auto;}	
+	.navigation {right:-320px; left:auto;}
+	.navigation.nav-active {right: 0; left: auto;}
 }
 
 

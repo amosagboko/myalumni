@@ -16,6 +16,7 @@
     <!-- Custom Stylesheet -->
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/emoji.css">
+    <link rel="stylesheet" href="/css/mobile-nav-fix.css">
     
     <link rel="stylesheet" href="/css/lightbox.css">
     <!-- Select2 -->
@@ -59,6 +60,9 @@
         </div>
         <!-- navigation top -->
 
+        <!-- Mobile Menu Overlay -->
+        <div class="mobile-menu-overlay"></div>
+        
         <!-- navigation left -->
         <nav class="navigation scroll-bar">
             <div class="container ps-0 pe-0">
