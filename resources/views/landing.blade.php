@@ -97,7 +97,7 @@
                     <!-- Deadline Notice -->
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Important Notice:</strong> Alumni onboarding will close at midnight today ({{ now()->endOfDay()->format('M d, Y h:i A') }}). 
+                        <strong>Important Notice:</strong> Alumni onboarding will close at midnight today ({{ now()->format('M d, Y') }} at 11:59 PM). 
                         Please complete your registration before the deadline.
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
