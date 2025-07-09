@@ -34,7 +34,7 @@ class AlumniOnboardingController extends Controller
         // Check if onboarding deadline has passed
         if (!$this->isOnboardingAllowed()) {
             return redirect()->route('home')
-                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period has closed. Thank you.');
         }
 
         $user = Auth::user();
@@ -79,7 +79,7 @@ class AlumniOnboardingController extends Controller
         // Check if onboarding deadline has passed
         if (!$this->isOnboardingAllowed()) {
             return redirect()->route('home')
-                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period has closed. Thank you.');
         }
 
         $request->validate([
@@ -114,7 +114,7 @@ class AlumniOnboardingController extends Controller
         // Check if onboarding deadline has passed
         if (!$this->isOnboardingAllowed()) {
             return redirect()->route('home')
-                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period has closed. Thank you.');
         }
 
         $request->validate([
@@ -142,7 +142,7 @@ class AlumniOnboardingController extends Controller
         // Check if onboarding deadline has passed
         if (!$this->isOnboardingAllowed()) {
             return redirect()->route('home')
-                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period has closed. Thank you.');
         }
 
         return view('auth.verify-email');

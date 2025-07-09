@@ -39,7 +39,7 @@ class LandingPageController extends Controller
         // Check if onboarding deadline has passed
         if (!$this->isOnboardingAllowed()) {
             return redirect()->back()
-                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period has closed. Thank you.');
         }
 
         $request->validate([
@@ -84,7 +84,7 @@ class LandingPageController extends Controller
         if (!$this->isOnboardingAllowed()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.'
+                'message' => 'Onboarding has ended for all alumni categories. The registration period has closed. Thank you.'
             ]);
         }
 
@@ -144,7 +144,7 @@ class LandingPageController extends Controller
         if (!$this->isOnboardingAllowed()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.'
+                'message' => 'Onboarding has ended for all alumni categories. The registration period has closed. Thank you.'
             ]);
         }
 
