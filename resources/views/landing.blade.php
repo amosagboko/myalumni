@@ -94,6 +94,14 @@
                 <div class="search-section">
                     <h2 class="text-center mb-4">Retrieve Your Alumni Credentials</h2>
                     
+                    <!-- Deadline Notice -->
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Important Notice:</strong> Alumni onboarding will close at midnight today ({{ now()->endOfDay()->format('M d, Y h:i A') }}). 
+                        Please complete your registration before the deadline.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             {{ session('error') }}

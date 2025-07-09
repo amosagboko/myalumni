@@ -10,8 +10,23 @@ use Illuminate\Validation\Rules\Password;
 
 class AlumniOnboardingController extends Controller
 {
+    /**
+     * Check if onboarding is still allowed (before midnight today)
+     */
+    private function isOnboardingAllowed()
+    {
+        $deadline = now()->endOfDay(); // Midnight today (23:59:59)
+        return now()->lessThan($deadline);
+    }
+
     public function showOnboarding()
     {
+        // Check if onboarding deadline has passed
+        if (!$this->isOnboardingAllowed()) {
+            return redirect()->route('home')
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+        }
+
         $user = Auth::user();
         
         // Check if user is an alumni
@@ -51,6 +66,12 @@ class AlumniOnboardingController extends Controller
 
     public function updatePassword(Request $request)
     {
+        // Check if onboarding deadline has passed
+        if (!$this->isOnboardingAllowed()) {
+            return redirect()->route('home')
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+        }
+
         $request->validate([
             'password' => ['required', 'confirmed', Password::defaults()],
             'current_password' => ['required', 'current_password'],
@@ -80,6 +101,12 @@ class AlumniOnboardingController extends Controller
 
     public function updateProfile(Request $request)
     {
+        // Check if onboarding deadline has passed
+        if (!$this->isOnboardingAllowed()) {
+            return redirect()->route('home')
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+        }
+
         $request->validate([
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . Auth::id()],
             'password' => ['required', 'confirmed', Password::defaults()],
@@ -102,6 +129,12 @@ class AlumniOnboardingController extends Controller
 
     public function showVerificationNotice()
     {
+        // Check if onboarding deadline has passed
+        if (!$this->isOnboardingAllowed()) {
+            return redirect()->route('home')
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+        }
+
         return view('auth.verify-email');
     }
 }

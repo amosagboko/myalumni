@@ -10,6 +10,15 @@ use Illuminate\Support\Facades\Log;
 
 class LandingPageController extends Controller
 {
+    /**
+     * Check if onboarding is still allowed (before midnight today)
+     */
+    private function isOnboardingAllowed()
+    {
+        $deadline = now()->endOfDay(); // Midnight today (23:59:59)
+        return now()->lessThan($deadline);
+    }
+
     public function index()
     {
         return view('landing');
@@ -17,6 +26,12 @@ class LandingPageController extends Controller
 
     public function searchCredentials(Request $request)
     {
+        // Check if onboarding deadline has passed
+        if (!$this->isOnboardingAllowed()) {
+            return redirect()->back()
+                ->with('error', 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.');
+        }
+
         $request->validate([
             'matriculation_id' => 'required|string'
         ]);
@@ -55,6 +70,14 @@ class LandingPageController extends Controller
 
     public function updateEmail(Request $request)
     {
+        // Check if onboarding deadline has passed
+        if (!$this->isOnboardingAllowed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.'
+            ]);
+        }
+
         try {
             $request->validate([
                 'matriculation_id' => 'required|string',
@@ -107,6 +130,14 @@ class LandingPageController extends Controller
 
     public function resendCredentials(Request $request)
     {
+        // Check if onboarding deadline has passed
+        if (!$this->isOnboardingAllowed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Onboarding has ended for all alumni categories. The registration period closed at midnight today.'
+            ]);
+        }
+
         try {
             $request->validate([
                 'matriculation_id' => 'required|string'
