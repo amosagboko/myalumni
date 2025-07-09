@@ -11,12 +11,22 @@ use Illuminate\Validation\Rules\Password;
 class AlumniOnboardingController extends Controller
 {
     /**
-     * Check if onboarding is still allowed (before midnight today)
+     * Check if onboarding is still allowed (before midnight today - July 9, 2025)
      */
     private function isOnboardingAllowed()
     {
-        $deadline = now()->endOfDay(); // Midnight today (23:59:59)
-        return now()->lessThan($deadline);
+        // Set explicit deadline: July 9, 2025 at 23:59:59 in Lagos timezone
+        $deadline = \Carbon\Carbon::create(2025, 7, 9, 23, 59, 59, 'Africa/Lagos');
+        $currentTime = now()->setTimezone('Africa/Lagos');
+        
+        // Log for debugging
+        \Illuminate\Support\Facades\Log::info('Onboarding deadline check', [
+            'current_time' => $currentTime->format('Y-m-d H:i:s'),
+            'deadline' => $deadline->format('Y-m-d H:i:s'),
+            'is_allowed' => $currentTime->lessThan($deadline)
+        ]);
+        
+        return $currentTime->lessThan($deadline);
     }
 
     public function showOnboarding()
