@@ -29,9 +29,6 @@
                                     <div class="stats-card p-3">
                                         <h6 class="text-muted mb-2">Voters Register</h6>
                                         <h3 class="mb-0 text-info">{{ number_format($totalSubscribed + $totalExempted) }}</h3>
-                                        <small class="text-muted">
-                                            {{ number_format($totalSubscribed) }} Subscribed + {{ number_format($totalExempted) }} Exempted
-                                        </small>
                                     </div>
                                 </div>
                                 @if($timeRemaining)
