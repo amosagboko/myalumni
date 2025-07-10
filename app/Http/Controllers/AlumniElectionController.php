@@ -72,9 +72,45 @@ class AlumniElectionController extends Controller
      */
     public function results(Election $election)
     {
-        // Show results for this election
-        $results = $election->results()->with(['office', 'candidate.alumni'])->get();
-        return view('alumni.elections.results', compact('election', 'results'));
+        // Only show results if election is completed
+        if ($election->status !== 'completed') {
+            return redirect()
+                ->route('alumni.elections')
+                ->with('error', 'Election results are not yet available. Results will be published after the election is completed.');
+        }
+
+        // Load election data with necessary relationships
+        $election->load(['offices.candidates.alumni.user', 'offices.candidates.votes', 'results.candidate.alumni.user', 'results.office']);
+
+        // Calculate basic statistics
+        $totalAccredited = $election->getTotalAccreditedVoters();
+        $totalVotes = $election->getTotalVotes();
+        $voterTurnout = $totalAccredited > 0 ? round(($totalVotes / $totalAccredited) * 100, 2) : 0;
+
+        // Get results for each office
+        $officeResults = $election->offices->map(function ($office) {
+            $candidates = $office->candidates->map(function ($candidate) {
+                $votes = $candidate->votes->count();
+                return [
+                    'candidate' => $candidate,
+                    'votes' => $votes,
+                    'is_winner' => $candidate->electionResults->where('is_winner', true)->isNotEmpty()
+                ];
+            })->sortByDesc('votes');
+
+            $totalOfficeVotes = $candidates->sum('votes');
+
+            return [
+                'office' => $office,
+                'candidates' => $candidates->map(function ($candidate) use ($totalOfficeVotes) {
+                    $percentage = $totalOfficeVotes > 0 ? round(($candidate['votes'] / $totalOfficeVotes) * 100, 1) : 0;
+                    return array_merge($candidate, ['percentage' => $percentage]);
+                }),
+                'total_votes' => $totalOfficeVotes
+            ];
+        });
+
+        return view('alumni.elections.results', compact('election', 'officeResults', 'totalAccredited', 'totalVotes', 'voterTurnout'));
     }
 
     /**
