@@ -57,6 +57,8 @@ class AlumniElectionController extends Controller
         // Show voting form for this election
         $offices = $election->offices()->with('candidates.alumni')->get();
         $totalAccredited = $election->getTotalAccreditedVoters();
+        $totalSubscribed = $election->getTotalSubscribedUsers();
+        $totalExempted = $election->getTotalExemptedUsers();
         
         // Calculate time remaining
         $timeRemaining = null;
@@ -64,7 +66,7 @@ class AlumniElectionController extends Controller
             $timeRemaining = $election->voting_end->diffForHumans(['parts' => 2]);
         }
         
-        return view('alumni.elections.vote', compact('election', 'offices', 'totalAccredited', 'timeRemaining'));
+        return view('alumni.elections.vote', compact('election', 'offices', 'totalAccredited', 'totalSubscribed', 'totalExempted', 'timeRemaining'));
     }
 
     /**

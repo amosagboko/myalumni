@@ -545,4 +545,43 @@ class Election extends Model
     {
         return $this->candidates()->count();
     }
+
+    /**
+     * Get total subscribed users (alumni who paid the ₦2,000 subscription fee during onboarding).
+     */
+    public function getTotalSubscribedUsers(): int
+    {
+        $subscriptionFeeType = \App\Models\FeeType::where('code', 'subscription')
+            ->orWhere('code', 'subscription_registration')
+            ->first();
+            
+        if (!$subscriptionFeeType) {
+            return 0;
+        }
+
+        return \App\Models\Transaction::whereHas('feeTemplate', function ($query) use ($subscriptionFeeType) {
+            $query->where('fee_type_id', $subscriptionFeeType->id);
+        })->where('status', 'paid')->count();
+    }
+
+    /**
+     * Get total exempted users (alumni who were exempted from paying the ₦2,000 subscription fee during onboarding).
+     */
+    public function getTotalExemptedUsers(): int
+    {
+        // 2024 graduates are exempted from all fees including subscription fee
+        return \App\Models\Alumni::where('year_of_graduation', 2024)
+            ->whereNotNull('contact_address')
+            ->whereNotNull('phone_number')
+            ->whereNotNull('qualification_type')
+            ->count();
+    }
+
+    /**
+     * Get total voters register (subscribed + exempted).
+     */
+    public function getTotalVotersRegister(): int
+    {
+        return $this->getTotalSubscribedUsers() + $this->getTotalExemptedUsers();
+    }
 }

@@ -19,14 +19,23 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="stats-card p-3">
                                         <h6 class="text-muted mb-2">Total Accredited Voters</h6>
                                         <h3 class="mb-0">{{ number_format($totalAccredited) }}</h3>
                                     </div>
                                 </div>
+                                <div class="col-md-4">
+                                    <div class="stats-card p-3">
+                                        <h6 class="text-muted mb-2">Voters Register</h6>
+                                        <h3 class="mb-0 text-info">{{ number_format($totalSubscribed + $totalExempted) }}</h3>
+                                        <small class="text-muted">
+                                            {{ number_format($totalSubscribed) }} Subscribed + {{ number_format($totalExempted) }} Exempted
+                                        </small>
+                                    </div>
+                                </div>
                                 @if($timeRemaining)
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="stats-card p-3">
                                             <h6 class="text-muted mb-2">Voting Time Remaining</h6>
                                             <h3 class="mb-0 text-primary">
