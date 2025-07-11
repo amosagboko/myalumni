@@ -6,7 +6,14 @@
         <div class="col-12 col-lg-10 col-xl-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="card-title mb-0">Vote - {{ $election->title }}</h3>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Vote - {{ $election->title }}</h3>
+                        <a href="{{ route('alumni.elections') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            <span class="d-none d-sm-inline">Back to Elections</span>
+                            <span class="d-inline d-sm-none">Back</span>
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <!-- Accreditation Statistics -->
