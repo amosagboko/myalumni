@@ -1,12 +1,12 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container mt-5 pt-7" style="margin-left: 300px; max-width: 900px;">
+<div class="container-fluid mt-5 pt-7 px-3 px-md-4">
     <div class="row justify-content-center">
-        <div class="col-md-12">
+        <div class="col-12 col-lg-10 col-xl-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="card-title">Vote - {{ $election->title }}</h3>
+                    <h3 class="card-title mb-0">Vote - {{ $election->title }}</h3>
                 </div>
                 <div class="card-body">
                     <!-- Accreditation Statistics -->
@@ -18,26 +18,27 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
                                     <div class="stats-card p-3">
                                         <h6 class="text-muted mb-2">Total Accredited Voters</h6>
                                         <h3 class="mb-0">{{ number_format($totalAccredited) }}</h3>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <div class="stats-card p-3">
                                         <h6 class="text-muted mb-2">Voters Register</h6>
                                         <h3 class="mb-0 text-info">{{ number_format($totalSubscribed + $totalExempted) }}</h3>
                                     </div>
                                 </div>
                                 @if($timeRemaining)
-                                    <div class="col-md-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="stats-card p-3">
                                             <h6 class="text-muted mb-2">Voting Time Remaining</h6>
                                             <h3 class="mb-0 text-primary">
                                                 <i class="bi bi-clock me-2"></i>
-                                                {{ $timeRemaining }}
+                                                <span class="d-none d-sm-inline">{{ $timeRemaining }}</span>
+                                                <span class="d-inline d-sm-none">{{ $timeRemaining }}</span>
                                             </h3>
                                         </div>
                                     </div>
@@ -86,7 +87,8 @@
                             <i class="bi bi-x-circle me-2"></i>
                             You are not accredited for this election. Please complete the accreditation process first.
                             <div class="mt-3">
-                                <a href="{{ route('alumni.elections.accreditation', $election) }}" class="btn btn-primary">
+                                <a href="{{ route('alumni.elections.accreditation', $election) }}" class="btn btn-primary w-100 w-md-auto">
+                                    <i class="bi bi-person-check me-2"></i>
                                     Go to Accreditation
                                 </a>
                             </div>
@@ -111,7 +113,7 @@
                                 <div class="card mb-4">
                                     <div class="card-header bg-light">
                                         <h5 class="card-title mb-0">{{ $office->title }}</h5>
-                                        <small class="text-muted">{{ $office->description }}</small>
+                                        <small class="text-muted d-block d-md-inline">{{ $office->description }}</small>
                                     </div>
                                     <div class="card-body">
                                         @if($office->candidates->isEmpty())
@@ -128,16 +130,16 @@
                                                                 name="votes[{{ $office->id }}]" 
                                                                 value="{{ $candidate->id }}"
                                                                 required>
-                                                            <div class="d-flex align-items-center">
+                                                            <div class="d-flex align-items-start">
                                                                 @if($candidate->passport)
                                                                     <img src="{{ asset('storage/' . $candidate->passport) }}" 
                                                                         alt="Candidate" 
-                                                                        class="rounded-circle me-3"
-                                                                        style="width: 48px; height: 48px; object-fit: cover;">
+                                                                        class="rounded-circle me-3 mt-1"
+                                                                        style="width: 48px; height: 48px; object-fit: cover; flex-shrink: 0;">
                                                                 @endif
-                                                                <div>
+                                                                <div class="flex-grow-1">
                                                                     <h6 class="mb-1">{{ $candidate->alumni->user->name }}</h6>
-                                                                    <small class="text-muted">
+                                                                    <small class="text-muted d-block mb-2">
                                                                         {{ $candidate->alumni->matriculation_number }}
                                                                     </small>
                                                                     @if($candidate->manifesto)
@@ -146,7 +148,9 @@
                                                                                 class="btn btn-sm btn-outline-primary"
                                                                                 data-bs-toggle="modal" 
                                                                                 data-bs-target="#manifestoModal{{ $candidate->id }}">
-                                                                                View Manifesto
+                                                                                <i class="bi bi-file-text me-1"></i>
+                                                                                <span class="d-none d-sm-inline">View Manifesto</span>
+                                                                                <span class="d-inline d-sm-none">Manifesto</span>
                                                                             </button>
                                                                         </div>
                                                                     @endif
@@ -175,12 +179,13 @@
                                                                                 <h6>Supporting Documents:</h6>
                                                                                 <ul class="list-unstyled">
                                                                                     @foreach($candidate->documents as $document)
-                                                                                        <li>
+                                                                                        <li class="mb-2">
                                                                                             <a href="{{ asset('storage/' . $document) }}" 
                                                                                                 target="_blank" 
                                                                                                 class="btn btn-sm btn-outline-secondary">
                                                                                                 <i class="bi bi-file-earmark me-2"></i>
-                                                                                                View Document
+                                                                                                <span class="d-none d-sm-inline">View Document</span>
+                                                                                                <span class="d-inline d-sm-none">Document</span>
                                                                                             </a>
                                                                                         </li>
                                                                                     @endforeach
@@ -205,12 +210,16 @@
                             </div>
 
                             <div class="card-footer">
-                                <div class="d-flex justify-content-between">
+                                <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
                                     <a href="{{ route('alumni.elections') }}" class="btn btn-secondary">
-                                        <i class="fas fa-arrow-left me-2"></i>Back to Elections
+                                        <i class="bi bi-arrow-left me-2"></i>
+                                        <span class="d-none d-sm-inline">Back to Elections</span>
+                                        <span class="d-inline d-sm-none">Back</span>
                                     </a>
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-eye me-2"></i>Preview Votes
+                                        <i class="bi bi-eye me-2"></i>
+                                        <span class="d-none d-sm-inline">Preview Votes</span>
+                                        <span class="d-inline d-sm-none">Preview</span>
                                     </button>
                                 </div>
                             </div>
@@ -221,4 +230,108 @@
         </div>
     </div>
 </div>
+
+<style>
+@media (max-width: 768px) {
+    .container-fluid {
+        margin-left: 0 !important;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .stats-card {
+        text-align: center;
+    }
+    
+    .stats-card h3 {
+        font-size: 1.5rem;
+    }
+    
+    .stats-card h6 {
+        font-size: 0.875rem;
+    }
+    
+    .alert-heading {
+        font-size: 1.1rem;
+    }
+    
+    .card-title {
+        font-size: 1.25rem;
+    }
+    
+    .list-group-item {
+        padding: 0.75rem;
+    }
+    
+    .form-check-input {
+        margin-top: 0.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+    }
+    
+    .alert {
+        padding: 0.75rem;
+    }
+    
+    .alert-heading {
+        font-size: 1rem;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem;
+    }
+    
+    .stats-card {
+        padding: 1rem !important;
+    }
+    
+    .stats-card h3 {
+        font-size: 1.25rem;
+    }
+    
+    .list-group-item {
+        padding: 0.5rem;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+}
+
+.stats-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+</style>
 @endsection 

@@ -1,12 +1,12 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container mt-5 pt-7" style="margin-left: 300px; max-width: 900px;">
+<div class="container-fluid mt-5 pt-7 px-3 px-md-4">
     <div class="row justify-content-center">
-        <div class="col-md-12">
+        <div class="col-12 col-lg-10 col-xl-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="card-title">Accreditation - {{ $election->title }}</h3>
+                    <h3 class="card-title mb-0">Accreditation - {{ $election->title }}</h3>
                 </div>
                 <div class="card-body">
                     @php
@@ -100,32 +100,69 @@
                                     <h5 class="card-title">Submit Accreditation</h5>
                                     <p class="card-text">Please confirm your details before submitting for accreditation:</p>
                                     
-                                    <div class="table-responsive mb-4">
-                                        <table class="table table-bordered">
-                                            <tbody>
-                                                <tr>
-                                                    <th style="width: 200px;">Name</th>
-                                                    <td>{{ $alumni->user->name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Matriculation Number</th>
-                                                    <td>{{ $alumni->matriculation_number }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Email</th>
-                                                    <td>{{ $alumni->user->email }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Phone Number</th>
-                                                    <td>{{ $alumni->phone_number }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <div class="mb-4">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <div class="card border">
+                                                    <div class="card-body p-0">
+                                                        <div class="row g-0">
+                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
+                                                                <div class="p-3">
+                                                                    <strong>Name</strong>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-12 col-sm-8 col-md-9">
+                                                                <div class="p-3">
+                                                                    {{ $alumni->user->name }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row g-0 border-top">
+                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
+                                                                <div class="p-3">
+                                                                    <strong>Matriculation Number</strong>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-12 col-sm-8 col-md-9">
+                                                                <div class="p-3">
+                                                                    {{ $alumni->matriculation_number }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row g-0 border-top">
+                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
+                                                                <div class="p-3">
+                                                                    <strong>Email</strong>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-12 col-sm-8 col-md-9">
+                                                                <div class="p-3">
+                                                                    {{ $alumni->user->email }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row g-0 border-top">
+                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
+                                                                <div class="p-3">
+                                                                    <strong>Phone Number</strong>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-12 col-sm-8 col-md-9">
+                                                                <div class="p-3">
+                                                                    {{ $alumni->phone_number }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <form action="{{ route('alumni.elections.accreditation.submit', $election) }}" method="POST">
                                         @csrf
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" class="btn btn-primary w-100 w-md-auto">
+                                            <i class="bi bi-check-circle me-2"></i>
                                             Submit Accreditation Request
                                         </button>
                                     </form>
@@ -146,15 +183,17 @@
                     @endif
 
                     <!-- Navigation -->
-                    <div class="mt-4">
+                    <div class="mt-4 d-flex flex-column flex-md-row gap-2">
                         <a href="{{ route('alumni.elections') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left me-2"></i>
-                            Back to Elections
+                            <span class="d-none d-sm-inline">Back to Elections</span>
+                            <span class="d-inline d-sm-none">Back</span>
                         </a>
                         @if($isAccredited)
-                            <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-primary ms-2">
+                            <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-primary">
                                 <i class="bi bi-check-square me-2"></i>
-                                Proceed to Vote
+                                <span class="d-none d-sm-inline">Proceed to Vote</span>
+                                <span class="d-inline d-sm-none">Vote</span>
                             </a>
                         @endif
                     </div>
@@ -163,4 +202,60 @@
         </div>
     </div>
 </div>
+
+<style>
+@media (max-width: 768px) {
+    .container-fluid {
+        margin-left: 0 !important;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .alert-heading {
+        font-size: 1.1rem;
+    }
+    
+    .card-title {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+    }
+    
+    .alert {
+        padding: 0.75rem;
+    }
+    
+    .alert-heading {
+        font-size: 1rem;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .p-3 {
+        padding: 0.75rem !important;
+    }
+    
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+}
+</style>
 @endsection 
