@@ -33,7 +33,9 @@ class AlumniElectionController extends Controller
                     ->orWhere(function($q) use ($now) {
                         $q->where('accreditation_start', '<=', $now)
                           ->where('voting_end', '>=', $now);
-                    });
+                    })
+                    // OR completed elections (so alumni can view results)
+                    ->orWhere('status', 'completed');
             })
             ->orderBy('accreditation_start', 'desc')
             ->get();
@@ -81,8 +83,10 @@ class AlumniElectionController extends Controller
                 ->with('error', 'Election results are not yet available. Results will be published after the election is completed.');
         }
 
-        // Load election data with necessary relationships
-        $election->load(['offices.candidates.alumni.user', 'offices.candidates.votes', 'results.candidate.alumni.user', 'results.office']);
+        // Load election data with necessary relationships - ONLY approved candidates
+        $election->load(['offices.candidates' => function($query) {
+            $query->where('status', 'approved');
+        }, 'offices.candidates.alumni.user', 'offices.candidates.votes', 'results.candidate.alumni.user', 'results.office']);
 
         // Calculate basic statistics
         $totalAccredited = $election->getTotalAccreditedVoters();

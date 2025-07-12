@@ -20,7 +20,12 @@
                                 <div class="col-12 mb-3">
                                     <div class="card border-0 shadow-sm">
                                         <div class="card-body">
-                                            <h5 class="card-title fw-bold mb-3">{{ $election->title }}</h5>
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <h5 class="card-title fw-bold mb-0">{{ $election->title }}</h5>
+                                                <span class="badge {{ $election->status === 'completed' ? 'bg-success' : 'bg-primary' }}">
+                                                    {{ ucfirst($election->status) }}
+                                                </span>
+                                            </div>
                                             
                                             @if($election->offices->isEmpty())
                                                 <div class="alert alert-info mb-3">
@@ -61,23 +66,36 @@
                                             @endif
                                             
                                             <div class="d-flex flex-wrap gap-2">
-                                                <a href="{{ route('alumni.elections.accreditation', $election) }}" 
-                                                   class="btn btn-info btn-sm">
-                                                    <i class="bi bi-person-check me-1"></i>
-                                                    <span class="d-none d-sm-inline">Accreditation</span>
-                                                    <span class="d-inline d-sm-none">Accredit</span>
-                                                </a>
-                                                <a href="{{ route('alumni.elections.vote', $election) }}" 
-                                                   class="btn btn-primary btn-sm">
-                                                    <i class="bi bi-check2-square me-1"></i>
-                                                    Vote
-                                                </a>
-                                                <a href="{{ route('alumni.elections.results', $election) }}" 
-                                                   class="btn btn-secondary btn-sm">
-                                                    <i class="bi bi-bar-chart me-1"></i>
-                                                    <span class="d-none d-sm-inline">Results</span>
-                                                    <span class="d-inline d-sm-none">Results</span>
-                                                </a>
+                                                @if($election->status === 'completed')
+                                                    <!-- Completed Election - Show Results prominently -->
+                                                    <a href="{{ route('alumni.elections.results', $election) }}" 
+                                                       class="btn btn-success btn-sm">
+                                                        <i class="bi bi-trophy me-1"></i>
+                                                        <span class="d-none d-sm-inline">View Results</span>
+                                                        <span class="d-inline d-sm-none">Results</span>
+                                                    </a>
+                                                @else
+                                                    <!-- Active Election - Show normal buttons -->
+                                                    <a href="{{ route('alumni.elections.accreditation', $election) }}" 
+                                                       class="btn btn-info btn-sm">
+                                                        <i class="bi bi-person-check me-1"></i>
+                                                        <span class="d-none d-sm-inline">Accreditation</span>
+                                                        <span class="d-inline d-sm-none">Accredit</span>
+                                                    </a>
+                                                    <a href="{{ route('alumni.elections.vote', $election) }}" 
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-check2-square me-1"></i>
+                                                        Vote
+                                                    </a>
+                                                    @if($election->status === 'voting')
+                                                        <a href="{{ route('alumni.elections.results', $election) }}" 
+                                                           class="btn btn-secondary btn-sm">
+                                                            <i class="bi bi-bar-chart me-1"></i>
+                                                            <span class="d-none d-sm-inline">Live Results</span>
+                                                            <span class="d-inline d-sm-none">Results</span>
+                                                        </a>
+                                                    @endif
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
