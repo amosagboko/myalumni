@@ -70,6 +70,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('admin.onboarding-settings.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.onboarding-settings*') ? 'active' : '' }}">
+                                    <i data-feather="settings" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Onboarding Settings</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('fee-templates.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('fee-templates*') ? 'active' : '' }}">
                                     <i data-feather="file-text" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Fee Management</span>

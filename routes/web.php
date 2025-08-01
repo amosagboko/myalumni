@@ -54,6 +54,11 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     // Fee Type Management
     Route::resource('fee-types', FeeTypeController::class);
     Route::patch('fee-types/{feeType}/toggle-status', [FeeTypeController::class, 'toggleStatus'])->name('fee-types.toggle-status');
+    
+    // Onboarding Settings Management
+    Route::get('/onboarding-settings', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'index'])->name('onboarding-settings.index');
+    Route::post('/onboarding-settings/close', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'close'])->name('onboarding-settings.close');
+    Route::post('/onboarding-settings/reopen', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'reopen'])->name('onboarding-settings.reopen');
 });
 
 // Add specific route for users management

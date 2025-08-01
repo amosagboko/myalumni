@@ -34,6 +34,19 @@
                                 </div>
                             </div>
                             <div class="col-md-3 mb-3">
+                                <div class="card {{ \App\Models\OnboardingSetting::isEnabled() ? 'bg-success' : 'bg-danger' }} text-white">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Onboarding Status</h6>
+                                        <h3 class="mb-0">{{ \App\Models\OnboardingSetting::isEnabled() ? 'OPEN' : 'CLOSED' }}</h3>
+                                        <small>
+                                            <a href="{{ route('admin.onboarding-settings.index') }}" class="text-white text-decoration-none">
+                                                Manage Settings
+                                            </a>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
                                 <div class="card bg-info text-white">
                                     <div class="card-body">
                                         <h6 class="card-title">Total Alumni</h6>

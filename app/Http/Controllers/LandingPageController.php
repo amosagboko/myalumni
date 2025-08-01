@@ -11,22 +11,19 @@ use Illuminate\Support\Facades\Log;
 class LandingPageController extends Controller
 {
     /**
-     * Check if onboarding is still allowed (before midnight today - July 9, 2025)
+     * Check if onboarding is currently allowed based on admin settings
      */
     private function isOnboardingAllowed()
     {
-        // Set explicit deadline: July 9, 2025 at 23:59:59 in Lagos timezone
-        $deadline = \Carbon\Carbon::create(2025, 7, 9, 23, 59, 59, 'Africa/Lagos');
-        $currentTime = now()->setTimezone('Africa/Lagos');
+        $isEnabled = \App\Models\OnboardingSetting::isEnabled();
         
         // Log for debugging
-        \Illuminate\Support\Facades\Log::info('Onboarding deadline check', [
-            'current_time' => $currentTime->format('Y-m-d H:i:s'),
-            'deadline' => $deadline->format('Y-m-d H:i:s'),
-            'is_allowed' => $currentTime->lessThan($deadline)
+        \Illuminate\Support\Facades\Log::info('Onboarding status check', [
+            'current_time' => now()->format('Y-m-d H:i:s'),
+            'is_enabled' => $isEnabled
         ]);
         
-        return $currentTime->lessThan($deadline);
+        return $isEnabled;
     }
 
     public function index()

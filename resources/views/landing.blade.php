@@ -94,13 +94,22 @@
                 <div class="search-section">
                     <h2 class="text-center mb-4">Retrieve Your Alumni Credentials</h2>
                     
-                    <!-- Deadline Notice -->
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Important Notice:</strong> Alumni onboarding will close at midnight today (Jul 09, 2025 at 11:59 PM). 
-                        Please complete your registration before the deadline.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                    <!-- Onboarding Status Notice -->
+                    @if(\App\Models\OnboardingSetting::isEnabled())
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Onboarding Status:</strong> Alumni registration is currently open. 
+                            Please complete your registration to access the alumni portal.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @else
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Onboarding Status:</strong> Alumni registration is currently closed. 
+                            Please check back later or contact the administrator for more information.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
                     
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
