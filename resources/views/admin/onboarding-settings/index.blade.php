@@ -1,7 +1,5 @@
-@extends('layouts.admin')
-
-@section('content')
-<div class="container-fluid mt-3 mt-md-5 pt-3 pt-md-7 px-3 px-md-4">
+<x-alumniadmin-dashboard>
+<div class="container mt-5 pt-5" style="margin-left: 150px;">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-8">
             <div class="card shadow-sm">
@@ -175,4 +173,4 @@
         </div>
     </div>
 </div>
-@endsection 
+</x-alumniadmin-dashboard> 
