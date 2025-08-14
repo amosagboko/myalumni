@@ -33,4 +33,20 @@ class Vote extends Model
     {
         return $this->belongsTo(AccreditedVoter::class);
     }
+
+    /**
+     * Boot the model to add validation rules.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Ensure only approved candidates can receive votes
+        static::creating(function ($vote) {
+            $candidate = \App\Models\Candidate::find($vote->candidate_id);
+            if (!$candidate || $candidate->status !== 'approved') {
+                throw new \Exception('Cannot create vote for non-approved candidate.');
+            }
+        });
+    }
 } 

@@ -413,7 +413,11 @@ class ElectionController extends Controller
             return back()->with('error', 'Results are only available during voting or after completion.');
         }
 
-        $election->load(['offices.candidates.alumni.user', 'offices.candidates.votes']);
+        // Load ONLY approved candidates for printing
+        $election->load(['offices.candidates' => function($query) {
+            $query->where('status', 'approved'); // Only approved candidates in print results
+        }, 'offices.candidates.alumni.user', 'offices.candidates.votes']);
+        
         return view('elcom.elections.print-full-results', compact('election'));
     }
 
@@ -426,7 +430,11 @@ class ElectionController extends Controller
             return back()->with('error', 'Results are only available during voting or after completion.');
         }
 
-        $election->load(['offices.candidates.alumni.user', 'offices.candidates.votes']);
+        // Load ONLY approved candidates for printing winners
+        $election->load(['offices.candidates' => function($query) {
+            $query->where('status', 'approved'); // Only approved candidates in winners list
+        }, 'offices.candidates.alumni.user', 'offices.candidates.votes']);
+        
         return view('elcom.elections.print-winners', compact('election'));
     }
 
@@ -439,7 +447,11 @@ class ElectionController extends Controller
             return back()->with('error', 'Certificates are only available after election completion.');
         }
 
-        $election->load(['offices.candidates.alumni', 'offices.candidates.electionResults']);
+        // Load ONLY approved candidates for certificates
+        $election->load(['offices.candidates' => function($query) {
+            $query->where('status', 'approved'); // Only approved candidates get certificates
+        }, 'offices.candidates.alumni', 'offices.candidates.electionResults']);
+        
         return view('elcom.elections.print-certificates', compact('election'));
     }
 
@@ -945,7 +957,9 @@ class ElectionController extends Controller
 
         return response()->stream(function() use ($election) {
             while (true) {
-                $election->load(['offices.candidates.alumni.user', 'offices.candidates.votes']);
+                $election->load(['offices.candidates' => function($query) {
+                    $query->where('status', 'approved'); // Only approved candidates in results
+                }, 'offices.candidates.alumni.user', 'offices.candidates.votes']);
                 
                 $data = [
                     'totalAccredited' => $election->getTotalAccreditedVoters(),

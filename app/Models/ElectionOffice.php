@@ -63,4 +63,20 @@ class ElectionOffice extends Model
     {
         return $this->votes()->count();
     }
+
+    /**
+     * Get only approved candidates for this office.
+     */
+    public function approvedCandidates()
+    {
+        return $this->candidates()->where('status', 'approved');
+    }
+
+    /**
+     * Get only candidates eligible for ballot (approved status).
+     */
+    public function ballotCandidates()
+    {
+        return $this->approvedCandidates();
+    }
 } 

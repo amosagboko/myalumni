@@ -56,8 +56,11 @@ class AlumniElectionController extends Controller
      */
     public function vote(Election $election)
     {
-        // Show voting form for this election
-        $offices = $election->offices()->with('candidates.alumni')->get();
+        // Show voting form for this election - ONLY approved candidates
+        $offices = $election->offices()->with(['candidates' => function($query) {
+            $query->where('status', 'approved'); // Only approved candidates appear on ballot
+        }, 'candidates.alumni'])->get();
+        
         $totalAccredited = $election->getTotalAccreditedVoters();
         $totalSubscribed = $election->getTotalSubscribedUsers();
         $totalExempted = $election->getTotalExemptedUsers();
@@ -571,8 +574,10 @@ class AlumniElectionController extends Controller
             'votes.*' => 'required|exists:candidates,id'
         ]);
 
-        // Verify that each vote is for a valid candidate in this election
-        $offices = $election->offices()->with(['candidates.alumni.user'])->get();
+        // Verify that each vote is for a valid candidate in this election - ONLY approved candidates
+        $offices = $election->offices()->with(['candidates' => function($query) {
+            $query->where('status', 'approved'); // Only approved candidates can receive votes
+        }, 'candidates.alumni.user'])->get();
         $validCandidates = $offices->flatMap->candidates->pluck('id')->toArray();
 
         foreach ($validated['votes'] as $officeId => $candidateId) {

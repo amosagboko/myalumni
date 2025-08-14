@@ -233,6 +233,38 @@ class Candidate extends Model
         return $this->status === 'pending';
     }
 
+    /**
+     * Scope a query to only include approved candidates.
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    /**
+     * Scope a query to only include candidates eligible for ballot.
+     */
+    public function scopeEligibleForBallot($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    /**
+     * Check if this candidate can appear on the ballot.
+     */
+    public function canAppearOnBallot(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    /**
+     * Check if this candidate can receive votes.
+     */
+    public function canReceiveVotes(): bool
+    {
+        return $this->status === 'approved';
+    }
+
     // For backward compatibility
     public function agent(): BelongsTo
     {
