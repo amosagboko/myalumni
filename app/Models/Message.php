@@ -33,4 +33,36 @@ class Message extends Model
     {
         return $this->belongsTo(User::class, 'receiver_id');
     }
+
+    /**
+     * Scope a query to only include messages older than specified days.
+     */
+    public function scopeOlderThan($query, $days)
+    {
+        return $query->where('created_at', '<', now()->subDays($days));
+    }
+
+    /**
+     * Scope a query to only include messages newer than specified days.
+     */
+    public function scopeNewerThan($query, $days)
+    {
+        return $query->where('created_at', '>=', now()->subDays($days));
+    }
+
+    /**
+     * Check if this message is older than specified days.
+     */
+    public function isOlderThan($days): bool
+    {
+        return $this->created_at->lt(now()->subDays($days));
+    }
+
+    /**
+     * Get the age of this message in days.
+     */
+    public function getAgeInDays(): int
+    {
+        return $this->created_at->diffInDays(now());
+    }
 }

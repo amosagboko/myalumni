@@ -19,6 +19,7 @@ class Kernel extends ConsoleKernel
     {
         // ... existing scheduled tasks ...
         $schedule->command('content:cleanup')->daily();
+        $schedule->command('chat:cleanup')->daily(); // Clean up old chat messages daily
         $schedule->command('eoi:sync-candidate-payments')->everyTwoMinutes();
     }
 
@@ -39,6 +40,8 @@ class Kernel extends ConsoleKernel
             Commands\ListElections::class,
             Commands\ExportDatabase::class,
             \App\Console\Commands\SyncEoiCandidatePayments::class,
+            \App\Console\Commands\CleanupOldChats::class,
+            \App\Console\Commands\TestChatCleanup::class,
         ];
     }
 } 
