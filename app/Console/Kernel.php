@@ -42,6 +42,7 @@ class Kernel extends ConsoleKernel
             \App\Console\Commands\SyncEoiCandidatePayments::class,
             \App\Console\Commands\CleanupOldChats::class,
             \App\Console\Commands\TestChatCleanup::class,
+            \App\Console\Commands\TestContentCleanup::class,
         ];
     }
 } 
