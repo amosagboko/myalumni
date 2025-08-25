@@ -42,6 +42,10 @@ return [
         'test_mode' => env('CREDOCENTRAL_TEST_MODE', false),
         'service_codes' => [
             'subscription' => '003486U9Q446',
+            'registration' => '003486REG2025',
+            'development_levy' => '003486DEV2025',
+            'data_processing' => '003486DAT2025',
+            'tech_support' => '003486TEC2025',
             'eoi-nat-president'        => '0034865MAOAN',
             'eoi-deputy-national'      => '0034865MAOAN',
             'eoi-nat-sec-gen'          => '0034865MAOAN',
@@ -53,7 +57,6 @@ return [
             'eoi-nat-wel-off'          => '0034865MAOAN',
             'eoi-nat-provost'          => '0034865MAOAN',
             'eoi-sudo'                 => '0034865MAOAN',
-
 
             // Add more as needed
         ],

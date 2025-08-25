@@ -131,7 +131,9 @@ class Alumni extends Model
 
         // For 2025+ graduates only, get fees based on the alumni's category and active year
         if ($this->year_of_graduation >= 2025) {
+            // Get fees specific to this alumni's category
             $fees = FeeTemplate::where('graduation_year', $activeYear->year)
+                ->where('category_id', $this->category_id) // Filter by alumni's category
                 ->where('is_active', true)
                 ->where('valid_from', '<=', now())
                 ->where(function ($query) {
@@ -139,6 +141,22 @@ class Alumni extends Model
                         ->orWhere('valid_until', '>', now());
                 })
                 ->get();
+
+            Log::info('Category-based fees for 2025+ alumni', [
+                'alumni_id' => $this->id,
+                'graduation_year' => $this->year_of_graduation,
+                'category_id' => $this->category_id,
+                'category_name' => $this->category?->name ?? 'Unknown',
+                'fee_count' => $fees->count(),
+                'total_amount' => $fees->sum('amount'),
+                'fees' => $fees->map(function($fee) {
+                    return [
+                        'fee_type' => $fee->feeType->code ?? 'unknown',
+                        'amount' => $fee->amount,
+                        'description' => $fee->description
+                    ];
+                })->toArray()
+            ]);
 
             return $fees;
         }
