@@ -14,7 +14,7 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased" x-data="{ open: false }">
     <div class="min-h-screen bg-gray-100">
         <!-- Navigation -->
         <nav class="bg-white border-b border-gray-100">
@@ -108,8 +108,20 @@
                     <x-responsive-nav-link :href="route('admin.users')" :active="request()->routeIs('admin.users*')">
                         {{ __('Users') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('fee-templates.index')" :active="request()->routeIs('fee-templates*')">
+                    <x-responsive-nav-link :href="route('admin.fee-types.index')" :active="request()->routeIs('admin.fee-types*')">
+                        {{ __('Fee Types') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.fee-templates.index')" :active="request()->routeIs('admin.fee-templates*')">
                         {{ __('Fee Templates') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.alumni-categories.index')" :active="request()->routeIs('admin.alumni-categories*')">
+                        {{ __('Categories') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.alumni-categories.assign')" :active="request()->routeIs('admin.alumni-categories.assign*')">
+                        {{ __('Assign Categories') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions*')">
+                        {{ __('Transactions') }}
                     </x-responsive-nav-link>
                 </div>
 
@@ -150,7 +162,7 @@
 
         <!-- Page Content -->
         <main>
-            {{ $slot }}
+            @yield('content')
         </main>
     </div>
 </body>
