@@ -1,5 +1,23 @@
 # 🎯 Complete UI Management Implementation Guide
 
+## **Important Note: Two Different Fee Management Systems**
+
+The system has **two different fee management interfaces**:
+
+### **1. Fee Management (Legacy System)**
+- **Route**: `/fee-templates` 
+- **Controller**: `FeeTemplateController@index`
+- **Purpose**: Original fee template management
+- **Menu Item**: "Fee Management"
+
+### **2. Fee Templates (New Enhanced System)**
+- **Route**: `/admin/fee-templates`
+- **Controller**: `Admin\FeeTemplateController@index` 
+- **Purpose**: Enhanced fee template management with category-based fees
+- **Menu Item**: "Fee Templates"
+
+**Recommendation**: Use the new "Fee Templates" system for managing the 2025+ category-based fee structure.
+
 ## **Overview**
 This document outlines the complete UI management system implemented for the Alumni Portal, enabling administrators to manage all aspects of the application through a user-friendly interface.
 

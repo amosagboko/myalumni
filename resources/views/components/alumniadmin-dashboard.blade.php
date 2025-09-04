@@ -82,6 +82,30 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('admin.fee-templates.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.fee-templates*') ? 'active' : '' }}">
+                                    <i data-feather="file-text" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Fee Templates</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.alumni-categories.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.alumni-categories*') ? 'active' : '' }}">
+                                    <i data-feather="tag" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Categories</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.alumni-categories.assign') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.alumni-categories.assign*') ? 'active' : '' }}">
+                                    <i data-feather="user-check" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Assign Categories</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.transactions.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.transactions*') ? 'active' : '' }}">
+                                    <i data-feather="credit-card" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Transactions</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('alumni-years.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni-years.*') ? 'active' : '' }}">
                                     <i data-feather="calendar" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Alumni Years</span>
