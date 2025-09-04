@@ -4,7 +4,7 @@
             <div class="col-md-7">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1 class="h3 mb-0">Add New Alumni Category</h1>
-                    <a href="{{ route('admin.categories.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('admin.alumni-categories.index') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Categories
                     </a>
                 </div>
@@ -18,7 +18,7 @@
 
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <form action="{{ route('admin.categories.store') }}" method="POST">
+                        <form action="{{ route('admin.alumni-categories.store') }}" method="POST">
                             @csrf
                             <div class="mb-3">
                                 <label for="name" class="form-label">Name</label>

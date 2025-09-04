@@ -61,7 +61,7 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::post('fee-templates/{feeTemplate}/deactivate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'deactivate'])->name('fee-templates.deactivate');
     
     // Alumni Category Management
-    Route::resource('alumni-categories', AlumniCategoryController::class);
+    Route::resource('alumni-categories', \App\Http\Controllers\Admin\AlumniCategoryController::class);
     Route::get('alumni-categories/assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'index'])->name('alumni-categories.assign');
     Route::post('alumni-categories/assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'assign'])->name('alumni-categories.assign-single');
     Route::post('alumni-categories/bulk-assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'bulkAssign'])->name('alumni-categories.bulk-assign');

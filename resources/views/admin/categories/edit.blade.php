@@ -14,7 +14,7 @@
                             </div>
                         @endif
 
-                        <form action="{{ route('admin.categories.update', $category) }}" method="POST">
+                        <form action="{{ route('admin.alumni-categories.update', $alumniCategory) }}" method="POST">
                             @csrf
                             @method('PUT')
                             
@@ -24,7 +24,7 @@
                                        class="form-control @error('name') is-invalid @enderror" 
                                        id="name" 
                                        name="name" 
-                                       value="{{ old('name', $category->name) }}" 
+                                       value="{{ old('name', $alumniCategory->name) }}" 
                                        required>
                                 @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -36,7 +36,7 @@
                                 <textarea class="form-control @error('description') is-invalid @enderror" 
                                           id="description" 
                                           name="description" 
-                                          rows="3">{{ old('description', $category->description) }}</textarea>
+                                          rows="3">{{ old('description', $alumniCategory->description) }}</textarea>
                                 @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -49,7 +49,7 @@
                                            id="is_active" 
                                            name="is_active" 
                                            value="1" 
-                                           {{ old('is_active', $category->is_active) ? 'checked' : '' }}>
+                                           {{ old('is_active', $alumniCategory->is_active) ? 'checked' : '' }}>
                                     <label class="form-check-label" for="is_active">Active</label>
                                     @error('is_active')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -58,7 +58,7 @@
                             </div>
 
                             <div class="d-flex justify-content-end gap-2">
-                                <a href="{{ route('admin.categories.index') }}" class="btn btn-light">Cancel</a>
+                                <a href="{{ route('admin.alumni-categories.index') }}" class="btn btn-light">Cancel</a>
                                 <button type="submit" class="btn btn-primary">Update Category</button>
                             </div>
                         </form>

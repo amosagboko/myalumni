@@ -7,7 +7,7 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Alumni Categories</h5>
-                                <a href="{{ route('admin.categories.create') }}" class="btn btn-primary btn-sm">
+                                <a href="{{ route('admin.alumni-categories.create') }}" class="btn btn-primary btn-sm">
                                     <i data-feather="plus" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                                     Add New Category
                                 </a>
@@ -51,12 +51,12 @@
                                                     </td>
                                                     <td>
                                                         <div class="btn-group">
-                                                            <a href="{{ route('admin.categories.edit', $category) }}" 
+                                                            <a href="{{ route('admin.alumni-categories.edit', $category) }}" 
                                                                class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="edit-2" class="btn-round-md" style="width: 14px; height: 14px;"></i>
                                                             </a>
                                                             @if($category->alumni_count === 0 && !$category->hasFees())
-                                                                <form action="{{ route('admin.categories.destroy', $category) }}" 
+                                                                <form action="{{ route('admin.alumni-categories.destroy', $category) }}" 
                                                                       method="POST" 
                                                                       class="d-inline"
                                                                       onsubmit="return confirm('Are you sure you want to delete this category?');">
