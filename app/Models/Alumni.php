@@ -36,6 +36,7 @@ class Alumni extends Model
         'hobbies',
         'other_information',
         'created_by',
+        'category_id',
     ];
 
     /**
