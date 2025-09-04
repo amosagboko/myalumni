@@ -27,19 +27,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                     <div class="bg-blue-50 p-4 rounded-lg">
                         <div class="text-sm font-medium text-blue-600">Total Transactions</div>
-                        <div class="text-2xl font-bold text-blue-900">{{ $statistics['total'] }}</div>
+                        <div class="text-2xl font-bold text-blue-900">{{ $stats['total'] }}</div>
                     </div>
                     <div class="bg-green-50 p-4 rounded-lg">
                         <div class="text-sm font-medium text-green-600">Paid</div>
-                        <div class="text-2xl font-bold text-green-900">{{ $statistics['paid'] }}</div>
+                        <div class="text-2xl font-bold text-green-900">{{ $stats['paid'] }}</div>
                     </div>
                     <div class="bg-yellow-50 p-4 rounded-lg">
                         <div class="text-sm font-medium text-yellow-600">Pending</div>
-                        <div class="text-2xl font-bold text-yellow-900">{{ $statistics['pending'] }}</div>
+                        <div class="text-2xl font-bold text-yellow-900">{{ $stats['pending'] }}</div>
                     </div>
                     <div class="bg-red-50 p-4 rounded-lg">
                         <div class="text-sm font-medium text-red-600">Failed</div>
-                        <div class="text-2xl font-bold text-red-900">{{ $statistics['failed'] }}</div>
+                        <div class="text-2xl font-bold text-red-900">{{ $stats['failed'] }}</div>
                     </div>
                 </div>
 
@@ -109,8 +109,8 @@
                                         <div class="text-sm font-medium text-gray-900">{{ $transaction->reference }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $transaction->alumni->full_name }}</div>
-                                        <div class="text-sm text-gray-500">{{ $transaction->alumni->email }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $transaction->alumni->user->name }}</div>
+                                        <div class="text-sm text-gray-500">{{ $transaction->alumni->user->email }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">{{ $transaction->feeTemplate->feeType->name }}</div>
