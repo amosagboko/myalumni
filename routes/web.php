@@ -55,6 +55,27 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::resource('fee-types', FeeTypeController::class);
     Route::patch('fee-types/{feeType}/toggle-status', [FeeTypeController::class, 'toggleStatus'])->name('fee-types.toggle-status');
     
+    // Fee Template Management
+    Route::resource('fee-templates', \App\Http\Controllers\Admin\FeeTemplateController::class);
+    Route::post('fee-templates/{feeTemplate}/activate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'activate'])->name('fee-templates.activate');
+    Route::post('fee-templates/{feeTemplate}/deactivate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'deactivate'])->name('fee-templates.deactivate');
+    
+    // Alumni Category Management
+    Route::resource('alumni-categories', AlumniCategoryController::class);
+    Route::get('alumni-categories/assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'index'])->name('alumni-categories.assign');
+    Route::post('alumni-categories/assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'assign'])->name('alumni-categories.assign-single');
+    Route::post('alumni-categories/bulk-assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'bulkAssign'])->name('alumni-categories.bulk-assign');
+    Route::post('alumni-categories/remove', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'removeCategory'])->name('alumni-categories.remove');
+    Route::post('alumni-categories/bulk-remove', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'bulkRemoveCategory'])->name('alumni-categories.bulk-remove');
+    Route::get('alumni-categories/export', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'export'])->name('alumni-categories.export');
+    
+    // Transaction Management
+    Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('transactions/{transaction}', [\App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('transactions.show');
+    Route::post('transactions/{transaction}/mark-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markPaid'])->name('transactions.mark-paid');
+    Route::post('transactions/{transaction}/mark-failed', [\App\Http\Controllers\Admin\TransactionController::class, 'markFailed'])->name('transactions.mark-failed');
+    Route::get('transactions/export', [\App\Http\Controllers\Admin\TransactionController::class, 'export'])->name('transactions.export');
+    
     // Onboarding Settings Management
     Route::get('/onboarding-settings', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'index'])->name('onboarding-settings.index');
     Route::post('/onboarding-settings/close', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'close'])->name('onboarding-settings.close');

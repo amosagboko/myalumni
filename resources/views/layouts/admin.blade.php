@@ -36,8 +36,20 @@
                             <x-nav-link :href="route('admin.users')" :active="request()->routeIs('admin.users*')">
                                 {{ __('Users') }}
                             </x-nav-link>
-                            <x-nav-link :href="route('fee-templates.index')" :active="request()->routeIs('fee-templates*')">
+                            <x-nav-link :href="route('admin.fee-types.index')" :active="request()->routeIs('admin.fee-types*')">
+                                {{ __('Fee Types') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('admin.fee-templates.index')" :active="request()->routeIs('admin.fee-templates*')">
                                 {{ __('Fee Templates') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('admin.alumni-categories.index')" :active="request()->routeIs('admin.alumni-categories*')">
+                                {{ __('Categories') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('admin.alumni-categories.assign')" :active="request()->routeIs('admin.alumni-categories.assign*')">
+                                {{ __('Assign Categories') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions*')">
+                                {{ __('Transactions') }}
                             </x-nav-link>
                         </div>
                     </div>
