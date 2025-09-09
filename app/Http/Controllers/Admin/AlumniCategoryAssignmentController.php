@@ -48,9 +48,9 @@ class AlumniCategoryAssignmentController extends Controller
 
         $alumni = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // Get filter options
-        $faculties = Alumni::distinct()->pluck('faculty')->sort();
-        $graduationYears = Alumni::distinct()->pluck('year_of_graduation')->sort()->reverse();
+        // Get filter options - handle empty collections gracefully
+        $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort();
+        $graduationYears = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse();
         $categories = AlumniCategory::where('is_active', true)->get();
 
         return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'));
