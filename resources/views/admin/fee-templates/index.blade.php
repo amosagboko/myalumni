@@ -1,164 +1,178 @@
-<x-alumniadmin-dashboard>
-    <div class="container mx-auto px-4 py-8">
-        <div class="max-w-7xl mx-auto">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Fee Templates Management</h2>
-                    <a href="{{ route('admin.fee-templates.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                        <i class="fas fa-plus mr-2"></i>Create Fee Template
-                    </a>
-                </div>
+<x-alumniadmin-dashboard title="Fee Templates | FuLafia Alumni">
+    <div class="main-content right-chat-active">
+        <div class="middle-sidebar-bottom">
+            <div class="middle-sidebar-left">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Fee Templates</h5>
+                                <a href="{{ route('admin.fee-templates.create') }}" class="btn btn-primary btn-sm">
+                                    <i data-feather="plus" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
+                                    Add New Template
+                                </a>
+                            </div>
+                            <div class="card-body">
+                                @if(session('success'))
+                                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                        {{ session('success') }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                @endif
 
-                @if(session('success'))
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                        {{ session('success') }}
-                    </div>
-                @endif
+                                @if(session('error'))
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                        {{ session('error') }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                @endif
 
-                @if(session('error'))
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                        {{ session('error') }}
-                    </div>
-                @endif
-
-                <!-- Filters -->
-                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label for="fee_type" class="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
-                            <select name="fee_type" id="fee_type" class="w-full border-gray-300 rounded-md shadow-sm">
-                                <option value="">All Types</option>
-                                @foreach($feeTypes as $feeType)
-                                    <option value="{{ $feeType->id }}" {{ request('fee_type') == $feeType->id ? 'selected' : '' }}>
-                                        {{ $feeType->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label for="graduation_year" class="block text-sm font-medium text-gray-700 mb-1">Graduation Year</label>
-                            <select name="graduation_year" id="graduation_year" class="w-full border-gray-300 rounded-md shadow-sm">
-                                <option value="">All Years</option>
-                                @for($year = date('Y') + 1; $year >= 2020; $year--)
-                                    <option value="{{ $year }}" {{ request('graduation_year') == $year ? 'selected' : '' }}>
-                                        {{ $year }}
-                                    </option>
-                                @endfor
-                            </select>
-                        </div>
-                        <div>
-                            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                            <select name="category" id="category" class="w-full border-gray-300 rounded-md shadow-sm">
-                                <option value="">All Categories</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="flex items-end">
-                            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
-                                Filter
-                            </button>
-                            <a href="{{ route('admin.fee-templates.index') }}" class="ml-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
-                                Clear
-                            </a>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Fee Templates Table -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validity</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @forelse($feeTemplates as $template)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $template->feeType->name }}</div>
-                                        <div class="text-sm text-gray-500">{{ $template->feeType->code }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $template->graduation_year }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        @if($template->category)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                {{ $template->category->name }}
-                                            </span>
-                                        @else
-                                            <span class="text-gray-400">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        ₦{{ number_format($template->amount, 2) }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($template->is_active)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                Active
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                Inactive
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <div>{{ \Carbon\Carbon::parse($template->valid_from)->format('M d, Y') }}</div>
-                                        @if($template->valid_until)
-                                            <div class="text-gray-500">to {{ \Carbon\Carbon::parse($template->valid_until)->format('M d, Y') }}</div>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <div class="flex space-x-2">
-                                            <a href="{{ route('admin.fee-templates.edit', $template) }}" class="text-blue-600 hover:text-blue-900">Edit</a>
-                                            @if($template->is_active)
-                                                <form action="{{ route('admin.fee-templates.deactivate', $template) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    <button type="submit" class="text-yellow-600 hover:text-yellow-900" onclick="return confirm('Deactivate this template?')">Deactivate</button>
-                                                </form>
-                                            @else
-                                                <form action="{{ route('admin.fee-templates.activate', $template) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    <button type="submit" class="text-green-600 hover:text-green-900" onclick="return confirm('Activate this template?')">Activate</button>
-                                                </form>
-                                            @endif
-                                            @if($template->transactions->count() == 0)
-                                                <form action="{{ route('admin.fee-templates.destroy', $template) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Delete this template? This action cannot be undone.')">Delete</button>
-                                                </form>
-                                            @endif
+                                <!-- Filters -->
+                                <div class="mb-4 p-3 bg-light rounded">
+                                    <form method="GET" class="row g-3">
+                                        <div class="col-md-3">
+                                            <label for="fee_type" class="form-label">Fee Type</label>
+                                            <select name="fee_type" id="fee_type" class="form-select">
+                                                <option value="">All Types</option>
+                                                @foreach($feeTypes as $feeType)
+                                                    <option value="{{ $feeType->id }}" {{ request('fee_type') == $feeType->id ? 'selected' : '' }}>
+                                                        {{ $feeType->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                         </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                                        No fee templates found.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                        <div class="col-md-3">
+                                            <label for="graduation_year" class="form-label">Graduation Year</label>
+                                            <select name="graduation_year" id="graduation_year" class="form-select">
+                                                <option value="">All Years</option>
+                                                @for($year = date('Y') + 1; $year >= 2020; $year--)
+                                                    <option value="{{ $year }}" {{ request('graduation_year') == $year ? 'selected' : '' }}>
+                                                        {{ $year }}
+                                                    </option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="category" class="form-label">Category</label>
+                                            <select name="category" id="category" class="form-select">
+                                                <option value="">All Categories</option>
+                                                @foreach($categories as $category)
+                                                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                                        {{ $category->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 d-flex align-items-end">
+                                            <button type="submit" class="btn btn-outline-primary me-2">
+                                                <i data-feather="search" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
+                                                Filter
+                                            </button>
+                                            <a href="{{ route('admin.fee-templates.index') }}" class="btn btn-outline-secondary">
+                                                <i data-feather="x" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
+                                                Clear
+                                            </a>
+                                        </div>
+                                    </form>
+                                </div>
 
-                <!-- Pagination -->
-                <div class="mt-6">
-                    {{ $feeTemplates->links() }}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Fee Type</th>
+                                                <th>Year</th>
+                                                <th>Category</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                                <th>Validity</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($feeTemplates as $template)
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-bold">{{ $template->feeType->name }}</div>
+                                                        <small class="text-muted">{{ $template->feeType->code }}</small>
+                                                    </td>
+                                                    <td>{{ $template->graduation_year }}</td>
+                                                    <td>
+                                                        @if($template->category)
+                                                            <span class="badge bg-primary">{{ $template->category->name }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="fw-bold">₦{{ number_format($template->amount, 2) }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ $template->is_active ? 'success' : 'danger' }}">
+                                                            {{ $template->is_active ? 'Active' : 'Inactive' }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div>{{ \Carbon\Carbon::parse($template->valid_from)->format('M d, Y') }}</div>
+                                                        @if($template->valid_until)
+                                                            <small class="text-muted">to {{ \Carbon\Carbon::parse($template->valid_until)->format('M d, Y') }}</small>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group">
+                                                            <a href="{{ route('admin.fee-templates.edit', $template) }}" 
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                <i data-feather="edit-2" class="btn-round-md" style="width: 14px; height: 14px;"></i>
+                                                            </a>
+                                                            @if($template->is_active)
+                                                                <form action="{{ route('admin.fee-templates.deactivate', $template) }}" 
+                                                                      method="POST" 
+                                                                      class="d-inline"
+                                                                      onsubmit="return confirm('Deactivate this template?');">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                                        <i data-feather="pause" class="btn-round-md" style="width: 14px; height: 14px;"></i>
+                                                                    </button>
+                                                                </form>
+                                                            @else
+                                                                <form action="{{ route('admin.fee-templates.activate', $template) }}" 
+                                                                      method="POST" 
+                                                                      class="d-inline"
+                                                                      onsubmit="return confirm('Activate this template?');">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                                                        <i data-feather="play" class="btn-round-md" style="width: 14px; height: 14px;"></i>
+                                                                    </button>
+                                                                </form>
+                                                            @endif
+                                                            @if($template->transactions->count() == 0)
+                                                                <form action="{{ route('admin.fee-templates.destroy', $template) }}" 
+                                                                      method="POST" 
+                                                                      class="d-inline"
+                                                                      onsubmit="return confirm('Delete this template? This action cannot be undone.');">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                        <i data-feather="trash-2" class="btn-round-md" style="width: 14px; height: 14px;"></i>
+                                                                    </button>
+                                                                </form>
+                                                            @endif
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="7" class="text-center">No fee templates found.</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="mt-4">
+                                    {{ $feeTemplates->links() }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
