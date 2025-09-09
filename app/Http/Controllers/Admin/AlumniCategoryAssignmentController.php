@@ -13,7 +13,8 @@ class AlumniCategoryAssignmentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Alumni::with(['user', 'category']);
+        try {
+            $query = Alumni::with(['user', 'category']);
 
         // Apply search filter
         if ($request->filled('search')) {
@@ -53,7 +54,22 @@ class AlumniCategoryAssignmentController extends Controller
         $graduationYears = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse();
         $categories = AlumniCategory::where('is_active', true)->get();
 
-        return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'));
+            return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'));
+        } catch (\Exception $e) {
+            Log::error('Error in AlumniCategoryAssignmentController@index', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return view with empty data to prevent 500 error
+            $alumni = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+            $faculties = collect();
+            $graduationYears = collect();
+            $categories = collect();
+            
+            return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'))
+                ->with('error', 'There was an issue loading the alumni data. Please check the error logs.');
+        }
     }
 
     public function assign(Request $request)
