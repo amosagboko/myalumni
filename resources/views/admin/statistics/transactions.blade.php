@@ -179,12 +179,7 @@
                                                         <small class="text-muted">{{ $transaction->created_at->format('H:i') }}</small>
                                                     </td>
                                                     <td>
-                                                        <div class="btn-group">
-                                                            <a href="{{ route('transactions.show', $transaction) }}" 
-                                                               class="btn btn-sm btn-outline-primary">
-                                                                <i data-feather="eye" class="btn-round-md" style="width: 14px; height: 14px;"></i>
-                                                            </a>
-                                                        </div>
+                                                        <span class="text-muted">View Only</span>
                                                     </td>
                                                 </tr>
                                             @empty
