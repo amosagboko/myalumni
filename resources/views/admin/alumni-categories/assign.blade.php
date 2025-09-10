@@ -133,7 +133,6 @@
                                                 </th>
                                                 <th>Name</th>
                                                 <th>Matric</th>
-                                                <th>Email</th>
                                                 <th>Faculty</th>
                                                 <th>Graduation Year</th>
                                                 <th style="width: 120px;">Current Category</th>
@@ -150,7 +149,6 @@
                                                         <div class="fw-bold">{{ $alumnus->user->name ?? 'N/A' }}</div>
                                                     </td>
                                                     <td>{{ $alumnus->matric_number ?? 'N/A' }}</td>
-                                                    <td>{{ $alumnus->user->email ?? 'N/A' }}</td>
                                                     <td>{{ $alumnus->faculty ?? 'N/A' }}</td>
                                                     <td>{{ $alumnus->year_of_graduation ?? 'N/A' }}</td>
                                                     <td class="text-center" style="width: 120px;">
@@ -174,7 +172,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="8" class="text-center">No alumni found.</td>
+                                                    <td colspan="7" class="text-center">No alumni found.</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
