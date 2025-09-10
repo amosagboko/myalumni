@@ -7,7 +7,7 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Transaction Management</h5>
-                                <a href="{{ route('admin.transactions.export') }}" class="btn btn-success btn-sm">
+                                <a href="{{ route('transactions.export') }}" class="btn btn-success btn-sm">
                                     <i data-feather="download" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                                     Export
                                 </a>
@@ -130,7 +130,7 @@
                                                 <i data-feather="search" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                                                 Filter
                                             </button>
-                                            <a href="{{ route('admin.transactions.index') }}" class="btn btn-outline-secondary">
+                                            <a href="{{ route('transactions.index') }}" class="btn btn-outline-secondary">
                                                 <i data-feather="x" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                                                 Clear
                                             </a>
@@ -184,12 +184,12 @@
                                                     </td>
                                                     <td>
                                                         <div class="btn-group">
-                                                            <a href="{{ route('admin.transactions.show', $transaction) }}" 
+                                                            <a href="{{ route('transactions.show', $transaction) }}" 
                                                                class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="eye" class="btn-round-md" style="width: 14px; height: 14px;"></i>
                                                             </a>
                                                             @if($transaction->status === 'pending')
-                                                                <form action="{{ route('admin.transactions.mark-paid', $transaction) }}" 
+                                                                <form action="{{ route('transactions.mark-paid', $transaction) }}" 
                                                                       method="POST" 
                                                                       class="d-inline"
                                                                       onsubmit="return confirm('Mark this transaction as paid?');">
@@ -198,7 +198,7 @@
                                                                         <i data-feather="check" class="btn-round-md" style="width: 14px; height: 14px;"></i>
                                                                     </button>
                                                                 </form>
-                                                                <form action="{{ route('admin.transactions.mark-failed', $transaction) }}" 
+                                                                <form action="{{ route('transactions.mark-failed', $transaction) }}" 
                                                                       method="POST" 
                                                                       class="d-inline"
                                                                       onsubmit="return confirm('Mark this transaction as failed?');">

@@ -7,7 +7,7 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Transaction Details</h5>
-                                <a href="{{ route('admin.transactions.index') }}" class="btn btn-secondary btn-sm">
+                                <a href="{{ route('transactions.index') }}" class="btn btn-secondary btn-sm">
                                     <i data-feather="arrow-left" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                                     Back to Transactions
                                 </a>
@@ -210,7 +210,7 @@
                                                 </div>
                                                 <div class="card-body">
                                                     <div class="btn-group">
-                                                        <form action="{{ route('admin.transactions.mark-paid', $transaction) }}" 
+                                                        <form action="{{ route('transactions.mark-paid', $transaction) }}" 
                                                               method="POST" 
                                                               class="d-inline"
                                                               onsubmit="return confirm('Mark this transaction as paid?');">
@@ -220,7 +220,7 @@
                                                                 Mark as Paid
                                                             </button>
                                                         </form>
-                                                        <form action="{{ route('admin.transactions.mark-failed', $transaction) }}" 
+                                                        <form action="{{ route('transactions.mark-failed', $transaction) }}" 
                                                               method="POST" 
                                                               class="d-inline"
                                                               onsubmit="return confirm('Mark this transaction as failed?');">

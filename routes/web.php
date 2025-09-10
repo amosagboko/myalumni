@@ -73,11 +73,11 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::resource('alumni-categories', \App\Http\Controllers\Admin\AlumniCategoryController::class);
     
     // Transaction Management
-    Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('admin.transactions.index');
-    Route::get('transactions/{transaction}', [\App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('admin.transactions.show');
-    Route::post('transactions/{transaction}/mark-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markPaid'])->name('admin.transactions.mark-paid');
-    Route::post('transactions/{transaction}/mark-failed', [\App\Http\Controllers\Admin\TransactionController::class, 'markFailed'])->name('admin.transactions.mark-failed');
-    Route::get('transactions/export', [\App\Http\Controllers\Admin\TransactionController::class, 'export'])->name('admin.transactions.export');
+    Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('transactions/{transaction}', [\App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('transactions.show');
+    Route::post('transactions/{transaction}/mark-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markPaid'])->name('transactions.mark-paid');
+    Route::post('transactions/{transaction}/mark-failed', [\App\Http\Controllers\Admin\TransactionController::class, 'markFailed'])->name('transactions.mark-failed');
+    Route::get('transactions/export', [\App\Http\Controllers\Admin\TransactionController::class, 'export'])->name('transactions.export');
     
     // Onboarding Settings Management
     Route::get('/onboarding-settings', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'index'])->name('onboarding-settings.index');
