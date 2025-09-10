@@ -61,13 +61,16 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::post('fee-templates/{feeTemplate}/deactivate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'deactivate'])->name('fee-templates.deactivate');
     
     // Alumni Category Management
-    Route::resource('alumni-categories', \App\Http\Controllers\Admin\AlumniCategoryController::class);
+    // Assignment routes must come BEFORE resource routes to avoid conflicts
     Route::get('alumni-categories/assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'index'])->name('alumni-categories.assign');
     Route::post('alumni-categories/assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'assign'])->name('alumni-categories.assign-single');
     Route::post('alumni-categories/bulk-assign', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'bulkAssign'])->name('alumni-categories.bulk-assign');
     Route::post('alumni-categories/remove', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'removeCategory'])->name('alumni-categories.remove');
     Route::post('alumni-categories/bulk-remove', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'bulkRemoveCategory'])->name('alumni-categories.bulk-remove');
     Route::get('alumni-categories/export', [\App\Http\Controllers\Admin\AlumniCategoryAssignmentController::class, 'export'])->name('alumni-categories.export');
+    
+    // Resource routes (must come after specific routes)
+    Route::resource('alumni-categories', \App\Http\Controllers\Admin\AlumniCategoryController::class);
     
     // Transaction Management
     Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
