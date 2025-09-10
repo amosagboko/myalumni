@@ -7,10 +7,6 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Transaction Statistics</h5>
-                                <a href="{{ route('transactions.export') }}" class="btn btn-success btn-sm">
-                                    <i data-feather="download" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
-                                    Export
-                                </a>
                             </div>
                             <div class="card-body">
                                 @if(session('success'))
@@ -188,26 +184,6 @@
                                                                class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="eye" class="btn-round-md" style="width: 14px; height: 14px;"></i>
                                                             </a>
-                                                            @if($transaction->status === 'pending')
-                                                                <form action="{{ route('transactions.mark-paid', $transaction) }}" 
-                                                                      method="POST" 
-                                                                      class="d-inline"
-                                                                      onsubmit="return confirm('Mark this transaction as paid?');">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-success">
-                                                                        <i data-feather="check" class="btn-round-md" style="width: 14px; height: 14px;"></i>
-                                                                    </button>
-                                                                </form>
-                                                                <form action="{{ route('transactions.mark-failed', $transaction) }}" 
-                                                                      method="POST" 
-                                                                      class="d-inline"
-                                                                      onsubmit="return confirm('Mark this transaction as failed?');">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                                        <i data-feather="x" class="btn-round-md" style="width: 14px; height: 14px;"></i>
-                                                                    </button>
-                                                                </form>
-                                                            @endif
                                                         </div>
                                                     </td>
                                                 </tr>
