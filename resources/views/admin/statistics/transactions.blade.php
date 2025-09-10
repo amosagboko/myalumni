@@ -126,10 +126,10 @@
                                                 <i data-feather="search" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                                                 Filter
                                             </button>
-                                            <a href="{{ route('statistics.transactions') }}" class="btn btn-outline-secondary">
+                                            <button type="button" onclick="clearFilters()" class="btn btn-outline-secondary">
                                                 <i data-feather="x" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                                                 Clear
-                                            </a>
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
@@ -207,4 +207,14 @@
             </div>
         </div>
     </div>
-</x-alumniadmin-dashboard> 
+</x-alumniadmin-dashboard>
+
+<script>
+function clearFilters() {
+    document.getElementById('search').value = '';
+    document.getElementById('status').value = '';
+    document.getElementById('fee_type').value = '';
+    document.getElementById('date_from').value = '';
+    document.querySelector('form').submit();
+}
+</script> 
