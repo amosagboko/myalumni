@@ -65,6 +65,15 @@ class AlumniCategoryController extends Controller
     }
 
     /**
+     * Display the specified category.
+     */
+    public function show(AlumniCategory $alumniCategory)
+    {
+        $alumniCategory->loadCount('alumni');
+        return view('admin.categories.show', compact('alumniCategory'));
+    }
+
+    /**
      * Show the form for editing the specified category.
      */
     public function edit(AlumniCategory $alumniCategory)
