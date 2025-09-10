@@ -14,67 +14,28 @@ class AlumniCategoryAssignmentController extends Controller
     public function index(Request $request)
     {
         try {
-            // Start with a simple query
-            $query = Alumni::query();
-            
-            // Add relationships only if needed
-            $query->with(['user', 'category']);
-
-            // Apply search filter
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', "%{$search}%")
-                                 ->orWhere('email', 'like', "%{$search}%");
-                    })
-                    ->orWhere('matric_number', 'like', "%{$search}%");
-                });
-            }
-
-            // Apply faculty filter
-            if ($request->filled('faculty')) {
-                $query->where('faculty', $request->faculty);
-            }
-
-            // Apply graduation year filter
-            if ($request->filled('graduation_year')) {
-                $query->where('year_of_graduation', $request->graduation_year);
-            }
-
-            // Apply category filter
-            if ($request->filled('category')) {
-                if ($request->category === 'unassigned') {
-                    $query->whereNull('category_id');
-                } else {
-                    $query->where('category_id', $request->category);
-                }
-            }
-
-            $alumni = $query->orderBy('created_at', 'desc')->paginate(20);
-
-            // Get filter options - handle empty collections gracefully
-            $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort();
-            $graduationYears = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse();
+            // Very simple test - just return basic data
+            $alumni = Alumni::paginate(20);
+            $faculties = collect();
+            $graduationYears = collect();
             $categories = AlumniCategory::where('is_active', true)->get();
 
             return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'));
             
         } catch (\Exception $e) {
-            Log::error('Error in AlumniCategoryAssignmentController@index', [
+            Log::error('Simple test error in AlumniCategoryAssignmentController@index', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
+                'trace' => $e->getTraceAsString()
             ]);
             
-            // Return a simple view with minimal data
-            $alumni = collect([]);
-            $faculties = collect([]);
-            $graduationYears = collect([]);
-            $categories = collect([]);
-            
-            return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'))
-                ->with('error', 'There was an issue loading the alumni data. Error: ' . $e->getMessage());
+            // Return minimal data
+            return view('admin.alumni-categories.assign', [
+                'alumni' => collect([]),
+                'faculties' => collect([]),
+                'graduationYears' => collect([]),
+                'categories' => collect([]),
+                'error' => 'Error: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -218,79 +179,61 @@ class AlumniCategoryAssignmentController extends Controller
 
     public function export(Request $request)
     {
-        $query = Alumni::with(['user', 'category']);
+        try {
+            $alumni = Alumni::with(['user', 'category'])->get();
 
-        // Apply the same filters as index
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('user', function ($userQuery) use ($search) {
-                    $userQuery->where('name', 'like', "%{$search}%")
-                             ->orWhere('email', 'like', "%{$search}%");
-                })
-                ->orWhere('matric_number', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('faculty')) {
-            $query->where('faculty', $request->faculty);
-        }
-
-        if ($request->filled('graduation_year')) {
-            $query->where('year_of_graduation', $request->graduation_year);
-        }
-
-        if ($request->filled('category')) {
-            if ($request->category === 'unassigned') {
-                $query->whereNull('category_id');
-            } else {
-                $query->where('category_id', $request->category);
-            }
-        }
-
-        $alumni = $query->get();
-
-        $filename = 'alumni_categories_' . date('Y-m-d_H-i-s') . '.csv';
-        
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename={$filename}",
-        ];
-
-        $callback = function() use ($alumni) {
-            $file = fopen('php://output', 'w');
+            $filename = 'alumni_categories_' . date('Y-m-d_H-i-s') . '.csv';
             
-            // Add headers
-            fputcsv($file, [
-                'Name',
-                'Email',
-                'Matric Number',
-                'Faculty',
-                'Department',
-                'Programme',
-                'Graduation Year',
-                'Category',
-                'Category Description'
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename={$filename}",
+            ];
+
+            $callback = function() use ($alumni) {
+                $file = fopen('php://output', 'w');
+                
+                // Add headers
+                fputcsv($file, [
+                    'Name',
+                    'Email',
+                    'Matric Number',
+                    'Faculty',
+                    'Department',
+                    'Programme',
+                    'Graduation Year',
+                    'Category',
+                    'Category Description'
+                ]);
+
+                // Add data
+                foreach ($alumni as $alumnus) {
+                    fputcsv($file, [
+                        $alumnus->user->name ?? 'N/A',
+                        $alumnus->user->email ?? 'N/A',
+                        $alumnus->matric_number ?? 'N/A',
+                        $alumnus->faculty ?? 'N/A',
+                        $alumnus->department ?? 'N/A',
+                        $alumnus->programme ?? 'N/A',
+                        $alumnus->year_of_graduation ?? 'N/A',
+                        $alumnus->category ? $alumnus->category->name : 'Unassigned',
+                        $alumnus->category ? $alumnus->category->description : ''
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+            
+        } catch (\Exception $e) {
+            Log::error('Export failed', [
+                'error' => $e->getMessage()
             ]);
 
-            // Add data
-            foreach ($alumni as $alumnus) {
-                fputcsv($file, [
-                    $alumnus->user->name,
-                    $alumnus->user->email,
-                    $alumnus->matric_number,
-                    $alumnus->faculty,
-                    $alumnus->department,
-                    $alumnus->programme,
-                    $alumnus->year_of_graduation,
-                    $alumnus->category ? $alumnus->category->name : 'Unassigned',
-                    $alumnus->category ? $alumnus->category->description : ''
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export data. Please try again.'
+            ], 500);
+        }
     }
-} 
+}
