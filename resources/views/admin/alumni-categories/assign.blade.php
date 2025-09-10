@@ -19,7 +19,6 @@
                                 </div>
                             </div>
                             <div class="card-body">
-
                                 @if(session('success'))
                                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                                         {{ session('success') }}
@@ -30,6 +29,13 @@
                                 @if(session('error'))
                                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                         {{ session('error') }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                @endif
+
+                                @if(isset($error))
+                                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                        {{ $error }}
                                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                     </div>
                                 @endif
@@ -141,12 +147,12 @@
                                                         <input type="checkbox" class="alumni-checkbox form-check-input" value="{{ $alumnus->id }}">
                                                     </td>
                                                     <td>
-                                                        <div class="fw-bold">{{ $alumnus->user->name }}</div>
+                                                        <div class="fw-bold">{{ $alumnus->user->name ?? 'N/A' }}</div>
                                                     </td>
-                                                    <td>{{ $alumnus->matric_number }}</td>
-                                                    <td>{{ $alumnus->user->email }}</td>
-                                                    <td>{{ $alumnus->faculty }}</td>
-                                                    <td>{{ $alumnus->year_of_graduation }}</td>
+                                                    <td>{{ $alumnus->matric_number ?? 'N/A' }}</td>
+                                                    <td>{{ $alumnus->user->email ?? 'N/A' }}</td>
+                                                    <td>{{ $alumnus->faculty ?? 'N/A' }}</td>
+                                                    <td>{{ $alumnus->year_of_graduation ?? 'N/A' }}</td>
                                                     <td>
                                                         @if($alumnus->category)
                                                             <span class="badge bg-primary">{{ $alumnus->category->name }}</span>
@@ -189,109 +195,114 @@
 </x-alumniadmin-dashboard>
 
 <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const selectAllCheckbox = document.getElementById('select-all');
-            const selectAllHeader = document.getElementById('select-all-header');
-            const alumniCheckboxes = document.querySelectorAll('.alumni-checkbox');
-            const bulkCategorySelect = document.getElementById('bulk-category');
-            const bulkAssignButton = document.getElementById('bulk-assign');
-            const selectedCountSpan = document.getElementById('selected-count');
-            const categorySelects = document.querySelectorAll('.category-select');
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        const selectAllHeader = document.getElementById('select-all-header');
+        const alumniCheckboxes = document.querySelectorAll('.alumni-checkbox');
+        const bulkCategorySelect = document.getElementById('bulk-category');
+        const bulkAssignButton = document.getElementById('bulk-assign');
+        const selectedCountSpan = document.getElementById('selected-count');
+        const categorySelects = document.querySelectorAll('.category-select');
 
-            // Select all functionality
-            function updateSelectAll() {
-                const checkedBoxes = document.querySelectorAll('.alumni-checkbox:checked');
-                const totalBoxes = alumniCheckboxes.length;
-                
-                selectAllCheckbox.checked = checkedBoxes.length === totalBoxes && totalBoxes > 0;
-                selectAllHeader.checked = selectAllCheckbox.checked;
-                selectedCountSpan.textContent = checkedBoxes.length;
+        // Select all functionality
+        function updateSelectAll() {
+            const checkedBoxes = document.querySelectorAll('.alumni-checkbox:checked');
+            const totalBoxes = alumniCheckboxes.length;
+            
+            if (checkedBoxes.length === 0) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = false;
+            } else if (checkedBoxes.length === totalBoxes) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = true;
+            } else {
+                selectAllCheckbox.indeterminate = true;
             }
+            
+            selectedCountSpan.textContent = checkedBoxes.length;
+        }
 
-            selectAllCheckbox.addEventListener('change', function() {
-                alumniCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                updateSelectAll();
-            });
+        // Individual checkbox change
+        alumniCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAll);
+        });
 
-            selectAllHeader.addEventListener('change', function() {
-                alumniCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                updateSelectAll();
-            });
-
+        // Select all checkbox change
+        selectAllCheckbox.addEventListener('change', function() {
             alumniCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', updateSelectAll);
+                checkbox.checked = this.checked;
             });
+            updateSelectAll();
+        });
 
-            // Individual category assignment
-            categorySelects.forEach(select => {
-                select.addEventListener('change', function() {
+        // Header select all checkbox change
+        selectAllHeader.addEventListener('change', function() {
+            alumniCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            selectAllCheckbox.checked = this.checked;
+            updateSelectAll();
+        });
+
+        // Category select change
+        categorySelects.forEach(select => {
+            select.addEventListener('change', function() {
+                if (this.value) {
                     const alumniId = this.dataset.alumniId;
                     const categoryId = this.value;
                     
-                    if (categoryId) {
-                        assignCategory(alumniId, categoryId);
-                    }
-                });
-            });
-
-            // Bulk assignment
-            bulkAssignButton.addEventListener('click', function() {
-                const selectedAlumni = document.querySelectorAll('.alumni-checkbox:checked');
-                const categoryId = bulkCategorySelect.value;
-                
-                if (selectedAlumni.length === 0) {
-                    alert('Please select at least one alumni.');
-                    return;
-                }
-                
-                if (!categoryId) {
-                    alert('Please select a category.');
-                    return;
-                }
-                
-                const alumniIds = Array.from(selectedAlumni).map(checkbox => checkbox.value);
-                bulkAssignCategories(alumniIds, categoryId);
-            });
-
-            function assignCategory(alumniId, categoryId) {
-                fetch(`/admin/alumni-categories/assign`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        alumni_id: alumniId,
-                        category_id: categoryId
+                    fetch('{{ route("admin.alumni-categories.assign-single") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            alumni_id: alumniId,
+                            category_id: categoryId
+                        })
                     })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while assigning the category.');
-                });
-            }
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while assigning category.');
+                    });
+                }
+            });
+        });
 
-            function bulkAssignCategories(alumniIds, categoryId) {
-                fetch(`/admin/alumni-categories/bulk-assign`, {
+        // Bulk assign
+        bulkAssignButton.addEventListener('click', function() {
+            const selectedIds = Array.from(document.querySelectorAll('.alumni-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (selectedIds.length === 0) {
+                alert('Please select at least one alumni.');
+                return;
+            }
+            
+            const categoryId = bulkCategorySelect.value;
+            if (!categoryId) {
+                alert('Please select a category.');
+                return;
+            }
+            
+            if (confirm(`Assign selected alumni to this category?`)) {
+                fetch('{{ route("admin.alumni-categories.bulk-assign") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({
-                        alumni_ids: alumniIds,
+                        alumni_ids: selectedIds,
                         category_id: categoryId
                     })
                 })
@@ -308,8 +319,8 @@
                     alert('An error occurred while bulk assigning categories.');
                 });
             }
-
-            updateSelectAll();
         });
-    </script>
-</x-alumniadmin-dashboard> 
+
+        updateSelectAll();
+    });
+</script>
