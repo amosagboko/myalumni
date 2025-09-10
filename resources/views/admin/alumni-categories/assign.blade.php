@@ -136,7 +136,7 @@
                                                 <th>Email</th>
                                                 <th>Faculty</th>
                                                 <th>Graduation Year</th>
-                                                <th>Current Category</th>
+                                                <th style="width: 120px;">Current Category</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -153,11 +153,11 @@
                                                     <td>{{ $alumnus->user->email ?? 'N/A' }}</td>
                                                     <td>{{ $alumnus->faculty ?? 'N/A' }}</td>
                                                     <td>{{ $alumnus->year_of_graduation ?? 'N/A' }}</td>
-                                                    <td>
+                                                    <td class="text-center" style="width: 120px;">
                                                         @if($alumnus->category)
-                                                            <span class="badge bg-primary">{{ $alumnus->category->name }}</span>
+                                                            <span class="badge bg-primary" style="font-size: 0.75rem;">{{ $alumnus->category->name }}</span>
                                                         @else
-                                                            <span class="badge bg-secondary">Unassigned</span>
+                                                            <span class="badge bg-secondary" style="font-size: 0.75rem;">Unassigned</span>
                                                         @endif
                                                     </td>
                                                     <td>
