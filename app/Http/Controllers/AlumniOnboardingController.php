@@ -51,6 +51,40 @@ class AlumniOnboardingController extends Controller
             return view('alumni.onboarding.email-verification');
         }
 
+        // Check if bio data needs to be completed
+        if (!$user->alumni || !$user->alumni->contact_address || !$user->alumni->phone_number || !$user->alumni->qualification_type) {
+            return redirect()->route('alumni.bio-data')
+                ->with('warning', 'Please complete your bio data to continue.');
+        }
+
+        // Check if payments need to be completed (based on graduation year)
+        $alumni = $user->alumni;
+        $needsPaymentEnforcement = false;
+        
+        // 2023 and earlier: Must pay subscription fees
+        if ($alumni->year_of_graduation <= 2023) {
+            $needsPaymentEnforcement = true;
+        }
+        // 2024: Exempted from all fees (no enforcement needed)
+        elseif ($alumni->year_of_graduation === 2024) {
+            $needsPaymentEnforcement = false;
+        }
+        // 2025+: Must pay category-based fees
+        elseif ($alumni->year_of_graduation >= 2025) {
+            $needsPaymentEnforcement = true;
+        }
+        
+        if ($needsPaymentEnforcement) {
+            $hasUnpaidFees = $alumni->getActiveFees()->contains(function($fee) {
+                return !$fee->isPaid();
+            });
+            
+            if ($hasUnpaidFees) {
+                return redirect()->route('alumni.payments.index')
+                    ->with('warning', 'Please complete your payments to continue.');
+            }
+        }
+
         // All checks passed, redirect to alumni home
         return redirect()->route('alumni.home');
     }

@@ -20,18 +20,16 @@ class EnsureBioDataComplete
         if (Auth::check() && Auth::user()->alumni) {
             $alumni = Auth::user()->alumni;
             
-            // Only enforce for 2023 and earlier graduates
-            if ($alumni->year_of_graduation <= 2023) {
-                $hasCompleteBioData = $alumni->contact_address && 
-                    $alumni->phone_number && 
-                    $alumni->qualification_type;
+            // Enforce bio data completion for all alumni (2023 and earlier, 2024, and 2025+)
+            $hasCompleteBioData = $alumni->contact_address && 
+                $alumni->phone_number && 
+                $alumni->qualification_type;
 
-                if (!$hasCompleteBioData) {
-                    // Exclude the bio data update route and logout route from redirect
-                    if (!$request->is('alumni/profile/update') && !$request->is('logout')) {
-                        return redirect()->route('alumni.profile.edit')
-                            ->with('warning', 'Please complete your bio data to access this feature.');
-                    }
+            if (!$hasCompleteBioData) {
+                // Exclude the bio data update route and logout route from redirect
+                if (!$request->is('alumni/profile/update') && !$request->is('logout')) {
+                    return redirect()->route('alumni.profile.edit')
+                        ->with('warning', 'Please complete your bio data to access this feature.');
                 }
             }
         }
