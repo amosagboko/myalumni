@@ -134,6 +134,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Alumni routes latest
     Route::middleware(['auth', 'role:alumni'])->group(function () {
+        Route::get('/alumni/onboarding', [AlumniOnboardingController::class, 'showOnboarding'])->name('alumni.onboarding');
         Route::get('/alumni/home', function () {
             return view('alumni.home');
         })->name('alumni.home');

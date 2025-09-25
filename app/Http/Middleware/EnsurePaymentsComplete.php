@@ -43,6 +43,15 @@ class EnsurePaymentsComplete
                     return !$fee->isPaid();
                 });
 
+                Log::info('Payment enforcement check', [
+                    'alumni_id' => $alumni->id,
+                    'year_of_graduation' => $alumni->year_of_graduation,
+                    'needs_enforcement' => $needsPaymentEnforcement,
+                    'has_unpaid_fees' => $hasUnpaidFees,
+                    'active_fees_count' => $alumni->getActiveFees()->count(),
+                    'current_route' => $request->route() ? $request->route()->getName() : 'unknown'
+                ]);
+
                 if ($hasUnpaidFees) {
                     // Exclude payment-related routes and logout route from redirect
                     if (!$request->is('payments*') && !$request->is('logout')) {

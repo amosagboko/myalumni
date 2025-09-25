@@ -46,9 +46,9 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('alumni-relations-officer.home');
         }
 
-        // For alumni, redirect to their home page
+        // For alumni, redirect to onboarding to check completion status
         if ($user->hasRole('alumni')) {
-            return redirect()->route('alumni.home');
+            return redirect()->route('alumni.onboarding');
         }
 
         return redirect()->intended(route(RouteServiceProvider::getHomeRoute()));

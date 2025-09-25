@@ -57,7 +57,7 @@ class RouteServiceProvider extends ServiceProvider
         
         // Alumni
         if ($user->hasRole('alumni')) {
-            return 'alumni.home';
+            return 'alumni.onboarding';
         }
         
         // If user has no role or unknown role, redirect to login
