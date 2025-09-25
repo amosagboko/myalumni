@@ -132,9 +132,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/create-event', [CreateAllEvent::class, 'store'])->name('create.event.store');
     });
 
+    // Alumni onboarding route (outside role middleware to avoid circular dependency)
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/alumni/onboarding', [AlumniOnboardingController::class, 'showOnboarding'])->name('alumni.onboarding');
+    });
+
     // Alumni routes latest
     Route::middleware(['auth', 'role:alumni'])->group(function () {
-        Route::get('/alumni/onboarding', [AlumniOnboardingController::class, 'showOnboarding'])->name('alumni.onboarding');
         Route::get('/alumni/home', function () {
             return view('alumni.home');
         })->name('alumni.home');
