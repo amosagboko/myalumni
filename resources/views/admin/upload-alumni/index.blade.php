@@ -36,69 +36,6 @@
                             <button type="submit" class="btn btn-primary" id="upload-button">Upload</button>
                         </form>
 
-                        <div class="mt-4">
-                            <h6>Search Alumni</h6>
-                            <form action="{{ route('upload.alumni.search') }}" method="GET" class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Programme</label>
-                                    <select name="programme" class="form-select">
-                                        <option value="">Select Programme</option>
-                                        @foreach($programmes as $programme)
-                                            <option value="{{ $programme }}" {{ request('programme') == $programme ? 'selected' : '' }}>
-                                                {{ $programme }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Department</label>
-                                    <select name="department" class="form-select">
-                                        <option value="">Select Department</option>
-                                        @foreach($departments as $department)
-                                            <option value="{{ $department }}" {{ request('department') == $department ? 'selected' : '' }}>
-                                                {{ $department }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Faculty</label>
-                                    <select name="faculty" class="form-select">
-                                        <option value="">Select Faculty</option>
-                                        @foreach($faculties as $faculty)
-                                            <option value="{{ $faculty }}" {{ request('faculty') == $faculty ? 'selected' : '' }}>
-                                                {{ $faculty }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Year of Graduation</label>
-                                    <select name="year_of_graduation" class="form-select">
-                                        <option value="">Select Year</option>
-                                        @foreach($years as $year)
-                                            <option value="{{ $year }}" {{ request('year_of_graduation') == $year ? 'selected' : '' }}>
-                                                {{ $year }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Category</label>
-                                    <select name="category_id" class="form-select">
-                                        <option value="">Select Category</option>
-                                        @foreach($categories as $category)
-                                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                                {{ $category->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-primary">Search</button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
                 </div>
             </div>
