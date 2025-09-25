@@ -1,5 +1,5 @@
 <x-alumniadmin-dashboard>
-    <div class="container mt-5 pt-7" style="margin-left: 100px;">
+    <div class="container mt-3 pt-7" style="margin-left: 150px;">
         <div class="row justify-content-center">
             <div class="col-md-10">
                 <div class="card shadow-sm">
