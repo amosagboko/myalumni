@@ -135,6 +135,7 @@ Route::middleware(['auth'])->group(function () {
     // Alumni onboarding route (outside role middleware to avoid circular dependency)
     Route::middleware(['auth'])->group(function () {
         Route::get('/alumni/onboarding', [AlumniOnboardingController::class, 'showOnboarding'])->name('alumni.onboarding');
+        Route::post('/alumni/onboarding/update-password', [AlumniOnboardingController::class, 'updatePassword'])->name('alumni.onboarding.update-password');
     });
 
     // Alumni routes latest
