@@ -36,6 +36,31 @@
                             <button type="submit" class="btn btn-primary" id="upload-button">Upload</button>
                         </form>
 
+                        <!-- Quick Actions -->
+                        <div class="mt-4">
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h6 class="mb-0">Quick Actions</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ route('admin.alumni-categories.index') }}" class="btn btn-primary btn-sm">
+                                            <i class="feather-tag me-1"></i> Manage Categories
+                                        </a>
+                                        <a href="{{ route('admin.alumni-categories.assign') }}" class="btn btn-success btn-sm">
+                                            <i class="feather-user-check me-1"></i> Assign Categories
+                                        </a>
+                                        <a href="{{ route('admin.fee-templates.index') }}" class="btn btn-info btn-sm">
+                                            <i class="feather-file-text me-1"></i> Fee Templates
+                                        </a>
+                                        <a href="{{ route('admin.transactions.index') }}" class="btn btn-warning btn-sm">
+                                            <i class="feather-credit-card me-1"></i> Transactions
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
