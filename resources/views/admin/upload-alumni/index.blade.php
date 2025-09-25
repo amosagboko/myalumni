@@ -56,6 +56,9 @@
                                         <a href="{{ route('admin.transactions.index') }}" class="btn btn-warning btn-sm">
                                             <i class="feather-credit-card me-1"></i> Transactions
                                         </a>
+                                        <a href="{{ route('retrieve.credentials') }}" class="btn btn-secondary btn-sm">
+                                            <i class="feather-key me-1"></i> Retrieve Credentials
+                                        </a>
                                     </div>
                                 </div>
                             </div>
