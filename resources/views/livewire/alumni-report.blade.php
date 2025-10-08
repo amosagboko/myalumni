@@ -39,7 +39,7 @@
                             <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : asset('images/default-avatar.png') }}" 
                                  alt="Alumni Photo" 
                                  class="rounded-circle mb-0"
-                                 style="width: 60px; height: 60px; object-fit: cover;">
+                                 style="width: 120px; height: 120px; object-fit: cover;">
                         </div>
                         <div class="col-md-9">
                             <div class="row">

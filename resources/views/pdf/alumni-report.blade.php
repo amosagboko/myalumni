@@ -40,7 +40,17 @@
         <div class="card-header">Personal Information</div>
         <div class="card-body">
             <div class="row">
-                <div class="col col-6 mb-1"><span class="fw-bold">Full Name:</span> {{ $user->name }}</div>
+                <div class="col col-6 mb-1">
+                    <span class="fw-bold">Full Name:</span> {{ $user->name }}
+                </div>
+                <div class="col col-6 mb-1" style="text-align: right;">
+                    @php
+                        $avatarPath = $user->avatar ? public_path('storage/' . $user->avatar) : public_path('images/default-avatar.png');
+                    @endphp
+                    @if(file_exists($avatarPath))
+                        <img src="{{ $avatarPath }}" alt="Passport" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px;">
+                    @endif
+                </div>
                 <div class="col col-6 mb-1"><span class="fw-bold">Gender:</span> {{ ucfirst($user->gender) }}</div>
                 <div class="col col-6 mb-1"><span class="fw-bold">Title:</span> {{ $alumni->title }}</div>
                 <div class="col col-6 mb-1"><span class="fw-bold">Matric No:</span> {{ $alumni->matric_number }}</div>
