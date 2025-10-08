@@ -1,15 +1,15 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container mt-5 pt-5" style="margin-left: 150px; margin-top: 100px !important;">
+<div class="container-fluid mt-3 mt-md-5 pt-3 pt-md-5 px-3 px-md-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-12 col-lg-10 col-xl-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="card-title">Complete Your Payments</h3>
+                    <h3 class="card-title h5 h-md-4 mb-0">Complete Your Payments</h3>
                 </div>
                 <div class="card-body">
-                    <div class="mb-4 text-muted">
+                    <div class="mb-3 mb-md-4 text-muted">
                         Please complete all required payments to finish your onboarding process.
                     </div>
 
@@ -26,13 +26,13 @@
                     @endif
 
                     <div class="table-responsive">
-                        <table class="table table-bordered">
+                        <table class="table table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th>Fee Description</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="text-nowrap">Amount</th>
+                                    <th class="text-nowrap">Status</th>
+                                    <th class="text-nowrap">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -52,14 +52,10 @@
                                                 <form action="{{ route('alumni.payments.initiate') }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <input type="hidden" name="fee_id" value="{{ $fee->id }}">
-                                                    <button type="submit" class="btn btn-sm btn-primary">
-                                                        Pay Now
-                                                    </button>
+                                                    <button type="submit" class="btn btn-sm btn-primary text-nowrap">Pay Now</button>
                                                 </form>
                                             @else
-                                                <a href="{{ route('alumni.payments.show', $fee->getCompletedTransaction()->id) }}" class="btn btn-sm btn-info">
-                                                    View Receipt
-                                                </a>
+                                                <a href="{{ route('alumni.payments.show', $fee->getCompletedTransaction()->id) }}" class="btn btn-sm btn-info text-nowrap">View Receipt</a>
                                             @endif
                                         </td>
                                     </tr>

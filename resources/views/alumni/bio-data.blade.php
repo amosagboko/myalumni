@@ -1,15 +1,15 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container mt-5 pt-5" style="margin-left: 150px; margin-top: 100px !important;">
+<div class="container-fluid mt-3 mt-md-5 pt-3 pt-md-5 px-3 px-md-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-12 col-lg-10 col-xl-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="card-title">Complete Your Bio Data</h3>
+                    <h3 class="card-title h5 h-md-4 mb-0">Complete Your Bio Data</h3>
                 </div>
                 <div class="card-body">
-                    <div class="mb-4 text-muted">
+                    <div class="mb-3 mb-md-4 text-muted">
                         Please complete your bio data to continue with the onboarding process.
                     </div>
 
