@@ -15,15 +15,17 @@
         </div>
     @else
         <!-- Report Content -->
-        <div class="container" style="max-width: 800px; margin: 100px 0 0 300px; padding: 10px;">
+        <div class="container-fluid mt-3 mt-md-5 pt-3 pt-md-5 px-3 px-md-4">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-10 col-xl-8">
             <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <img src="{{ asset('images/fulafia-logo.jpg') }}" alt="FULAFIA Logo" style="width: 60px; height: 60px;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <img src="{{ asset('images/fulafia-logo.jpg') }}" alt="FULAFIA Logo" class="img-fluid" style="width: 60px; height: 60px;">
                 <div class="text-center">
-                    <h2 class="mb-0" style="font-size: 1rem;">Federal University of Lafia</h2>
-                    <h3 class="mb-0" style="font-size: 0.9rem;">Alumni Personal Data Registration Form</h3>
+                    <h2 class="mb-0 h6 h-md-5">Federal University of Lafia</h2>
+                    <h3 class="mb-0 h6">Alumni Personal Data Registration Form</h3>
                 </div>
-                <img src="{{ asset('images/alumni-logo.jpg') }}" alt="ALUMNI Logo" style="width: 60px; height: 60px;">
+                <img src="{{ asset('images/alumni-logo.jpg') }}" alt="ALUMNI Logo" class="img-fluid" style="width: 60px; height: 60px;">
             </div>
 
             <!-- Personal Information -->
@@ -198,13 +200,15 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="d-flex justify-content-center mt-2">
-                <button onclick="window.open('{{ route('alumni.print', ['id' => $alumni->id]) }}', '_blank')" class="btn btn-primary me-2">
+            <div class="d-flex flex-column flex-sm-row justify-content-center mt-2 gap-2">
+                <button onclick="window.open('{{ route('alumni.print', ['id' => $alumni->id]) }}', '_blank')" class="btn btn-primary">
                     <i class="fas fa-print me-1"></i> Print Form
                 </button>
                 <button wire:click="downloadPdf" class="btn btn-primary">
                     <i class="fas fa-download me-1"></i> Download Form
                 </button>
+            </div>
+                </div>
             </div>
         </div>
     @endif
