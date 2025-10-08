@@ -25,14 +25,15 @@
                         </div>
                     @endif
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle">
+                    <!-- Desktop/tablet view -->
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-bordered align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
                                     <th>Fee Description</th>
-                                    <th class="text-nowrap">Amount</th>
-                                    <th class="text-nowrap">Status</th>
-                                    <th class="text-nowrap">Actions</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th style="width: 150px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -52,10 +53,10 @@
                                                 <form action="{{ route('alumni.payments.initiate') }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <input type="hidden" name="fee_id" value="{{ $fee->id }}">
-                                                    <button type="submit" class="btn btn-sm btn-primary text-nowrap">Pay Now</button>
+                                                    <button type="submit" class="btn btn-sm btn-primary">Pay Now</button>
                                                 </form>
                                             @else
-                                                <a href="{{ route('alumni.payments.show', $fee->getCompletedTransaction()->id) }}" class="btn btn-sm btn-info text-nowrap">View Receipt</a>
+                                                <a href="{{ route('alumni.payments.show', $fee->getCompletedTransaction()->id) }}" class="btn btn-sm btn-info">View Receipt</a>
                                             @endif
                                         </td>
                                     </tr>
@@ -66,6 +67,42 @@
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Mobile view: cards -->
+                    <div class="d-md-none">
+                        @forelse($fees as $fee)
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="fw-semibold">{{ $fee->description }}</div>
+                                            <div class="text-muted small">Amount: ₦{{ number_format($fee->amount, 2) }}</div>
+                                        </div>
+                                        <div>
+                                            @if($fee->isPaid())
+                                                <span class="badge bg-success">Paid</span>
+                                            @else
+                                                <span class="badge bg-warning">Pending</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        @if(!$fee->isPaid())
+                                            <form action="{{ route('alumni.payments.initiate') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="fee_id" value="{{ $fee->id }}">
+                                                <button type="submit" class="btn btn-primary w-100">Pay Now</button>
+                                            </form>
+                                        @else
+                                            <a href="{{ route('alumni.payments.show', $fee->getCompletedTransaction()->id) }}" class="btn btn-info w-100">View Receipt</a>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center text-muted">No fees found for your profile.</div>
+                        @endforelse
                     </div>
 
                     @if($fees->isNotEmpty() && $fees->every->isPaid())
