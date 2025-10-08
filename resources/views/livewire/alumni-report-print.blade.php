@@ -111,8 +111,8 @@
         }
 
         .avatar {
-            width: 60px;
-            height: 60px;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
             object-fit: cover;
         }
