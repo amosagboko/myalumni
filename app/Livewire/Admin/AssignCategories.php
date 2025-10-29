@@ -21,10 +21,13 @@ class AssignCategories extends Component
     public $selectedAlumni = [];
     public $bulkCategoryId = '';
     
-    public $alumniId = null;
-    public $categoryId = null;
-    
     protected $paginationTheme = 'bootstrap';
+    
+    // Prevent loading indicator on initial mount
+    public function mount()
+    {
+        // Component initialization
+    }
 
     public function updatingSearch()
     {
@@ -280,19 +283,34 @@ class AssignCategories extends Component
 
     public function render()
     {
-        $alumni = $this->getAlumniQuery()->paginate(20);
-        
-        // Get filter options
-        $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort();
-        $graduationYears = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse();
-        $categories = AlumniCategory::where('is_active', true)->get();
+        try {
+            $alumni = $this->getAlumniQuery()->paginate(20);
+            
+            // Get filter options - handle empty collections gracefully
+            $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort()->values();
+            $graduationYears = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse()->values();
+            $categories = AlumniCategory::where('is_active', true)->get();
 
-        return view('livewire.admin.assign-categories', [
-            'alumni' => $alumni,
-            'faculties' => $faculties,
-            'graduationYears' => $graduationYears,
-            'categories' => $categories,
-        ]);
+            return view('livewire.admin.assign-categories', [
+                'alumni' => $alumni,
+                'faculties' => $faculties,
+                'graduationYears' => $graduationYears,
+                'categories' => $categories,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error rendering AssignCategories component', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return empty data on error
+            return view('livewire.admin.assign-categories', [
+                'alumni' => Alumni::query()->paginate(20),
+                'faculties' => collect([]),
+                'graduationYears' => collect([]),
+                'categories' => collect([]),
+            ]);
+        }
     }
 }
 

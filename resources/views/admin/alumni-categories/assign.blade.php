@@ -28,3 +28,22 @@
         </div>
     </div>
 </x-alumniadmin-dashboard>
+
+<script>
+    // Force hide preloader after Livewire initializes
+    document.addEventListener('livewire:init', function () {
+        // Hide preloader when Livewire is ready
+        setTimeout(function() {
+            $('.preloader').fadeOut(300);
+            $('.preloader-wrap').fadeOut(300);
+        }, 500);
+    });
+    
+    // Also hide preloader on regular page load (fallback)
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            $('.preloader').fadeOut(300);
+            $('.preloader-wrap').fadeOut(300);
+        }, 1000);
+    });
+</script>

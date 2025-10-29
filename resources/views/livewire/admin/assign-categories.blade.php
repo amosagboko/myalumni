@@ -19,13 +19,13 @@
         <div class="row g-3">
             <div class="col-md-2">
                 <label for="search" class="form-label">Search</label>
-                <input type="text" wire:model.live.debounce.300ms="search" id="search" 
+                <input type="text" wire:model.debounce.500ms="search" id="search" 
                        placeholder="Name, Matric, Email" 
                        class="form-control">
             </div>
             <div class="col-md-2">
                 <label for="faculty" class="form-label">Faculty</label>
-                <select wire:model.live="faculty" id="faculty" class="form-select">
+                <select wire:model="faculty" id="faculty" class="form-select">
                     <option value="">All Faculties</option>
                     @foreach($faculties as $facultyOption)
                         <option value="{{ $facultyOption }}">{{ $facultyOption }}</option>
@@ -34,7 +34,7 @@
             </div>
             <div class="col-md-2">
                 <label for="graduation_year" class="form-label">Graduation Year</label>
-                <select wire:model.live="graduationYear" id="graduation_year" class="form-select">
+                <select wire:model="graduationYear" id="graduation_year" class="form-select">
                     <option value="">All Years</option>
                     @foreach($graduationYears as $year)
                         <option value="{{ $year }}">{{ $year }}</option>
@@ -43,7 +43,7 @@
             </div>
             <div class="col-md-2">
                 <label for="category" class="form-label">Current Category</label>
-                <select wire:model.live="category" id="category" class="form-select">
+                <select wire:model="category" id="category" class="form-select">
                     <option value="">All Categories</option>
                     <option value="unassigned">Unassigned</option>
                     @foreach($categories as $categoryOption)
@@ -153,10 +153,13 @@
         {{ $alumni->links() }}
     </div>
 
-    <!-- Loading Indicator -->
-    <div wire:loading wire:target="assignCategory,bulkAssign" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.3); z-index: 9999;">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <!-- Small loading indicator in corner, not full screen -->
+    <div wire:loading.delay wire:target="assignCategory,bulkAssign" class="position-fixed bottom-0 end-0 m-3" style="z-index: 9999;">
+        <div class="alert alert-info mb-0 d-flex align-items-center gap-2">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span>Processing...</span>
         </div>
     </div>
 </div>
