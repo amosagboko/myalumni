@@ -13,69 +13,8 @@ class AlumniCategoryAssignmentController extends Controller
 {
     public function index(Request $request)
     {
-        try {
-            // Start with a simple query
-            $query = Alumni::query();
-            
-            // Add relationships only if needed
-            $query->with(['user', 'category']);
-
-            // Apply search filter
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', "%{$search}%")
-                                 ->orWhere('email', 'like', "%{$search}%");
-                    })
-                    ->orWhere('matric_number', 'like', "%{$search}%");
-                });
-            }
-
-            // Apply faculty filter
-            if ($request->filled('faculty')) {
-                $query->where('faculty', $request->faculty);
-            }
-
-            // Apply graduation year filter
-            if ($request->filled('graduation_year')) {
-                $query->where('year_of_graduation', $request->graduation_year);
-            }
-
-            // Apply category filter
-            if ($request->filled('category')) {
-                if ($request->category === 'unassigned') {
-                    $query->whereNull('category_id');
-                } else {
-                    $query->where('category_id', $request->category);
-                }
-            }
-
-            $alumni = $query->orderBy('created_at', 'desc')->paginate(20);
-
-            // Get filter options - handle empty collections gracefully
-            $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort();
-            $graduationYears = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse();
-            $categories = AlumniCategory::where('is_active', true)->get();
-
-            return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'));
-            
-        } catch (\Exception $e) {
-            Log::error('Error in AlumniCategoryAssignmentController@index', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
-            
-            // Return a simple view with minimal data
-            $alumni = collect([]);
-            $faculties = collect([]);
-            $graduationYears = collect([]);
-            $categories = collect([]);
-            
-            return view('admin.alumni-categories.assign', compact('alumni', 'faculties', 'graduationYears', 'categories'))
-                ->with('error', 'There was an issue loading the alumni data. Error: ' . $e->getMessage());
-        }
+        // Use Livewire component instead
+        return view('admin.alumni-categories.assign');
     }
 
     public function assign(Request $request)

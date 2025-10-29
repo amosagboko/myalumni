@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         // Register Livewire components
         Livewire::component('admin.manage-users', \App\Livewire\Admin\ManageUsers::class);
         Livewire::component('admin.dashboard', \App\Livewire\Admin\Dashboard::class);
+        Livewire::component('admin.assign-categories', \App\Livewire\Admin\AssignCategories::class);
 
         Schema::defaultStringLength(191);
         
