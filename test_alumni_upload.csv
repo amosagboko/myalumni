@@ -1,0 +1,8 @@
+firstname,surname,matriculation_id,programme,department,faculty,year_of_graduation,category,date_of_birth,state,lga,year_of_entry,gender
+John,Doe,1011700001,Computer Science,Computer Science,Science,2020,Postgraduate,1995-05-15,Lagos,Lagos Mainland,2016,Male
+Jane,Smith,1011700002,Mathematics,Mathematics,Science,2019,Undergraduate (Full-time),1996-08-20,Abuja,Abuja Municipal,2015,Female
+Mike,Johnson,1011700003,Business Admin,Business Admin,Management,2021,Undergraduate (Part-time),1994-03-10,Kano,Kano Municipal,2014,Male
+Sarah,Williams,1011700004,Engineering,Electrical Engineering,Engineering,2018,Diploma,1997-11-25,Rivers,Port Harcourt,2016,Female
+Peter,Brown,1011700005,Physics,Physics,Science,2020,Postgraduate,1995-01-10,Lagos,Lagos Island,2016,Male
+Mary,Davis,1011700006,Chemistry,Chemistry,Science,2019,Undergraduate (Full-time),1996-02-20,Ogun,Abeokuta North,2015,Female
+

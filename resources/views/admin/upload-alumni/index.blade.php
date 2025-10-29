@@ -31,7 +31,12 @@
                             <div class="mb-3">
                                 <label for="file" class="form-label">Upload File</label>
                                 <input type="file" class="form-control" id="file" name="file" accept=".csv,.xlsx,.xls">
-                                <div class="form-text">Please upload a CSV or Excel file with the following columns: firstname, surname, matriculation_id, programme, department, faculty, year_of_graduation, category, date_of_birth (YYYY-MM-DD), state, lga, year_of_entry, gender (enter the specific gender for each alumni)</div>
+                                <div class="form-text">
+                                    <strong>CSV Format:</strong> firstname, surname, matriculation_id, programme, department, faculty, year_of_graduation, <strong>category</strong>, date_of_birth (YYYY-MM-DD), state, lga, year_of_entry, gender
+                                    <br><small class="text-muted">
+                                        <strong>Valid categories:</strong> Postgraduate, Undergraduate (Full-time), Undergraduate (Part-time), Diploma
+                                    </small>
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-primary" id="upload-button">Upload</button>
                         </form>

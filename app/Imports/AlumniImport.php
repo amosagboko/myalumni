@@ -135,12 +135,44 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
             $alumniRole = Role::findByName('alumni');
             $user->assignRole($alumniRole);
 
-            // Get or create alumni category
-            $category = AlumniCategory::where('name', trim($row['category']))->first();
+            // Map category names to ensure correct matching
+            // Handle variations in case and spacing
+            $categoryName = trim($row['category']);
+            
+            // Normalize category name for lookup
+            $categoryMap = [
+                'postgraduate' => 'Postgraduate',
+                'undergraduate (full-time)' => 'Undergraduate (Full-time)',
+                'undergraduate (fulltime)' => 'Undergraduate (Full-time)',
+                'undergraduate-full-time' => 'Undergraduate (Full-time)',
+                'undergraduate_full_time' => 'Undergraduate (Full-time)',
+                'undergraduate (part-time)' => 'Undergraduate (Part-time)',
+                'undergraduate (parttime)' => 'Undergraduate (Part-time)',
+                'undergraduate-part-time' => 'Undergraduate (Part-time)',
+                'undergraduate_part_time' => 'Undergraduate (Part-time)',
+                'diploma' => 'Diploma',
+            ];
+            
+            // Convert to lowercase for case-insensitive matching
+            $normalizedKey = strtolower($categoryName);
+            
+            // Use mapped name if available, otherwise use original (trimmed)
+            $lookupName = $categoryMap[$normalizedKey] ?? $categoryName;
+            
+            // Find category by exact name match (after normalization)
+            $category = AlumniCategory::where('name', $lookupName)->first();
+            
+            // If still not found, try case-insensitive search as fallback
             if (!$category) {
-                $category = AlumniCategory::create([
-                    'name' => trim($row['category']),
-                    'status' => 'active'
+                $category = AlumniCategory::whereRaw('LOWER(name) = ?', [strtolower($lookupName)])->first();
+            }
+            
+            // If category is not found, this will fail validation, but we log it here for debugging
+            if (!$category) {
+                Log::warning('Category not found during import', [
+                    'provided_category' => $categoryName,
+                    'lookup_name' => $lookupName,
+                    'normalized_key' => $normalizedKey
                 ]);
             }
 
@@ -204,7 +236,41 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
             'department' => 'required|string|max:255',
             'faculty' => 'required|string|max:255',
             'year_of_graduation' => 'required|integer|min:1900|max:' . (date('Y') + 1),
-            'category' => 'required|string|exists:alumni_categories,name',
+            'category' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Normalize category name for validation
+                    $categoryName = trim($value);
+                    $categoryMap = [
+                        'postgraduate' => 'Postgraduate',
+                        'undergraduate (full-time)' => 'Undergraduate (Full-time)',
+                        'undergraduate (fulltime)' => 'Undergraduate (Full-time)',
+                        'undergraduate-full-time' => 'Undergraduate (Full-time)',
+                        'undergraduate_full_time' => 'Undergraduate (Full-time)',
+                        'undergraduate (part-time)' => 'Undergraduate (Part-time)',
+                        'undergraduate (parttime)' => 'Undergraduate (Part-time)',
+                        'undergraduate-part-time' => 'Undergraduate (Part-time)',
+                        'undergraduate_part_time' => 'Undergraduate (Part-time)',
+                        'diploma' => 'Diploma',
+                    ];
+                    
+                    $normalizedKey = strtolower($categoryName);
+                    $lookupName = $categoryMap[$normalizedKey] ?? $categoryName;
+                    
+                    // Check if category exists (case-insensitive)
+                    $categoryExists = AlumniCategory::where('name', $lookupName)
+                        ->orWhereRaw('LOWER(name) = ?', [strtolower($lookupName)])
+                        ->exists();
+                    
+                    if (!$categoryExists) {
+                        $validCategories = AlumniCategory::where('is_active', true)
+                            ->pluck('name')
+                            ->join(', ');
+                        $fail("The category '{$categoryName}' is invalid. Valid categories are: {$validCategories}");
+                    }
+                },
+            ],
             'date_of_birth' => 'required|date',
             'state' => 'required|string|max:255',
             'lga' => 'required|string|max:255',
@@ -229,7 +295,7 @@ class AlumniImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
             'year_of_graduation.min' => 'The year of graduation must be after 1900.',
             'year_of_graduation.max' => 'The year of graduation cannot be in the future.',
             'category.required' => 'The category field is required.',
-            'category.exists' => 'The selected category is invalid.',
+            'category.*' => 'The selected category is invalid. Valid categories are: Postgraduate, Undergraduate (Full-time), Undergraduate (Part-time), Diploma.',
             'date_of_birth.required' => 'The date of birth field is required.',
             'date_of_birth.date' => 'The date of birth must be a valid date.',
             'state.required' => 'The state field is required.',
