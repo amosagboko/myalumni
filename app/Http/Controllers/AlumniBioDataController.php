@@ -28,7 +28,16 @@ class AlumniBioDataController extends Controller
         }
 
         $titles = ['Prof', 'Dr', 'Mr', 'Mrs', 'Miss', 'Alh', 'Hajj', 'Chief', 'Mal'];
-        $qualificationTypes = ['Degree', 'Diploma', 'Certificate'];
+        
+        // Get qualification types based on alumni category
+        $qualificationTypes = [];
+        if ($alumni->category && $alumni->category->slug === 'postgraduate') {
+            // For Postgraduate: PhD, MSc, PGD
+            $qualificationTypes = ['PhD', 'MSc', 'PGD'];
+        } else {
+            // For other categories: Degree, Diploma, Certificate
+            $qualificationTypes = ['Degree', 'Diploma', 'Certificate'];
+        }
         
         return view('alumni.bio-data', compact('alumni', 'titles', 'qualificationTypes'));
     }
@@ -42,12 +51,20 @@ class AlumniBioDataController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
+        // Get alumni category for validation
+        $alumni = $user->alumni;
+        $isPostgraduate = $alumni && $alumni->category && $alumni->category->slug === 'postgraduate';
+        
+        $qualificationTypeRule = $isPostgraduate 
+            ? 'required|string|in:PhD,MSc,PGD'
+            : 'required|string|in:Degree,Diploma,Certificate';
+        
         $request->validate([
             'title' => 'required|string|in:Prof,Dr,Mr,Mrs,Miss,Alh,Hajj,Chief,Mal',
             'nationality' => 'required|string|max:255',
             'contact_address' => 'required|string',
             'phone_number' => 'required|string|max:20',
-            'qualification_type' => 'required|string|in:Degree,Diploma,Certificate',
+            'qualification_type' => $qualificationTypeRule,
             'qualification_details' => 'required|string',
             'present_employer' => 'required|string|max:255',
             'present_designation' => 'required|string|max:255',

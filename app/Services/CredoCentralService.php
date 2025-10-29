@@ -58,16 +58,93 @@ class CredoCentralService
         $endpoint = '/transaction/initialize';
         $fullUrl = $this->baseUrl . $endpoint;
 
-        // Determine the service code based on the fee type code (no fallback)
+        // Determine the service code based on the fee type code, category, and qualification type
         $feeTypeCode = $transaction->feeTemplate->feeType->code;
-        $serviceCode = config('services.credocentral.service_codes.' . $feeTypeCode);
-        if (empty($serviceCode)) {
-            Log::error('No service code configured for fee type', [
-                'fee_type_code' => $feeTypeCode,
-                'transaction_id' => $transaction->id
-            ]);
-            throw new \Exception("No service code configured for this payment type. Please contact the administrator.");
+        $categorySlug = $transaction->feeTemplate->category->slug ?? null;
+        $qualificationType = $transaction->alumni->qualification_type ?? null;
+        
+        // Get service codes for this fee type
+        $feeTypeServiceCodes = config('services.credocentral.service_codes.' . $feeTypeCode);
+        
+        // If it's a simple string (backward compatibility), use it directly
+        if (is_string($feeTypeServiceCodes)) {
+            $serviceCode = $feeTypeServiceCodes;
+        } 
+        // If it's an array (category-specific), look for category-specific code
+        elseif (is_array($feeTypeServiceCodes)) {
+            // For postgraduate category, check qualification type for subcategories (PhD, MSc, PGD)
+            if ($categorySlug === 'postgraduate' && $qualificationType) {
+                // Normalize qualification type (handle variations like "PhD", "Ph.D", "phd", etc.)
+                $qualificationNormalized = strtolower(trim($qualificationType));
+                // Remove dots and spaces, standardize
+                $qualificationNormalized = str_replace(['.', ' ', '_'], '', $qualificationNormalized);
+                
+                // Map to expected keys (handle variations)
+                $qualificationMap = [
+                    'phd' => 'phd',
+                    'ph.d' => 'phd',
+                    'doctorofphilosophy' => 'phd',
+                    'msc' => 'msc',
+                    'm.sc' => 'msc',
+                    'masters' => 'msc',
+                    'masterofscience' => 'msc',
+                    'pgd' => 'pgd',
+                    'pg.d' => 'pgd',
+                    'postgraduatediploma' => 'pgd',
+                ];
+                
+                $qualificationKey = $qualificationMap[$qualificationNormalized] ?? $qualificationNormalized;
+                
+                // Try qualification-specific key (e.g., 'postgraduate-phd', 'postgraduate-msc', 'postgraduate-pgd')
+                $postgradQualKey = 'postgraduate-' . $qualificationKey;
+                if (isset($feeTypeServiceCodes[$postgradQualKey])) {
+                    $serviceCode = $feeTypeServiceCodes[$postgradQualKey];
+                }
+            }
+            
+            // If not resolved yet, try category-specific service code for non-postgraduate categories
+            if (empty($serviceCode) && $categorySlug && isset($feeTypeServiceCodes[$categorySlug])) {
+                $serviceCode = $feeTypeServiceCodes[$categorySlug];
+            }
+        } else {
+            $serviceCode = null;
         }
+        
+        if (empty($serviceCode)) {
+            $expectedKey = null;
+            if ($categorySlug === 'postgraduate' && $qualificationType) {
+                $qualificationNormalized = strtolower(str_replace(['.', ' ', '_'], '', trim($qualificationType)));
+                $qualificationMap = [
+                    'phd' => 'phd', 'ph.d' => 'phd', 'doctorofphilosophy' => 'phd',
+                    'msc' => 'msc', 'm.sc' => 'msc', 'masters' => 'msc', 'masterofscience' => 'msc',
+                    'pgd' => 'pgd', 'pg.d' => 'pgd', 'postgraduatediploma' => 'pgd',
+                ];
+                $qualificationKey = $qualificationMap[$qualificationNormalized] ?? $qualificationNormalized;
+                $expectedKey = 'postgraduate-' . $qualificationKey;
+            } else {
+                $expectedKey = $categorySlug;
+            }
+            
+            Log::error('No service code configured for fee type and category', [
+                'fee_type_code' => $feeTypeCode,
+                'category_slug' => $categorySlug,
+                'qualification_type' => $qualificationType,
+                'expected_key' => $expectedKey,
+                'transaction_id' => $transaction->id,
+                'available_codes' => is_array($feeTypeServiceCodes) ? array_keys($feeTypeServiceCodes) : null
+            ]);
+            throw new \Exception("No service code configured for this payment type and category combination. Each category must have its own service code. Please contact the administrator.");
+        }
+
+        // Log which service code is being used
+        Log::info('Credo Central service code resolved', [
+            'transaction_id' => $transaction->id,
+            'fee_type_code' => $feeTypeCode,
+            'category_slug' => $categorySlug,
+            'qualification_type' => $qualificationType,
+            'service_code' => $serviceCode,
+            'amount' => $transaction->amount
+        ]);
 
         $requestData = [
             'amount' => $transaction->amount * 100,
@@ -87,6 +164,11 @@ class CredoCentralService
                         'variable_name' => 'fee_type',
                         'value' => $transaction->feeTemplate->feeType->code,
                         'display_name' => 'Fee Type'
+                    ],
+                    [
+                        'variable_name' => 'category',
+                        'value' => $categorySlug,
+                        'display_name' => 'Category'
                     ],
                     [
                         'variable_name' => 'alumni_id',
