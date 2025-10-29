@@ -248,6 +248,7 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
 
     // Reports Routes
     Route::get('/reports', App\Livewire\AlumniReport::class)->name('reports');
+    Route::get('/reports/download-pdf', [\App\Http\Controllers\AlumniReportController::class, 'downloadPdf'])->name('reports.download-pdf');
     Route::get('/reports/clearance-form', App\Livewire\ClearanceForm::class)->name('reports.clearance-form');
 
     // Alumni Election Routes

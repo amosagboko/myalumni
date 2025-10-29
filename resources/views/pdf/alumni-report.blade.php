@@ -48,7 +48,7 @@
                         $avatarPath = $user->avatar ? public_path('storage/' . $user->avatar) : public_path('images/default-avatar.png');
                     @endphp
                     @if(file_exists($avatarPath))
-                        <img src="{{ $avatarPath }}" alt="Passport" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px;">
+                        <img src="{{ $avatarPath }}" alt="Passport" style="width: 150px; height: 150px; object-fit: cover; border-radius: 6px;">
                     @endif
                 </div>
                 <div class="col col-6 mb-1"><span class="fw-bold">Gender:</span> {{ ucfirst($user->gender) }}</div>
