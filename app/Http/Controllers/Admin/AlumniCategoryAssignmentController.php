@@ -88,10 +88,54 @@ class AlumniCategoryAssignmentController extends Controller
         try {
             DB::beginTransaction();
 
-            $alumni = Alumni::findOrFail($request->alumni_id);
+            $alumni = Alumni::with('category')->findOrFail($request->alumni_id);
+            $newCategory = AlumniCategory::findOrFail($request->category_id);
+            $oldCategorySlug = $alumni->category ? $alumni->category->slug : null;
+            
+            // Update category
             $alumni->update(['category_id' => $request->category_id]);
-
+            
+            // Handle qualification_type consistency
+            // If switching to/from postgraduate, validate/reset qualification_type
+            if ($newCategory->slug === 'postgraduate') {
+                // Switching TO postgraduate category
+                $validQualificationTypes = ['PhD', 'MSc', 'PGD'];
+                $currentQualificationType = $alumni->qualification_type;
+                
+                // If qualification_type exists but is invalid for postgraduate, log warning
+                if ($currentQualificationType && !in_array($currentQualificationType, $validQualificationTypes)) {
+                    Log::warning('Postgraduate category assigned but qualification_type is invalid', [
+                        'alumni_id' => $alumni->id,
+                        'category_id' => $request->category_id,
+                        'current_qualification_type' => $currentQualificationType,
+                        'note' => 'Alumni will need to update qualification_type to PhD, MSc, or PGD during bio data completion'
+                    ]);
+                }
+            } elseif ($oldCategorySlug === 'postgraduate' && $newCategory->slug !== 'postgraduate') {
+                // Switching FROM postgraduate to non-postgraduate category
+                $validQualificationTypes = ['Degree', 'Diploma', 'Certificate'];
+                $currentQualificationType = $alumni->qualification_type;
+                
+                // If qualification_type is PhD/MSc/PGD but category is no longer postgraduate, clear it
+                if ($currentQualificationType && in_array($currentQualificationType, ['PhD', 'MSc', 'PGD'])) {
+                    $alumni->update(['qualification_type' => null]);
+                    Log::info('Qualification type cleared when switching from postgraduate to non-postgraduate category', [
+                        'alumni_id' => $alumni->id,
+                        'old_category' => $oldCategorySlug,
+                        'new_category' => $newCategory->slug,
+                        'cleared_qualification_type' => $currentQualificationType
+                    ]);
+                }
+            }
+            
             DB::commit();
+
+            Log::info('Category assigned successfully', [
+                'alumni_id' => $alumni->id,
+                'old_category' => $oldCategorySlug,
+                'new_category' => $newCategory->slug,
+                'qualification_type' => $alumni->fresh()->qualification_type
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -102,6 +146,7 @@ class AlumniCategoryAssignmentController extends Controller
             DB::rollBack();
             Log::error('Category assignment failed', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'alumni_id' => $request->alumni_id,
                 'category_id' => $request->category_id
             ]);
@@ -124,20 +169,63 @@ class AlumniCategoryAssignmentController extends Controller
         try {
             DB::beginTransaction();
 
-            $updatedCount = Alumni::whereIn('id', $request->alumni_ids)
-                ->update(['category_id' => $request->category_id]);
+            $newCategory = AlumniCategory::findOrFail($request->category_id);
+            $alumniRecords = Alumni::with('category')->whereIn('id', $request->alumni_ids)->get();
+            
+            $updatedCount = 0;
+            $warningCount = 0;
+            
+            foreach ($alumniRecords as $alumni) {
+                $oldCategorySlug = $alumni->category ? $alumni->category->slug : null;
+                
+                // Update category
+                $alumni->update(['category_id' => $request->category_id]);
+                $updatedCount++;
+                
+                // Handle qualification_type consistency for each alumni
+                if ($newCategory->slug === 'postgraduate') {
+                    // Switching TO postgraduate category
+                    $validQualificationTypes = ['PhD', 'MSc', 'PGD'];
+                    $currentQualificationType = $alumni->qualification_type;
+                    
+                    if ($currentQualificationType && !in_array($currentQualificationType, $validQualificationTypes)) {
+                        $warningCount++;
+                        Log::warning('Postgraduate category assigned but qualification_type is invalid', [
+                            'alumni_id' => $alumni->id,
+                            'current_qualification_type' => $currentQualificationType
+                        ]);
+                    }
+                } elseif ($oldCategorySlug === 'postgraduate' && $newCategory->slug !== 'postgraduate') {
+                    // Switching FROM postgraduate to non-postgraduate category
+                    if ($alumni->qualification_type && in_array($alumni->qualification_type, ['PhD', 'MSc', 'PGD'])) {
+                        $alumni->update(['qualification_type' => null]);
+                    }
+                }
+            }
 
             DB::commit();
 
+            $message = "Successfully assigned category to {$updatedCount} alumni.";
+            if ($warningCount > 0) {
+                $message .= " Note: {$warningCount} alumni may need to update their qualification type to PhD, MSc, or PGD.";
+            }
+
+            Log::info('Bulk category assignment completed', [
+                'updated_count' => $updatedCount,
+                'warning_count' => $warningCount,
+                'category_slug' => $newCategory->slug
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => "Successfully assigned category to {$updatedCount} alumni."
+                'message' => $message
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Bulk category assignment failed', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'alumni_ids' => $request->alumni_ids,
                 'category_id' => $request->category_id
             ]);
