@@ -27,12 +27,20 @@
 <body>
     <div class="header">
         <div class="between">
-            <img src="{{ public_path('images/fulafia-logo.jpg') }}" class="logo" alt="FULAFIA">
+            @php
+                $fulafiaLogo = public_path('images/fulafia-logo.jpg');
+                $alumniLogo = public_path('images/alumni-logo.jpg');
+            @endphp
+            @if(file_exists($fulafiaLogo))
+                <img src="{{ $fulafiaLogo }}" class="logo" alt="FULAFIA">
+            @endif
             <div>
                 <div class="fw-bold">Federal University of Lafia</div>
                 <div class="small">Alumni Personal Data Registration Form</div>
             </div>
-            <img src="{{ public_path('images/alumni-logo.jpg') }}" class="logo" alt="ALUMNI">
+            @if(file_exists($alumniLogo))
+                <img src="{{ $alumniLogo }}" class="logo" alt="ALUMNI">
+            @endif
         </div>
     </div>
 
@@ -51,13 +59,13 @@
                         <img src="{{ $avatarPath }}" alt="Passport" style="width: 150px; height: 150px; object-fit: cover; border-radius: 6px;">
                     @endif
                 </div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Gender:</span> {{ ucfirst($user->gender) }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Title:</span> {{ $alumni->title }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Matric No:</span> {{ $alumni->matric_number }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Date of Birth:</span> {{ $alumni->date_of_birth }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">LGA:</span> {{ $alumni->lga }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">State of Origin:</span> {{ $alumni->state }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Nationality:</span> {{ $alumni->nationality }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Gender:</span> {{ $user->gender ? ucfirst($user->gender) : 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Title:</span> {{ $alumni->title ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Matric No:</span> {{ $alumni->matric_number ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Date of Birth:</span> {{ $alumni->date_of_birth ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">LGA:</span> {{ $alumni->lga ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">State of Origin:</span> {{ $alumni->state ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Nationality:</span> {{ $alumni->nationality ?? 'N/A' }}</div>
             </div>
         </div>
     </div>
@@ -66,9 +74,9 @@
         <div class="card-header">Contact Information</div>
         <div class="card-body">
             <div class="row">
-                <div class="col col-6 mb-1"><span class="fw-bold">Contact Address:</span> {{ $alumni->contact_address }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Email:</span> {{ $user->email }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Phone/WhatsApp:</span> {{ $alumni->phone_number }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Contact Address:</span> {{ $alumni->contact_address ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Email:</span> {{ $user->email ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Phone/WhatsApp:</span> {{ $alumni->phone_number ?? 'N/A' }}</div>
             </div>
         </div>
     </div>
@@ -77,12 +85,12 @@
         <div class="card-header">Academic Information</div>
         <div class="card-body">
             <div class="row">
-                <div class="col col-6 mb-1"><span class="fw-bold">Year of Entry:</span> {{ $alumni->year_of_entry }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Year of Graduation:</span> {{ $alumni->year_of_graduation }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Department:</span> {{ $alumni->department }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Faculty:</span> {{ $alumni->faculty }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Qualification Type:</span> {{ $alumni->qualification_type }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Qualification Detail:</span> {{ $alumni->qualification_details }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Year of Entry:</span> {{ $alumni->year_of_entry ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Year of Graduation:</span> {{ $alumni->year_of_graduation ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Department:</span> {{ $alumni->department ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Faculty:</span> {{ $alumni->faculty ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Qualification Type:</span> {{ $alumni->qualification_type ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Qualification Detail:</span> {{ $alumni->qualification_details ?? 'N/A' }}</div>
             </div>
         </div>
     </div>
@@ -91,9 +99,9 @@
         <div class="card-header">Professional Information</div>
         <div class="card-body">
             <div class="row">
-                <div class="col col-6 mb-1"><span class="fw-bold">Present Employer:</span> {{ $alumni->present_employer }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Present Post/Designation:</span> {{ $alumni->present_designation }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Professional Bodies:</span> {{ $alumni->professional_bodies }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Present Employer:</span> {{ $alumni->present_employer ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Present Post/Designation:</span> {{ $alumni->present_designation ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Professional Bodies:</span> {{ $alumni->professional_bodies ?? 'N/A' }}</div>
             </div>
         </div>
     </div>
@@ -102,9 +110,9 @@
         <div class="card-header">Additional Information</div>
         <div class="card-body">
             <div class="row">
-                <div class="col col-6 mb-1"><span class="fw-bold">Student Responsibilities:</span> {{ $alumni->student_responsibilities }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Hobbies:</span> {{ $alumni->hobbies }}</div>
-                <div class="col col-6 mb-1"><span class="fw-bold">Other Relevant Information:</span> {{ $alumni->other_information }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Student Responsibilities:</span> {{ $alumni->student_responsibilities ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Hobbies:</span> {{ $alumni->hobbies ?? 'N/A' }}</div>
+                <div class="col col-6 mb-1"><span class="fw-bold">Other Relevant Information:</span> {{ $alumni->other_information ?? 'N/A' }}</div>
             </div>
         </div>
     </div>
