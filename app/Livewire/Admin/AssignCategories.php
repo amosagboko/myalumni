@@ -29,23 +29,9 @@ class AssignCategories extends Component
         // Component initialization
     }
 
-    public function updatingSearch()
+    public function applyFilters()
     {
-        $this->resetPage();
-    }
-
-    public function updatingFaculty()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingGraduationYear()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingCategory()
-    {
+        // Force re-render with current filter values
         $this->resetPage();
     }
 

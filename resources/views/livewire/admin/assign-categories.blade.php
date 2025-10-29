@@ -19,13 +19,13 @@
         <div class="row g-3">
             <div class="col-md-2">
                 <label for="search" class="form-label">Search</label>
-                <input type="text" wire:model.debounce.500ms="search" id="search" 
+                <input type="text" wire:model.defer="search" id="search" 
                        placeholder="Name, Matric, Email" 
                        class="form-control">
             </div>
             <div class="col-md-2">
                 <label for="faculty" class="form-label">Faculty</label>
-                <select wire:model="faculty" id="faculty" class="form-select">
+                <select wire:model.defer="faculty" id="faculty" class="form-select">
                     <option value="">All Faculties</option>
                     @foreach($faculties as $facultyOption)
                         <option value="{{ $facultyOption }}">{{ $facultyOption }}</option>
@@ -34,7 +34,7 @@
             </div>
             <div class="col-md-2">
                 <label for="graduation_year" class="form-label">Graduation Year</label>
-                <select wire:model="graduationYear" id="graduation_year" class="form-select">
+                <select wire:model.defer="graduationYear" id="graduation_year" class="form-select">
                     <option value="">All Years</option>
                     @foreach($graduationYears as $year)
                         <option value="{{ $year }}">{{ $year }}</option>
@@ -43,7 +43,7 @@
             </div>
             <div class="col-md-2">
                 <label for="category" class="form-label">Current Category</label>
-                <select wire:model="category" id="category" class="form-select">
+                <select wire:model.defer="category" id="category" class="form-select">
                     <option value="">All Categories</option>
                     <option value="unassigned">Unassigned</option>
                     @foreach($categories as $categoryOption)
@@ -51,7 +51,11 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button wire:click="applyFilters" class="btn btn-outline-primary">
+                    <i data-feather="search" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
+                    Filter
+                </button>
                 <button wire:click="clearFilters" class="btn btn-outline-secondary">
                     <i data-feather="x" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
                     Clear
