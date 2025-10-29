@@ -62,7 +62,7 @@
 
                         <!-- Qualification Type -->
                         <div class="mb-3">
-                            <label for="qualification_type" class="form-label">Qualification Type</label>
+                            <label for="qualification_type" class="form-label">Qualification Type <span class="text-danger">*</span></label>
                             <select id="qualification_type" name="qualification_type" class="form-select @error('qualification_type') is-invalid @enderror" required>
                                 <option value="">Select Qualification Type</option>
                                 @foreach($qualificationTypes as $type)
@@ -74,6 +74,7 @@
                             @error('qualification_type')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="form-text text-muted">This field is required.</small>
                         </div>
 
                         <!-- Qualification Details -->

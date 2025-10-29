@@ -27,11 +27,24 @@ class AlumniBioDataController extends Controller
                 ->with('error', 'Your alumni record needs to be set up by an administrator first.');
         }
 
+        // Load category relationship to ensure it's available
+        $alumni->load('category');
+
         $titles = ['Prof', 'Dr', 'Mr', 'Mrs', 'Miss', 'Alh', 'Hajj', 'Chief', 'Mal'];
         
         // Get qualification types based on alumni category
-        $qualificationTypes = [];
-        if ($alumni->category && $alumni->category->slug === 'postgraduate') {
+        $categorySlug = $alumni->category ? $alumni->category->slug : null;
+        $categoryName = $alumni->category ? $alumni->category->name : 'Unknown';
+        
+        // Log for debugging
+        Log::info('Bio data form - Qualification types', [
+            'alumni_id' => $alumni->id,
+            'category_id' => $alumni->category_id,
+            'category_slug' => $categorySlug,
+            'category_name' => $categoryName,
+        ]);
+        
+        if ($categorySlug === 'postgraduate') {
             // For Postgraduate: PhD, MSc, PGD
             $qualificationTypes = ['PhD', 'MSc', 'PGD'];
         } else {
