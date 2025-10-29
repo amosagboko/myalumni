@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class AlumniReportController extends Controller
 {
@@ -32,15 +31,9 @@ class AlumniReportController extends Controller
             try {
                 $html = view('pdf.alumni-report', $data)->render();
                 
-                // Try using the facade first, if that fails try container resolution
-                try {
-                    $pdf = PDF::loadHTML($html);
-                } catch (\Exception $e) {
-                    // If facade fails, try resolving from container
-                    $pdf = app('dompdf.wrapper');
-                    $pdf->loadHTML($html);
-                }
-                
+                // Try resolving from container (more reliable than facade)
+                $dompdf = app('dompdf.wrapper');
+                $pdf = $dompdf->loadHTML($html);
                 $pdf->setPaper('a4', 'portrait');
 
                 $fileName = 'alumni_report_' . str_replace(' ', '_', strtolower($user->name)) . '_' . now()->format('Ymd_His') . '.pdf';
