@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class AlumniReportController extends Controller
 {
@@ -31,8 +31,16 @@ class AlumniReportController extends Controller
             
             try {
                 $html = view('pdf.alumni-report', $data)->render();
-
-                $pdf = Pdf::loadHTML($html);
+                
+                // Try using the facade first, if that fails try container resolution
+                try {
+                    $pdf = PDF::loadHTML($html);
+                } catch (\Exception $e) {
+                    // If facade fails, try resolving from container
+                    $pdf = app('dompdf.wrapper');
+                    $pdf->loadHTML($html);
+                }
+                
                 $pdf->setPaper('a4', 'portrait');
 
                 $fileName = 'alumni_report_' . str_replace(' ', '_', strtolower($user->name)) . '_' . now()->format('Ymd_His') . '.pdf';
@@ -52,10 +60,9 @@ class AlumniReportController extends Controller
                 'alumni_id' => $alumni->id ?? null,
             ]);
             
-            // Show more detailed error in development, generic in production
-            $errorMessage = config('app.debug') 
-                ? 'Failed to generate PDF: ' . $e->getMessage() 
-                : 'Failed to generate PDF. Please contact support if this issue persists.';
+            // Always show the actual error message for debugging
+            $errorMessage = 'Failed to generate PDF: ' . $e->getMessage() . 
+                ' (File: ' . basename($e->getFile()) . ', Line: ' . $e->getLine() . ')';
             
             return redirect()->route('reports')
                 ->with('error', $errorMessage);
