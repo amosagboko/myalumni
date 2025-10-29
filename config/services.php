@@ -43,42 +43,50 @@ return [
         'service_codes' => [
             // Category-specific service codes
             // Format: 'fee_type_code' => ['category_slug' => 'service_code']
+            // IMPORTANT: Replace the placeholder values below with ACTUAL Credo Central service codes
+            // The KEY is the category slug (e.g., 'undergraduate-full-time')
+            // The VALUE is whatever service code Credo Central provides (can be any format)
             // For Postgraduate, we support qualification-specific codes: 'postgraduate-phd', 'postgraduate-msc', 'postgraduate-pgd'
             'registration' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
-                'postgraduate-phd' => '003486REG2025_PHD',
-                'postgraduate-msc' => '003486REG2025_MSC',
-                'postgraduate-pgd' => '003486REG2025_PGD',
-                'undergraduate-full-time' => '003486REG2025_UGFT',
-                'undergraduate-part-time' => '003486REG2025_UGPT',
-                'diploma' => '003486REG2025_DIP',
+                // Replace these placeholder values with actual Credo Central codes
+                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
+                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
+                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
+                // Undergraduate categories - replace with actual Credo Central codes
+                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
+                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
+                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
             ],
             'development_levy' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
-                'postgraduate-phd' => '003486DEV2025_PHD',
-                'postgraduate-msc' => '003486DEV2025_MSC',
-                'postgraduate-pgd' => '003486DEV2025_PGD',
-                'undergraduate-full-time' => '003486DEV2025_UGFT',
-                'undergraduate-part-time' => '003486DEV2025_UGPT',
-                'diploma' => '003486DEV2025_DIP',
+                // Replace these placeholder values with actual Credo Central codes
+                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
+                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
+                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
+                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
+                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
+                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
             ],
             'data_processing' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
-                'postgraduate-phd' => '003486DAT2025_PHD',
-                'postgraduate-msc' => '003486DAT2025_MSC',
-                'postgraduate-pgd' => '003486DAT2025_PGD',
-                'undergraduate-full-time' => '003486DAT2025_UGFT',
-                'undergraduate-part-time' => '003486DAT2025_UGPT',
-                'diploma' => '003486DAT2025_DIP',
+                // Replace these placeholder values with actual Credo Central codes
+                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
+                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
+                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
+                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
+                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
+                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
             ],
             'tech_support' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
-                'postgraduate-phd' => '003486TEC2025_PHD',
-                'postgraduate-msc' => '003486TEC2025_MSC',
-                'postgraduate-pgd' => '003486TEC2025_PGD',
-                'undergraduate-full-time' => '003486TEC2025_UGFT',
-                'undergraduate-part-time' => '003486TEC2025_UGPT',
-                'diploma' => '003486TEC2025_DIP',
+                // Replace these placeholder values with actual Credo Central codes
+                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
+                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
+                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
+                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
+                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
+                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
             ],
             // Subscription - Add category-specific codes as needed (STRICT - NO FALLBACKS)
             'subscription' => [
