@@ -273,11 +273,13 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
 
 // Division routes: Student Affairs
 Route::middleware(['auth', 'role:student-affairs'])->prefix('student-affairs')->name('student-affairs.')->group(function () {
+    Route::get('/', \App\Livewire\StudentAffairs\Dashboard::class)->name('home');
     Route::get('/clearance', \App\Livewire\StudentAffairs\Clearance::class)->name('clearance');
 });
 
 // Division routes: Academic Affairs
 Route::middleware(['auth', 'role:academic-affairs'])->prefix('academic-affairs')->name('academic-affairs.')->group(function () {
+    Route::get('/', \App\Livewire\AcademicAffairs\Dashboard::class)->name('home');
     Route::get('/clearance', \App\Livewire\AcademicAffairs\Clearance::class)->name('clearance');
 });
 
