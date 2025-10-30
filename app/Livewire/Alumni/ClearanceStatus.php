@@ -14,6 +14,6 @@ class ClearanceStatus extends Component
 
         return view('livewire.alumni.clearance-status', [
             'alumni' => $alumni,
-        ]);
+        ])->layout('layouts.alumni');
     }
 }
