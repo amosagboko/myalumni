@@ -6,7 +6,12 @@
     <title>{{ $title ?? 'Alumni Management System' }}</title>
     
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (file_exists(public_path('build/manifest.json')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <link rel="stylesheet" href="/css/app.css">
+        <script src="/js/app.js" defer></script>
+    @endif
     
     <!-- Styles -->
     @livewireStyles
