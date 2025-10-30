@@ -36,6 +36,9 @@ class Dashboard extends Component
             ->limit(10)
             ->get();
 
+        $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort()->values();
+        $years = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse()->values();
+
         return view('livewire.academic-affairs.dashboard', [
             'kpis' => [
                 'pending' => $pendingClearances,
@@ -44,6 +47,8 @@ class Dashboard extends Component
                 'overall' => $overallCleared,
             ],
             'recentActivity' => $recentActivity,
+            'faculties' => $faculties,
+            'years' => $years,
         ]);
     }
 }

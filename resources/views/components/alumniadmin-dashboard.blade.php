@@ -122,6 +122,43 @@
                         </ul>
                     </div>
 
+                    @php($user = auth()->user())
+                    @if($user && ($user->hasRole('student-affairs') || $user->hasRole('academic-affairs')))
+                        <div class="nav-wrap bg-white bg-transparent-card rounded-3 shadow-sm ps-3 pe-3 pt-0 pb-3 mb-2">
+                            <div class="nav-caption fw-600 font-xssss text-grey-500 mb-2">Divisions</div>
+                            <ul class="mb-1 pt-0">
+                                @if($user->hasRole('student-affairs'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('student-affairs.home') }}" class="nav-content-bttn open-font {{ request()->routeIs('student-affairs.home') ? 'active' : '' }}">
+                                            <i data-feather="home" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                            <span>Student Affairs Dashboard</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('student-affairs.clearance') }}" class="nav-content-bttn open-font {{ request()->routeIs('student-affairs.clearance') ? 'active' : '' }}">
+                                            <i data-feather="user-check" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                            <span>Student Affairs Clearance</span>
+                                        </a>
+                                    </li>
+                                @endif
+                                @if($user->hasRole('academic-affairs'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('academic-affairs.home') }}" class="nav-content-bttn open-font {{ request()->routeIs('academic-affairs.home') ? 'active' : '' }}">
+                                            <i data-feather="home" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                            <span>Academic Affairs Dashboard</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('academic-affairs.clearance') }}" class="nav-content-bttn open-font {{ request()->routeIs('academic-affairs.clearance') ? 'active' : '' }}">
+                                            <i data-feather="user-check" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                            <span>Academic Affairs Clearance</span>
+                                        </a>
+                                    </li>
+                                @endif
+                            </ul>
+                        </div>
+                    @endif
+
                     <!-- Statistics Section -->
                     <div class="nav-wrap bg-white bg-transparent-card rounded-3 shadow-sm ps-3 pe-3 pt-0 pb-3 mb-2">
                         <div class="nav-caption fw-600 font-xssss text-grey-500 mb-2">Statistics</div>

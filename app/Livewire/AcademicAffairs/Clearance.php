@@ -8,6 +8,7 @@ use App\Models\Alumni;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Clearance extends Component
 {
@@ -18,6 +19,18 @@ class Clearance extends Component
     public $year = '';
 
     protected $paginationTheme = 'bootstrap';
+
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'faculty' => ['except' => ''],
+        'year' => ['except' => ''],
+    ];
+
+    public function mount($faculty = null, $year = null)
+    {
+        if ($faculty !== null) { $this->faculty = $faculty; }
+        if ($year !== null) { $this->year = $year; }
+    }
 
     public function updatingSearch() { $this->resetPage(); }
     public function updatingFaculty() { $this->resetPage(); }
@@ -34,8 +47,7 @@ class Clearance extends Component
             DB::beginTransaction();
             $alumni = Alumni::with('user')->findOrFail($alumniId);
 
-            // Enforce onboarding & payments completion
-            $onboardingComplete = $alumni->biodata_completed ?? true; // adjust if flag exists
+            $onboardingComplete = $alumni->biodata_completed ?? true;
             $paymentsComplete = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
             if (!$onboardingComplete) {
                 DB::rollBack();
@@ -50,7 +62,6 @@ class Clearance extends Component
             $alumni->academic_affairs_cleared = (bool) $newValue;
             $alumni->save();
 
-            // Audit log
             DB::table('clearance_logs')->insert([
                 'alumni_id' => $alumni->id,
                 'division' => 'academic_affairs',
@@ -85,6 +96,40 @@ class Clearance extends Component
         if ($this->faculty) { $q->where('faculty', $this->faculty); }
         if ($this->year) { $q->where('year_of_graduation', $this->year); }
         return $q;
+    }
+
+    public function export(): StreamedResponse
+    {
+        $filename = 'academic_affairs_clearance_' . now()->format('Ymd_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $query = $this->getQuery();
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Name', 'Matric', 'Faculty', 'Year', 'Onboarding', 'Payments', 'Academic Affairs']);
+
+            $query->chunk(500, function ($chunk) use ($handle) {
+                foreach ($chunk as $a) {
+                    $onboard = $a->biodata_completed ?? true;
+                    $paid = method_exists($a, 'hasCompletedRequiredPayments') ? $a->hasCompletedRequiredPayments() : true;
+                    fputcsv($handle, [
+                        $a->user->name ?? 'N/A',
+                        $a->matric_number ?? 'N/A',
+                        $a->faculty ?? 'N/A',
+                        $a->year_of_graduation ?? 'N/A',
+                        $onboard ? 'YES' : 'NO',
+                        $paid ? 'YES' : 'NO',
+                        $a->academic_affairs_cleared ? 'CLEARED' : 'NOT CLEARED',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, $headers);
     }
 
     public function render()

@@ -9,8 +9,9 @@
             @endif
 
             <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Academic Affairs Clearance</h6>
+                    <button wire:click="export" class="btn btn-sm btn-success">Export CSV</button>
                 </div>
                 <div class="card-body">
                     <div class="mb-3 p-3 bg-light rounded">

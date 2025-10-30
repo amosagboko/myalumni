@@ -9,6 +9,25 @@
                 </div>
             </div>
 
+            <!-- Quick Filter Presets -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-white"><h6 class="mb-0">Quick Filters</h6></div>
+                <div class="card-body">
+                    <div class="mb-2 small text-muted">By Faculty</div>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @foreach($faculties->take(8) as $f)
+                            <a href="{{ route('academic-affairs.clearance', ['faculty' => $f]) }}" class="btn btn-sm btn-outline-primary">{{ $f }}</a>
+                        @endforeach
+                    </div>
+                    <div class="mb-2 small text-muted">By Year</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach($years->take(8) as $y)
+                            <a href="{{ route('academic-affairs.clearance', ['year' => $y]) }}" class="btn btn-sm btn-outline-primary">{{ $y }}</a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
             <!-- KPIs -->
             <div class="row g-3 mb-3">
                 <div class="col-6 col-md-3">
