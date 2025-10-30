@@ -5,6 +5,30 @@
     <div class="middle-sidebar-bottom">
         <div class="middle-sidebar-left">
             <div class="middle-wrap">
+                <!-- Status Badges Row -->
+                @php
+                    $alumni = Auth::user()->alumni;
+                    $needsBioData = !$alumni || !$alumni->contact_address || !$alumni->phone_number || !$alumni->qualification_type;
+                    $activeFees = $alumni ? $alumni->getActiveFees() : collect([]);
+                    $unpaidFees = $activeFees->filter(function($fee) { return !$fee->isPaid(); });
+                    $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
+                    $studentCleared = (bool) ($alumni->student_affairs_cleared ?? false);
+                    $academicCleared = (bool) ($alumni->academic_affairs_cleared ?? false);
+                    $overallCleared = $studentCleared && $academicCleared;
+                @endphp
+                <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-3">
+                    <div class="card-body p-3">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="badge {{ $needsBioData ? 'bg-danger' : 'bg-success' }}">Onboarding: {{ $needsBioData ? 'Pending ✖' : 'Completed ✔' }}</span>
+                            <span class="badge {{ $needsPayments ? 'bg-danger' : 'bg-success' }}">Payments: {{ $needsPayments ? 'Pending ✖' : 'Completed ✔' }}</span>
+                            <span class="badge {{ $studentCleared ? 'bg-success' : 'bg-danger' }}">Student Affairs: {{ $studentCleared ? 'Cleared ✔' : 'Not Cleared ✖' }}</span>
+                            <span class="badge {{ $academicCleared ? 'bg-success' : 'bg-danger' }}">Academic Affairs: {{ $academicCleared ? 'Cleared ✔' : 'Not Cleared ✖' }}</span>
+                            <span class="badge {{ $overallCleared ? 'bg-success' : 'bg-warning' }}">Overall: {{ $overallCleared ? 'Cleared' : 'Pending' }}</span>
+                            <a href="{{ route('alumni.clearance-status') }}" class="btn btn-sm btn-outline-primary ms-auto">View Clearance Status</a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Welcome Section -->
                 <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-4">
                     <div class="card-body p-4 w-100 bg-current border-0 d-flex rounded-3">

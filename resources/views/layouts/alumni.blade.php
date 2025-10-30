@@ -101,6 +101,12 @@
                                         <span>Clearance Form</span>
                                     </a>
                                 </li>
+                                <li>
+                                    <a href="{{ route('alumni.clearance-status') }}" class="nav-content-bttn open-font">
+                                        <i data-feather="check-circle" class="me-3"></i>
+                                        <span>Clearance Status</span>
+                                    </a>
+                                </li>
                                 @if(auth()->user()->hasRole('alumni'))
                                     @php
                                         $electionLinksDisabled = $needsBioData || $needsPayments;

@@ -7,6 +7,23 @@
                         <h6 class="mb-0">Admin Dashboard</h6>
                     </div>
                     <div class="card-body p-3">
+                        <!-- Clearance Badges Row -->
+                        @php
+                            $studentPending = \App\Models\Alumni::where('student_affairs_cleared', false)->count();
+                            $academicPending = \App\Models\Alumni::where('academic_affairs_cleared', false)->count();
+                            $fullyCleared = \App\Models\Alumni::where('student_affairs_cleared', true)->where('academic_affairs_cleared', true)->count();
+                            $overallPending = \App\Models\Alumni::where(function($q){
+                                $q->where('student_affairs_cleared', false)->orWhere('academic_affairs_cleared', false);
+                            })->count();
+                        @endphp
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="badge bg-danger">Student Affairs Pending: {{ number_format($studentPending) }}</span>
+                            <span class="badge bg-danger">Academic Affairs Pending: {{ number_format($academicPending) }}</span>
+                            <span class="badge bg-success">Fully Cleared: {{ number_format($fullyCleared) }}</span>
+                            <span class="badge bg-warning">Overall Pending: {{ number_format($overallPending) }}</span>
+                            <a href="{{ route('admin.clearance-audit') }}" class="btn btn-sm btn-outline-primary ms-auto">View Clearance Audit</a>
+                        </div>
+
                         <div class="row">
                             <!-- User Statistics -->
                             <div class="col-md-3 mb-3">

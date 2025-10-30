@@ -138,6 +138,11 @@
                                     <span>Alumni Distribution</span>
                                 </a>
                             </li>
+                            <li>
+                                <a href="{{ route('admin.clearance-audit') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.clearance-audit') ? 'active' : '' }}">
+                                    <i data-feather="clipboard" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i><span>Clearance Audit</span>
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>

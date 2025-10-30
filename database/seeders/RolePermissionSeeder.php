@@ -27,7 +27,7 @@ class RolePermissionSeeder extends Seeder
             'create post',
             'comment on post',
             'view events',
-	        'view alumni',
+            'view alumni',
             'update profile',
             'request transcript',
             'generate reports',
@@ -38,82 +38,63 @@ class RolePermissionSeeder extends Seeder
             'message',
             'my transactions',
             'my donations',
-	        'job post',
+            'job post',
+            // New permissions for clearance
+            'view clearance pages',
+            'toggle student affairs clearance',
+            'toggle academic affairs clearance',
+            'view clearance audit',
+            'export clearance audit',
         ];
     
+        // Create permissions
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
 
-    // Create permissions
-    foreach ($permissions as $permission) {
-        Permission::firstOrCreate(['name' => $permission]);
-    }
+        // Define roles and assign permissions
+        $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
+        $supportAdmin = Role::firstOrCreate(['name' => 'support-admin']);
+        $alumni = Role::firstOrCreate(['name' => 'alumni']);
+        $administrator = Role::firstOrCreate(['name' => 'administrator']);
+        $elcomChairman = Role::firstOrCreate(['name' => 'elcom-chairman']);
+        $alumniRelationsOfficer = Role::firstOrCreate(['name' => 'alumni-relations-officer']);
+        // New roles
+        $studentAffairs = Role::firstOrCreate(['name' => 'student-affairs']);
+        $academicAffairs = Role::firstOrCreate(['name' => 'academic-affairs']);
 
-    // Define roles and assign permissions
-    $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
-    $supportAdmin = Role::firstOrCreate(['name' => 'support-admin']);
-    $alumni = Role::firstOrCreate(['name' => 'alumni']);
-    $administrator = Role::firstOrCreate(['name' => 'administrator']);
-    $elcomChairman = Role::firstOrCreate(['name' => 'elcom-chairman']);
-    $alumniRelationsOfficer = Role::firstOrCreate(['name' => 'alumni-relations-officer']);
+        // Assign permissions to roles
+        $superAdmin->givePermissionTo($permissions);
 
-
-    
-    // Assign permissions to roles
-    $superAdmin->givePermissionTo([
+        $supportAdmin->givePermissionTo([
             'suspend users account',
             'create event',
-            'view all users',
+            'upload alumni',
             'create election',
             'moderate post or delete',
-            'upload alumni',
-            'create all users',
-            'create fee template',
-            'create post',
-            'comment on post',
-            'view events',
-	        'view alumni',
-            'update profile',
-            'request transcript',
             'generate reports',
-            'fee template',
             'chat',
+        ]);
+
+        $alumni->givePermissionTo([
+            'request transcript',
             'activate alumni',
             'membership',
             'message',
             'my transactions',
             'my donations',
-	        'job post',
-    ]);
-
-    $supportAdmin->givePermissionTo([
-            'suspend users account',
-            'create event',
-            'upload alumni',
+            'job post',
             'create election',
-            'moderate post or delete',
-            'generate reports',
+            'view events',
+            'update profile',
+            'view alumni',
+            'create post',
+            'comment on post',
             'chat',
-    ]);
+            'view events',
+        ]);
 
-    $alumni->givePermissionTo([
-        'request transcript',
-        'activate alumni',
-        'membership',
-        'message',
-        'my transactions',
-        'my donations',
-        'job post',
-        'create election',
-        'view events',
-        'update profile',
-        'view alumni',
-        'create post',
-        'comment on post',
-        'chat',
-        'view events',
-        
-    ]);
-
-    $administrator->givePermissionTo([
+        $administrator->givePermissionTo([
             'suspend users account',
             'create event',
             'view all users',
@@ -137,30 +118,41 @@ class RolePermissionSeeder extends Seeder
             'my transactions',
             'my donations',
             'job post',
-    ]);
+            'view clearance audit',
+            'export clearance audit',
+        ]);
 
-    $elcomChairman->givePermissionTo([
-        'create election',
-        'view events',
-        'view alumni',
-        'generate reports',
-        'chat',
-        'moderate post or delete'
-    ]);
+        $elcomChairman->givePermissionTo([
+            'create election',
+            'view events',
+            'view alumni',
+            'generate reports',
+            'chat',
+            'moderate post or delete'
+        ]);
 
-    $alumniRelationsOfficer->givePermissionTo([
-        'create event',
-        'view events',
-        'view alumni',
-        'upload alumni',
-        'activate alumni',
-        'generate reports',
-        'chat',
-        'moderate post or delete',
-        'create post',
-        'comment on post'
-    ]);
+        $alumniRelationsOfficer->givePermissionTo([
+            'create event',
+            'view events',
+            'view alumni',
+            'upload alumni',
+            'activate alumni',
+            'generate reports',
+            'chat',
+            'moderate post or delete',
+            'create post',
+            'comment on post'
+        ]);
 
+        // New role permissions
+        $studentAffairs->givePermissionTo([
+            'view clearance pages',
+            'toggle student affairs clearance',
+        ]);
+
+        $academicAffairs->givePermissionTo([
+            'view clearance pages',
+            'toggle academic affairs clearance',
+        ]);
     }
-
 }

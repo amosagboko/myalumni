@@ -65,5 +65,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'bio.data.complete' => \App\Http\Middleware\EnsureBioDataComplete::class,
         'payments.complete' => \App\Http\Middleware\EnsurePaymentsComplete::class,
+        'ensure.clearance' => \App\Http\Middleware\EnsureClearanceComplete::class,
     ];
 } 

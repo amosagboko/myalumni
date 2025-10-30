@@ -246,10 +246,15 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
         Route::get('/{transaction}/failed', [AlumniPaymentController::class, 'paymentFailed'])->name('failed');
     });
 
-    // Reports Routes
-    Route::get('/reports', App\Livewire\AlumniReport::class)->name('reports');
+    // Reports Routes (clearance-gated)
+    Route::get('/reports', App\Livewire\AlumniReport::class)
+        ->middleware('ensure.clearance')
+        ->name('reports');
     Route::get('/reports/download-pdf', [\App\Http\Controllers\AlumniReportController::class, 'downloadPdf'])->name('reports.download-pdf');
     Route::get('/reports/clearance-form', App\Livewire\ClearanceForm::class)->name('reports.clearance-form');
+
+    // Clearance Status (Alumni)
+    Route::get('/alumni/clearance-status', \App\Livewire\Alumni\ClearanceStatus::class)->name('alumni.clearance-status');
 
     // Alumni Election Routes
     Route::get('/alumni/elections', [\App\Http\Controllers\AlumniElectionController::class, 'index'])->name('alumni.elections');
@@ -266,6 +271,23 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
     Route::post('/alumni/elections/{election}/offices/{office}/expression-of-interest', [\App\Http\Controllers\AlumniElectionController::class, 'submitExpressionOfInterest'])->name('alumni.elections.expression-of-interest.submit');
     Route::get('/alumni/elections/{election}/offices/{office}/candidates', [\App\Http\Controllers\AlumniElectionController::class, 'publishedCandidates'])->name('alumni.elections.published-candidates');
     Route::get('/alumni/elections/expression-of-interest/status', [\App\Http\Controllers\AlumniElectionController::class, 'expressionOfInterestStatus'])->name('alumni.elections.expression-of-interest.status');
+});
+
+// Division routes: Student Affairs
+Route::middleware(['auth', 'role:student-affairs'])->prefix('student-affairs')->name('student-affairs.')->group(function () {
+    Route::get('/clearance', \App\Livewire\StudentAffairs\Clearance::class)->name('clearance');
+});
+
+// Division routes: Academic Affairs
+Route::middleware(['auth', 'role:academic-affairs'])->prefix('academic-affairs')->name('academic-affairs.')->group(function () {
+    Route::get('/clearance', \App\Livewire\AcademicAffairs\Clearance::class)->name('clearance');
+});
+
+// Admin: Clearance Audit
+Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/clearance-audit', \App\Livewire\Admin\ClearanceAudit::class)
+        ->middleware('can:view clearance audit')
+        ->name('clearance-audit');
 });
 
 // Election Management Routes - accessible by elcom, elcom-chairman, and administrator
