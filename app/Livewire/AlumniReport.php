@@ -3,8 +3,6 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Models\Alumni;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class AlumniReport extends Component
@@ -34,15 +32,29 @@ class AlumniReport extends Component
         return redirect()->route('reports.download-pdf');
     }
 
+    protected function computeStatuses(): array
+    {
+        $alumni = $this->alumni;
+        $needsBioData = !$alumni || !$alumni->contact_address || !$alumni->phone_number || !$alumni->qualification_type;
+        $activeFees = $alumni ? $alumni->getActiveFees() : collect([]);
+        $unpaidFees = $activeFees->filter(function ($fee) { return !$fee->isPaid(); });
+        $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
+        $studentCleared = (bool) ($alumni->student_affairs_cleared ?? false);
+        $academicCleared = (bool) ($alumni->academic_affairs_cleared ?? false);
+        $allOk = !$needsBioData && !$needsPayments && $studentCleared && $academicCleared;
+
+        return compact('needsBioData', 'needsPayments', 'studentCleared', 'academicCleared', 'allOk');
+    }
+
     public function render()
     {
-        if (!$this->alumni) {
-            return view('livewire.alumni-report', [
+        $statuses = $this->computeStatuses();
+
+        if (!$statuses['allOk']) {
+            return view('livewire.reports-gate', array_merge($statuses, [
                 'user' => $this->user,
-                'alumni' => null
-            ])->layout('layouts.alumni', [
-                'title' => 'Alumni Data Report'
-            ]);
+                'alumni' => $this->alumni,
+            ]))->layout('layouts.alumni', [ 'title' => 'Alumni Reports' ]);
         }
 
         return view('livewire.alumni-report', [

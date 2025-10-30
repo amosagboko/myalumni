@@ -246,10 +246,8 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
         Route::get('/{transaction}/failed', [AlumniPaymentController::class, 'paymentFailed'])->name('failed');
     });
 
-    // Reports Routes (clearance-gated)
-    Route::get('/reports', App\Livewire\AlumniReport::class)
-        ->middleware('ensure.clearance')
-        ->name('reports');
+    // Reports Routes (component will gate access)
+    Route::get('/reports', App\Livewire\AlumniReport::class)->name('reports');
     Route::get('/reports/download-pdf', [\App\Http\Controllers\AlumniReportController::class, 'downloadPdf'])->name('reports.download-pdf');
     Route::get('/reports/clearance-form', App\Livewire\ClearanceForm::class)->name('reports.clearance-form');
 
