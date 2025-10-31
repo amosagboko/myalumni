@@ -1,6 +1,7 @@
-<div class="container mt-5 pt-5">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8">
+<div class="middle-sidebar-bottom">
+    <div class="middle-sidebar-left">
+        <div class="row">
+            <div class="col-12">
             @if (session()->has('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
