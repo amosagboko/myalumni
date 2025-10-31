@@ -99,7 +99,7 @@ class Audit extends Component
         $logs = $this->getQuery()->paginate(20);
         return view('livewire.student-affairs.audit', [
             'logs' => $logs,
-        ]);
+        ])->layout('components.alumniadmin-dashboard', ['title' => 'Student Affairs Audit']);
     }
 }
 

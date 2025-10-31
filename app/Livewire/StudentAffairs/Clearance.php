@@ -268,6 +268,6 @@ class Clearance extends Component
             'faculties' => $faculties,
             'departments' => $departments,
             'years' => $years,
-        ]);
+        ])->layout('components.alumniadmin-dashboard', ['title' => 'Student Affairs Clearance']);
     }
 }
