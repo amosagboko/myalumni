@@ -77,7 +77,7 @@ class Clearance extends Component
         }
 
         $user = Auth::user();
-        if (!$user || !$user->can('toggle student affairs clearance')) {
+        if (!$user || !$user->can('clear student affairs')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
@@ -136,7 +136,7 @@ class Clearance extends Component
         }
 
         $user = Auth::user();
-        if (!$user || !$user->can('toggle student affairs clearance')) {
+        if (!$user || !$user->can('clear student affairs')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
@@ -175,7 +175,7 @@ class Clearance extends Component
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
         $user = Auth::user();
-        if (!$user || !$user->can('toggle student affairs clearance')) {
+        if (!$user || !$user->can('clear student affairs')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
