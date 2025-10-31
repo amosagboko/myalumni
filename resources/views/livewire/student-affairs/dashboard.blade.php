@@ -5,7 +5,7 @@
                 <h6 class="mb-0">Student Affairs Dashboard</h6>
                 <div class="d-flex gap-2">
                     <a href="{{ route('student-affairs.clearance') }}" class="btn btn-sm btn-primary">Go to Clearance</a>
-                    <a href="{{ route('admin.clearance-audit') }}" class="btn btn-sm btn-outline-secondary">Clearance Audit</a>
+                    <a href="{{ route('student-affairs.audit') }}" class="btn btn-sm btn-outline-secondary">Clearance Audit</a>
                 </div>
             </div>
 

@@ -50,43 +50,43 @@ return [
             'registration' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
                 // Replace these placeholder values with actual Credo Central codes
-                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
-                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
-                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
+                'postgraduate-phd' => '003486UHBXXG',
+                'postgraduate-msc' => '003486A4A30C',
+                'postgraduate-pgd' => '0034866M79QZ',
                 // Undergraduate categories - replace with actual Credo Central codes
-                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
-                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
-                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
+                'undergraduate-full-time' => '003486PYW8VS',
+                'undergraduate-part-time' => '0034860PZGM7',
+                'diploma' => '003486Q4TVWL',
             ],
             'development_levy' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
                 // Replace these placeholder values with actual Credo Central codes
-                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
-                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
-                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
-                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
-                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
-                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
+                'postgraduate-phd' => '003486ZWDECG',
+                'postgraduate-msc' => '003486CCZPVP',
+                'postgraduate-pgd' => '003486T0R3FS',
+                'undergraduate-full-time' => '003486M6S4XV',
+                'undergraduate-part-time' => '003486M0T2MO',
+                'diploma' => '003486LKJG80',
             ],
             'data_processing' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
                 // Replace these placeholder values with actual Credo Central codes
-                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
-                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
-                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
-                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
-                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
-                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
+                'postgraduate-phd' => '0034865JCWIM',
+                'postgraduate-msc' => '003486LALDE9',
+                'postgraduate-pgd' => '00348631YJUP',
+                'undergraduate-full-time' => '003486T26SAE',
+                'undergraduate-part-time' => '003486MJKMC1',
+                'diploma' => '00348665ECWG',
             ],
             'tech_support' => [
                 // Postgraduate subcategories based on qualification type (STRICT - NO FALLBACKS)
                 // Replace these placeholder values with actual Credo Central codes
-                'postgraduate-phd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PHD',
-                'postgraduate-msc' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_MSC',
-                'postgraduate-pgd' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_PGD',
-                'undergraduate-full-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGFT',
-                'undergraduate-part-time' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_UGPT',
-                'diploma' => 'REPLACE_WITH_ACTUAL_CREDO_CODE_FOR_DIPLOMA',
+                'postgraduate-phd' => '003486ITNQTE',
+                'postgraduate-msc' => '0034867F12P6',
+                'postgraduate-pgd' => '0034860KE8LF',
+                'undergraduate-full-time' => '003486TJ3QEV',
+                'undergraduate-part-time' => '0034862114FZ',
+                'diploma' => '003486UA8M7C',
             ],
             // Subscription - Add category-specific codes as needed (STRICT - NO FALLBACKS)
             'subscription' => [

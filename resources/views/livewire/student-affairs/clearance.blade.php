@@ -16,10 +16,10 @@
                 <div class="card-body">
                     <div class="mb-3 p-3 bg-light rounded">
                         <div class="row g-2">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <input type="text" wire:model.debounce.500ms="search" placeholder="Search name or matric" class="form-control">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <select wire:model="faculty" class="form-select">
                                     <option value="">All Faculties</option>
                                     @foreach($faculties as $f)
@@ -27,13 +27,55 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <select wire:model="department" class="form-select">
+                                    <option value="">All Departments</option>
+                                    @foreach($departments as $d)
+                                        <option value="{{ $d }}">{{ $d }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <select wire:model="year" class="form-select">
                                     <option value="">All Years</option>
                                     @foreach($years as $y)
                                         <option value="{{ $y }}">{{ $y }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="col-md-1">
+                                <select wire:model="perPage" class="form-select">
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Actions -->
+                    <div class="mb-3 p-3 bg-primary bg-opacity-10 rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="form-check">
+                                    <input type="checkbox" id="select-all-sa" class="form-check-input" 
+                                           wire:click="toggleSelectAll">
+                                    <label class="form-check-label" for="select-all-sa">
+                                        Select All (Page)
+                                    </label>
+                                </div>
+                                <button type="button" wire:click="bulkClear" class="btn btn-success btn-sm">
+                                    <i data-feather="check-square" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
+                                    Bulk Clear
+                                </button>
+                                <button type="button" wire:click="bulkUnclear" class="btn btn-danger btn-sm">
+                                    <i data-feather="x-square" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
+                                    Bulk Unclear
+                                </button>
+                            </div>
+                            <div class="text-muted">
+                                <span>{{ count($selectedAlumni) }}</span> alumni selected
                             </div>
                         </div>
                     </div>
@@ -42,9 +84,13 @@
                         <table class="table table-hover">
                             <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" class="form-check-input">
+                                </th>
                                 <th>Name</th>
                                 <th>Matric</th>
                                 <th>Faculty</th>
+                                <th>Department</th>
                                 <th>Year</th>
                                 <th>Onboarding</th>
                                 <th>Payments</th>
@@ -55,9 +101,16 @@
                             <tbody>
                             @forelse($alumni as $a)
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" class="alumni-checkbox form-check-input" 
+                                               value="{{ $a->id }}"
+                                               wire:model="selectedAlumni"
+                                               wire:key="checkbox-{{ $a->id }}">
+                                    </td>
                                     <td>{{ $a->user->name ?? 'N/A' }}</td>
                                     <td>{{ $a->matric_number ?? 'N/A' }}</td>
                                     <td>{{ $a->faculty ?? 'N/A' }}</td>
+                                    <td>{{ $a->department ?? 'N/A' }}</td>
                                     <td>{{ $a->year_of_graduation ?? 'N/A' }}</td>
                                     <td>
                                         @php($onboard = $a->biodata_completed ?? true)
@@ -94,7 +147,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center">No records.</td>
+                                    <td colspan="10" class="text-center">No records.</td>
                                 </tr>
                             @endforelse
                             </tbody>

@@ -29,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('academic-affairs.clearance', \App\Livewire\AcademicAffairs\Clearance::class);
         Livewire::component('admin.clearance-audit', \App\Livewire\Admin\ClearanceAudit::class);
         Livewire::component('student-affairs.dashboard', \App\Livewire\StudentAffairs\Dashboard::class);
+        Livewire::component('student-affairs.audit', \App\Livewire\StudentAffairs\Audit::class);
         Livewire::component('academic-affairs.dashboard', \App\Livewire\AcademicAffairs\Dashboard::class);
+        Livewire::component('academic-affairs.audit', \App\Livewire\AcademicAffairs\Audit::class);
     }
 }
