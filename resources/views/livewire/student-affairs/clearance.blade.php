@@ -143,10 +143,16 @@
                                     <td class="text-nowrap">
                                         @php($disabled = !($onboard && $paid))
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button class="btn btn-sm btn-outline-success" @disabled($disabled)
-                                                    wire:click="toggleClearance({{ $a->id }}, true)">Mark Cleared</button>
-                                            <button class="btn btn-sm btn-outline-danger" @disabled($disabled)
-                                                    wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')">Unclear</button>
+                                            <button type="button" class="btn btn-sm btn-outline-success" 
+                                                    @disabled($disabled)
+                                                    wire:click="toggleClearance({{ $a->id }}, true)"
+                                                    wire:loading.attr="disabled"
+                                                    wire:target="toggleClearance">Mark Cleared</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    @disabled($disabled)
+                                                    wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')"
+                                                    wire:loading.attr="disabled"
+                                                    wire:target="toggleClearance">Unclear</button>
                                         </div>
                                     </td>
                                 </tr>

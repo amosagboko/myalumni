@@ -77,7 +77,7 @@ class Clearance extends Component
         }
 
         $user = Auth::user();
-        if (!$user || !$user->can('clear student affairs')) {
+        if (!$user || !$user->can('toggle student affairs clearance')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
@@ -136,7 +136,7 @@ class Clearance extends Component
         }
 
         $user = Auth::user();
-        if (!$user || !$user->can('clear student affairs')) {
+        if (!$user || !$user->can('toggle student affairs clearance')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
@@ -175,7 +175,7 @@ class Clearance extends Component
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
         $user = Auth::user();
-        if (!$user || !$user->can('clear student affairs')) {
+        if (!$user || !$user->can('toggle student affairs clearance')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
@@ -211,7 +211,14 @@ class Clearance extends Component
             ]);
 
             DB::commit();
+            
+            // Refresh the alumni model to ensure we have latest data
+            $alumni->refresh();
+            
             session()->flash('success', 'Clearance updated successfully.');
+            
+            // Reset pagination to show updated record
+            $this->resetPage();
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Student Affairs clearance toggle failed', ['error' => $e->getMessage()]);
