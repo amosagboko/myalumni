@@ -80,22 +80,22 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    <div class="table-responsive" style="overflow-x:auto;">
+                        <table class="table table-hover table-sm align-middle small">
                             <thead>
                             <tr>
                                 <th>
                                     <input type="checkbox" class="form-check-input">
                                 </th>
-                                <th>Name</th>
-                                <th>Matric</th>
-                                <th>Faculty</th>
-                                <th>Department</th>
-                                <th>Year</th>
-                                <th>Onboarding</th>
-                                <th>Payments</th>
-                                <th>Student Affairs</th>
-                                <th>Action</th>
+                                <th class="text-nowrap">Name</th>
+                                <th class="text-nowrap">Matric</th>
+                                <th class="text-nowrap">Faculty</th>
+                                <th class="text-nowrap">Department</th>
+                                <th class="text-nowrap">Year</th>
+                                <th class="text-nowrap">Onboarding</th>
+                                <th class="text-nowrap">Payments</th>
+                                <th class="text-nowrap">SA</th>
+                                <th class="text-nowrap">Action</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -107,11 +107,11 @@
                                                wire:model="selectedAlumni"
                                                wire:key="checkbox-{{ $a->id }}">
                                     </td>
-                                    <td>{{ $a->user->name ?? 'N/A' }}</td>
-                                    <td>{{ $a->matric_number ?? 'N/A' }}</td>
-                                    <td>{{ $a->faculty ?? 'N/A' }}</td>
-                                    <td>{{ $a->department ?? 'N/A' }}</td>
-                                    <td>{{ $a->year_of_graduation ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->user->name ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->matric_number ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->faculty ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->department ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->year_of_graduation ?? 'N/A' }}</td>
                                     <td>
                                         @php($onboard = $a->biodata_completed ?? true)
                                         @if($onboard)
@@ -128,16 +128,16 @@
                                             <span class="badge bg-danger">✖</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="text-nowrap">
                                         @if($a->student_affairs_cleared)
                                             <span class="badge bg-success">✔</span>
                                         @else
                                             <span class="badge bg-danger">✖</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="text-nowrap">
                                         @php($disabled = !($onboard && $paid))
-                                        <div class="d-flex gap-2">
+                                        <div class="btn-group btn-group-sm" role="group">
                                             <button class="btn btn-sm btn-outline-success" @disabled($disabled)
                                                     wire:click="toggleClearance({{ $a->id }}, true)">Mark Cleared</button>
                                             <button class="btn btn-sm btn-outline-danger" @disabled($disabled)

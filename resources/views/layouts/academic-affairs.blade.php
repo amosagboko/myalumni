@@ -33,8 +33,8 @@
                     <ul class="mb-1 pt-0">
                         <li class="nav-item">
                             <a href="{{ route('academic-affairs.home') }}" class="nav-content-bttn open-font {{ request()->routeIs('academic-affairs.home') ? 'active' : '' }}">
-                                <i data-feather="home" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
-                                <span>Dashboard</span>
+                                <i data-feather="activity" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                <span>Recent Activity</span>
                             </a>
                         </li>
                         <li class="nav-item">
