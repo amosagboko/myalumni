@@ -105,7 +105,7 @@
                             </thead>
                             <tbody>
                             @forelse($alumni as $a)
-                                <tr>
+                                <tr wire:key="alumni-row-{{ $a->id }}">
                                     <td>
                                         <input type="checkbox" class="alumni-checkbox form-check-input" 
                                                value="{{ $a->id }}"
@@ -133,7 +133,7 @@
                                             <span class="badge bg-danger">✖</span>
                                         @endif
                                     </td>
-                                    <td class="text-nowrap">
+                                    <td class="text-nowrap" wire:key="clearance-badge-{{ $a->id }}-{{ $a->student_affairs_cleared }}">
                                         @if($a->student_affairs_cleared)
                                             <span class="badge bg-success">✔</span>
                                         @else
@@ -142,18 +142,18 @@
                                     </td>
                                     <td class="text-nowrap">
                                         @php($disabled = !($onboard && $paid))
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-sm btn-outline-success" 
-                                                    @disabled($disabled)
-                                                    wire:click="toggleClearance({{ $a->id }}, true)"
-                                                    wire:loading.attr="disabled"
-                                                    wire:target="toggleClearance">Mark Cleared</button>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                    @disabled($disabled)
-                                                    wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')"
-                                                    wire:loading.attr="disabled"
-                                                    wire:target="toggleClearance">Unclear</button>
-                                        </div>
+                                        @if($disabled)
+                                            <small class="text-muted">Complete onboarding & payments first</small>
+                                        @else
+                                            <div class="d-flex gap-2">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-success" 
+                                                        wire:click="toggleClearance({{ $a->id }}, true)">Mark Cleared</button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger" 
+                                                        wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')">Unclear</button>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

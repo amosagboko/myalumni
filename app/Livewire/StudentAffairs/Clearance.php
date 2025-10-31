@@ -174,9 +174,18 @@ class Clearance extends Component
 
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
+        Log::info('toggleClearance called', [
+            'alumni_id' => $alumniId,
+            'new_value' => $newValue,
+            'reason' => $reason,
+            'user_id' => Auth::id()
+        ]);
+
         $user = Auth::user();
         if (!$user || !$user->can('toggle student affairs clearance')) {
-            return session()->flash('error', 'Unauthorized.');
+            Log::warning('Unauthorized clearance toggle attempt', ['user_id' => Auth::id()]);
+            session()->flash('error', 'Unauthorized.');
+            return;
         }
 
         try {

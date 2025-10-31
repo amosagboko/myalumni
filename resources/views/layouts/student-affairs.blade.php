@@ -57,18 +57,24 @@
 
     {{ $slot }}
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/js/plugin.js"></script>
     <script src="/js/lightbox.js"></script>
     <script src="/js/scripts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/script.js"></script>
+    @livewireScripts
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             feather.replace();
         });
+        // Hide preloader when Livewire initializes
+        document.addEventListener('livewire:init', function () {
+            setTimeout(function() {
+                $('.preloader').fadeOut(300);
+            }, 500);
+        });
     </script>
-    @livewireScripts
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="/js/script.js"></script>
     @stack('scripts')
 </div>
 </body>
