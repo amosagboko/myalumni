@@ -53,8 +53,8 @@
                                 </select>
                             </div>
                             <div class="col-md-12 d-flex gap-2 mt-2">
-                                <button class="btn btn-outline-primary btn-sm" wire:click="applyFilters">Filter</button>
-                                <button class="btn btn-outline-secondary btn-sm" wire:click="clearFilters">Clear</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" wire:click.prevent="applyFilters" wire:loading.attr="disabled">Filter</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click.prevent="clearFilters" wire:loading.attr="disabled">Clear</button>
                             </div>
                         </div>
                     </div>
