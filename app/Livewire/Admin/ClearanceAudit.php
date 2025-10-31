@@ -58,6 +58,6 @@ class ClearanceAudit extends Component
         $logs = $this->query()->paginate(20);
         return view('livewire.admin.clearance-audit', [
             'logs' => $logs,
-        ]);
+        ])->layout('layouts.admin', ['title' => 'Clearance Audit']);
     }
 }
