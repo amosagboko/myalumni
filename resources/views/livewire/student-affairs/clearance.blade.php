@@ -1,5 +1,5 @@
 <div class="middle-sidebar-bottom">
-    <div class="middle-sidebar-left">
+    <div class="middle-sidebar-left" style="margin-left: 150px; margin-top: 70px;">
         <div class="row">
             <div class="col-12">
             @if (session()->has('success'))
