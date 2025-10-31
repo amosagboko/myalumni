@@ -49,6 +49,6 @@ class Dashboard extends Component
             'recentActivity' => $recentActivity,
             'faculties' => $faculties,
             'years' => $years,
-        ])->layout('components.alumniadmin-dashboard', ['title' => 'Student Affairs Dashboard']);
+        ])->layout('layouts.student-affairs', ['title' => 'Student Affairs Dashboard']);
     }
 }

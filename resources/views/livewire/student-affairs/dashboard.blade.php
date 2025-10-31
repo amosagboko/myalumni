@@ -9,22 +9,33 @@
                 </div>
             </div>
 
-            <!-- Quick Filter Presets -->
+            <!-- Quick Filters -->
             <div class="card mb-3 shadow-sm">
                 <div class="card-header bg-white"><h6 class="mb-0">Quick Filters</h6></div>
                 <div class="card-body">
-                    <div class="mb-2 small text-muted">By Faculty</div>
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        @foreach($faculties->take(8) as $f)
-                            <a href="{{ route('student-affairs.clearance', ['faculty' => $f]) }}" class="btn btn-sm btn-outline-primary">{{ $f }}</a>
-                        @endforeach
-                    </div>
-                    <div class="mb-2 small text-muted">By Year</div>
-                    <div class="d-flex flex-wrap gap-2">
-                        @foreach($years->take(8) as $y)
-                            <a href="{{ route('student-affairs.clearance', ['year' => $y]) }}" class="btn btn-sm btn-outline-primary">{{ $y }}</a>
-                        @endforeach
-                    </div>
+                    <form action="{{ route('student-affairs.clearance') }}" method="get" class="row g-2 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">By Faculty</label>
+                            <select name="faculty" class="form-select">
+                                <option value="">All Faculties</option>
+                                @foreach($faculties as $f)
+                                    <option value="{{ $f }}">{{ $f }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted">By Year</label>
+                            <select name="year" class="form-select">
+                                <option value="">All Years</option>
+                                @foreach($years as $y)
+                                    <option value="{{ $y }}">{{ $y }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">Go</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
