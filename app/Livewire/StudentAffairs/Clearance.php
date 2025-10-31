@@ -44,6 +44,20 @@ class Clearance extends Component
     public function updatingYear() { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
 
+    public function applyFilters()
+    {
+        $this->resetPage();
+    }
+
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->faculty = '';
+        $this->department = '';
+        $this->year = '';
+        $this->resetPage();
+    }
+
     public function toggleSelectAll()
     {
         $currentPageAlumni = $this->getQuery()->paginate($this->perPage)->pluck('id')->toArray();
