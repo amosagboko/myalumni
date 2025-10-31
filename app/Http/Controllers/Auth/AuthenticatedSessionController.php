@@ -46,6 +46,16 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('alumni-relations-officer.home');
         }
 
+        // If user is Student Affairs, redirect to SA dashboard
+        if ($user->hasRole('student-affairs')) {
+            return redirect()->route('student-affairs.home');
+        }
+
+        // If user is Academic Affairs, redirect to AA dashboard
+        if ($user->hasRole('academic-affairs')) {
+            return redirect()->route('academic-affairs.home');
+        }
+
         // For alumni, redirect to alumni home
         if ($user->hasRole('alumni')) {
             return redirect()->route('alumni.home');
