@@ -149,20 +149,16 @@
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 
                                                         wire:click="toggleClearance({{ $a->id }}, true)"
-                                                        wire:key="clear-btn-{{ $a->id }}">
-                                                    <span wire:loading.remove wire:target="toggleClearance">Mark Cleared</span>
-                                                    <span wire:loading wire:target="toggleClearance">
-                                                        <span class="spinner-border spinner-border-sm me-1"></span>
-                                                    </span>
+                                                        wire:key="clear-btn-{{ $a->id }}-{{ now()->timestamp }}">
+                                                    Mark Cleared
+                                                    <span wire:loading wire:target="toggleClearance" class="spinner-border spinner-border-sm ms-1"></span>
                                                 </button>
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-danger" 
                                                         wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')"
-                                                        wire:key="unclear-btn-{{ $a->id }}">
-                                                    <span wire:loading.remove wire:target="toggleClearance">Unclear</span>
-                                                    <span wire:loading wire:target="toggleClearance">
-                                                        <span class="spinner-border spinner-border-sm me-1"></span>
-                                                    </span>
+                                                        wire:key="unclear-btn-{{ $a->id }}-{{ now()->timestamp }}">
+                                                    Unclear
+                                                    <span wire:loading wire:target="toggleClearance" class="spinner-border spinner-border-sm ms-1"></span>
                                                 </button>
                                             </div>
                                         @endif

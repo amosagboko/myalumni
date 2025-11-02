@@ -179,6 +179,14 @@ class Clearance extends Component
 
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
+        Log::info('=== toggleClearance METHOD CALLED ===', [
+            'alumni_id' => $alumniId,
+            'new_value' => $newValue,
+            'reason' => $reason,
+            'user_id' => Auth::id(),
+            'method_params' => func_get_args()
+        ]);
+        
         try {
             $user = Auth::user();
             if (!$user) {
