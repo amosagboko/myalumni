@@ -44,13 +44,17 @@ class Clearance extends Component
     public function updatingYear() { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
 
+    public function applyFilters()
+    {
+        $this->resetPage();
+    }
+
     public function clearFilters()
     {
-        $this->search = '';
-        $this->faculty = '';
-        $this->department = '';
-        $this->year = '';
+        Log::info('clearFilters called in StudentAffairs/Clearance');
+        $this->reset(['search', 'faculty', 'department', 'year']);
         $this->resetPage();
+        $this->dispatch('filters-cleared'); // Optional: dispatch event for UI feedback
     }
 
     public function toggleSelectAll()

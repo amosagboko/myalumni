@@ -21,7 +21,7 @@
                                 <input type="text" wire:model.debounce.500ms="search" placeholder="Search name or matric" class="form-control">
                             </div>
                             <div class="col-md-3">
-                                <select wire:model="faculty" class="form-select">
+                                <select wire:model.defer="faculty" class="form-select">
                                     <option value="">All Faculties</option>
                                     @foreach($faculties as $f)
                                         <option value="{{ $f }}">{{ $f }}</option>
@@ -29,7 +29,7 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <select wire:model="department" class="form-select">
+                                <select wire:model.defer="department" class="form-select">
                                     <option value="">All Departments</option>
                                     @foreach($departments as $d)
                                         <option value="{{ $d }}">{{ $d }}</option>
@@ -37,7 +37,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <select wire:model="year" class="form-select">
+                                <select wire:model.defer="year" class="form-select">
                                     <option value="">All Years</option>
                                     @foreach($years as $y)
                                         <option value="{{ $y }}">{{ $y }}</option>
@@ -53,7 +53,14 @@
                                 </select>
                             </div>
                             <div class="col-md-12 d-flex gap-2 mt-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click="clearFilters">Clear Filters</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" wire:click="applyFilters" wire:loading.attr="disabled">
+                                    <span wire:loading.remove wire:target="applyFilters">Apply Filters</span>
+                                    <span wire:loading wire:target="applyFilters">Applying...</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click="clearFilters" wire:loading.attr="disabled">
+                                    <span wire:loading.remove wire:target="clearFilters">Clear Filters</span>
+                                    <span wire:loading wire:target="clearFilters">Clearing...</span>
+                                </button>
                             </div>
                         </div>
                     </div>
