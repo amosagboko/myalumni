@@ -175,6 +175,8 @@ class Clearance extends Component
 
     public $message = '';
     public $messageType = '';
+    public $selectedAlumniId = null;
+    public $selectedAlumniValue = null;
 
     public function testMethod()
     {
@@ -183,32 +185,39 @@ class Clearance extends Component
         $this->messageType = 'success';
     }
 
-    public function testToggleClearance($alumniId, $newValue)
+    public function setAlumniForToggle($alumniId, $newValue)
     {
-        Log::info('TEST toggleClearance CALLED', ['id' => $alumniId, 'value' => $newValue, 'type_id' => gettype($alumniId), 'type_val' => gettype($newValue)]);
-        $this->message = "Test toggleClearance called with ID: {$alumniId}, Value: {$newValue}";
-        $this->messageType = 'success';
+        Log::info('setAlumniForToggle CALLED', ['id' => $alumniId, 'value' => $newValue]);
+        $this->selectedAlumniId = (int) $alumniId;
+        $this->selectedAlumniValue = (bool) ((string) $newValue === '1' || (int) $newValue === 1 || $newValue === true);
+        $this->toggleClearance();
     }
 
-    public function toggleClearance($alumniId, $newValue)
+    public function toggleClearance()
     {
-        Log::info('toggleClearance CALLED', ['id' => $alumniId, 'value' => $newValue, 'type_id' => gettype($alumniId), 'type_val' => gettype($newValue)]);
+        if ($this->selectedAlumniId === null) {
+            Log::info('toggleClearance CALLED without selectedAlumniId');
+            return;
+        }
+
+        Log::info('toggleClearance CALLED', ['id' => $this->selectedAlumniId, 'value' => $this->selectedAlumniValue]);
         
         $user = Auth::user();
         
         if (!$user || !$user->can('toggle student affairs clearance')) {
             $this->message = 'Unauthorized.';
             $this->messageType = 'error';
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
             return;
         }
 
-        $alumniId = (int) $alumniId;
-        $newValue = (bool) ((string) $newValue === '1' || (int) $newValue === 1 || $newValue === true);
-        
-        $alumni = Alumni::find($alumniId);
+        $alumni = Alumni::find($this->selectedAlumniId);
         if (!$alumni) {
             $this->message = 'Alumni not found.';
             $this->messageType = 'error';
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
             return;
         }
 
@@ -218,11 +227,13 @@ class Clearance extends Component
         if (!$onboard || !$paid) {
             $this->message = 'Alumni must complete onboarding and payments first.';
             $this->messageType = 'error';
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
             return;
         }
 
         $old = (bool) $alumni->student_affairs_cleared;
-        $alumni->student_affairs_cleared = (bool) $newValue;
+        $alumni->student_affairs_cleared = $this->selectedAlumniValue;
         $alumni->save();
 
         DB::table('clearance_logs')->insert([
@@ -231,7 +242,7 @@ class Clearance extends Component
             'actor_user_id' => $user->id,
             'actor_role' => $user->getRoleNames()->first() ?? 'student-affairs',
             'old_value' => $old,
-            'new_value' => (bool) $newValue,
+            'new_value' => $this->selectedAlumniValue,
             'reason' => 'Manual toggle',
             'created_at' => now(),
             'updated_at' => now(),
@@ -239,6 +250,8 @@ class Clearance extends Component
 
         $this->message = 'Clearance updated successfully.';
         $this->messageType = 'success';
+        $this->selectedAlumniId = null;
+        $this->selectedAlumniValue = null;
     }
 
     public function clearMessage()
