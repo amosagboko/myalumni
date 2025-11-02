@@ -175,97 +175,51 @@ class Clearance extends Component
 
     public $message = '';
     public $messageType = '';
-    public $refreshTrigger = 0;
 
-    public function toggleClearance($alumniId, $newValue, $reason = null)
+    public function toggleClearance($alumniId, $newValue)
     {
-        Log::info('=== toggleClearance METHOD CALLED ===', [
-            'alumni_id' => $alumniId,
-            'new_value' => $newValue,
-            'reason' => $reason,
-            'user_id' => Auth::id(),
-            'method_params' => func_get_args()
-        ]);
+        $user = Auth::user();
         
-        try {
-            $user = Auth::user();
-            if (!$user) {
-                $this->message = 'Not authenticated.';
-                $this->messageType = 'error';
-                $this->dispatch('clearance-error');
-                return;
-            }
-
-            // Temporarily bypass permission check for debugging - REMOVE AFTER TESTING
-            // if (!$user->can('toggle student affairs clearance')) {
-            //     $this->message = 'Unauthorized. Permission: toggle student affairs clearance';
-            //     $this->messageType = 'error';
-            //     $this->dispatch('clearance-error');
-            //     return;
-            // }
-
-            DB::beginTransaction();
-            
-            $alumni = Alumni::with('user')->findOrFail($alumniId);
-
-            $onboardingComplete = $alumni->biodata_completed ?? true;
-            $paymentsComplete = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
-            
-            if (!$onboardingComplete) {
-                DB::rollBack();
-                $this->message = 'Complete onboarding first.';
-                $this->messageType = 'error';
-                $this->dispatch('clearance-error');
-                return;
-            }
-            
-            if (!$paymentsComplete) {
-                DB::rollBack();
-                $this->message = 'Complete required payments first.';
-                $this->messageType = 'error';
-                $this->dispatch('clearance-error');
-                return;
-            }
-
-            $old = (bool) $alumni->student_affairs_cleared;
-            $alumni->student_affairs_cleared = (bool) $newValue;
-            $alumni->save();
-
-            DB::table('clearance_logs')->insert([
-                'alumni_id' => $alumni->id,
-                'division' => 'student_affairs',
-                'actor_user_id' => $user->id,
-                'actor_role' => $user->getRoleNames()->first() ?? 'student-affairs',
-                'old_value' => $old,
-                'new_value' => (bool) $newValue,
-                'reason' => $reason ?? 'Manual toggle',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            DB::commit();
-            
-            // Force refresh by incrementing trigger - this ensures Livewire re-renders with fresh data
-            $this->refreshTrigger++;
-            
-            // Clear any previous messages and show success
-            $this->message = 'Clearance updated successfully!';
-            $this->messageType = 'success';
-            
-        } catch (\Throwable $e) {
-            if (DB::transactionLevel() > 0) {
-                DB::rollBack();
-            }
-            Log::error('Student Affairs clearance toggle failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'alumni_id' => $alumniId,
-                'user_id' => Auth::id()
-            ]);
-            $this->message = 'Error: ' . $e->getMessage();
+        if (!$user || !$user->can('toggle student affairs clearance')) {
+            $this->message = 'Unauthorized.';
             $this->messageType = 'error';
-            $this->dispatch('clearance-error');
+            return;
         }
+
+        $alumni = Alumni::find($alumniId);
+        if (!$alumni) {
+            $this->message = 'Alumni not found.';
+            $this->messageType = 'error';
+            return;
+        }
+
+        $onboard = $alumni->biodata_completed ?? true;
+        $paid = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
+        
+        if (!$onboard || !$paid) {
+            $this->message = 'Alumni must complete onboarding and payments first.';
+            $this->messageType = 'error';
+            return;
+        }
+
+        $old = (bool) $alumni->student_affairs_cleared;
+        $alumni->student_affairs_cleared = (bool) $newValue;
+        $alumni->save();
+
+        DB::table('clearance_logs')->insert([
+            'alumni_id' => $alumni->id,
+            'division' => 'student_affairs',
+            'actor_user_id' => $user->id,
+            'actor_role' => $user->getRoleNames()->first() ?? 'student-affairs',
+            'old_value' => $old,
+            'new_value' => (bool) $newValue,
+            'reason' => 'Manual toggle',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->message = 'Clearance updated successfully.';
+        $this->messageType = 'success';
     }
 
     public function clearMessage()

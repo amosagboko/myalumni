@@ -148,17 +148,13 @@
                                             <div class="d-flex gap-2">
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 
-                                                        wire:click="toggleClearance({{ $a->id }}, true)"
-                                                        wire:key="clear-btn-{{ $a->id }}-{{ now()->timestamp }}">
+                                                        wire:click="toggleClearance({{ $a->id }}, 1)">
                                                     Mark Cleared
-                                                    <span wire:loading wire:target="toggleClearance" class="spinner-border spinner-border-sm ms-1"></span>
                                                 </button>
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-danger" 
-                                                        wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')"
-                                                        wire:key="unclear-btn-{{ $a->id }}-{{ now()->timestamp }}">
+                                                        wire:click="toggleClearance({{ $a->id }}, 0)">
                                                     Unclear
-                                                    <span wire:loading wire:target="toggleClearance" class="spinner-border spinner-border-sm ms-1"></span>
                                                 </button>
                                             </div>
                                         @endif

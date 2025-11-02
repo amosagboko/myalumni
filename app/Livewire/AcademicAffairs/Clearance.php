@@ -158,51 +158,59 @@ class Clearance extends Component
         }
     }
 
-    public function toggleClearance($alumniId, $newValue, $reason = null)
+    public $message = '';
+    public $messageType = '';
+
+    public function toggleClearance($alumniId, $newValue)
     {
         $user = Auth::user();
+        
         if (!$user || !$user->can('toggle academic affairs clearance')) {
-            return session()->flash('error', 'Unauthorized.');
+            $this->message = 'Unauthorized.';
+            $this->messageType = 'error';
+            return;
         }
 
-        try {
-            DB::beginTransaction();
-            $alumni = Alumni::with('user')->findOrFail($alumniId);
-
-            $onboardingComplete = $alumni->biodata_completed ?? true;
-            $paymentsComplete = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
-            if (!$onboardingComplete) {
-                DB::rollBack();
-                return session()->flash('error', 'Complete onboarding first.');
-            }
-            if (!$paymentsComplete) {
-                DB::rollBack();
-                return session()->flash('error', 'Complete required payments first.');
-            }
-
-            $old = (bool) $alumni->academic_affairs_cleared;
-            $alumni->academic_affairs_cleared = (bool) $newValue;
-            $alumni->save();
-
-            DB::table('clearance_logs')->insert([
-                'alumni_id' => $alumni->id,
-                'division' => 'academic_affairs',
-                'actor_user_id' => $user->id,
-                'actor_role' => $user->getRoleNames()->first(),
-                'old_value' => $old,
-                'new_value' => (bool) $newValue,
-                'reason' => $reason,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            DB::commit();
-            session()->flash('success', 'Clearance updated successfully.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Academic Affairs clearance toggle failed', ['error' => $e->getMessage()]);
-            session()->flash('error', 'Failed to update clearance.');
+        $alumni = Alumni::find($alumniId);
+        if (!$alumni) {
+            $this->message = 'Alumni not found.';
+            $this->messageType = 'error';
+            return;
         }
+
+        $onboard = $alumni->biodata_completed ?? true;
+        $paid = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
+        
+        if (!$onboard || !$paid) {
+            $this->message = 'Alumni must complete onboarding and payments first.';
+            $this->messageType = 'error';
+            return;
+        }
+
+        $old = (bool) $alumni->academic_affairs_cleared;
+        $alumni->academic_affairs_cleared = (bool) $newValue;
+        $alumni->save();
+
+        DB::table('clearance_logs')->insert([
+            'alumni_id' => $alumni->id,
+            'division' => 'academic_affairs',
+            'actor_user_id' => $user->id,
+            'actor_role' => $user->getRoleNames()->first() ?? 'academic-affairs',
+            'old_value' => $old,
+            'new_value' => (bool) $newValue,
+            'reason' => 'Manual toggle',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->message = 'Clearance updated successfully.';
+        $this->messageType = 'success';
+    }
+
+    public function clearMessage()
+    {
+        $this->message = '';
+        $this->messageType = '';
     }
 
     public function getQuery()

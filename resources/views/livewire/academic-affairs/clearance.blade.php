@@ -1,11 +1,11 @@
 <div class="container mt-5 pt-5">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8">
-            @if (session()->has('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
-            @if (session()->has('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
+            @if($message)
+                <div class="alert alert-{{ $messageType === 'success' ? 'success' : 'danger' }} alert-dismissible fade show" role="alert">
+                    {{ $message }}
+                    <button type="button" class="btn-close" wire:click="clearMessage" aria-label="Close"></button>
+                </div>
             @endif
 
             <div class="card mb-3 shadow-sm">
@@ -137,12 +137,18 @@
                                     </td>
                                     <td>
                                         @php($disabled = !($onboard && $paid))
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-sm btn-outline-success" @disabled($disabled)
-                                                    wire:click="toggleClearance({{ $a->id }}, true)">Mark Cleared</button>
-                                            <button class="btn btn-sm btn-outline-danger" @disabled($disabled)
-                                                    wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')">Unclear</button>
-                                        </div>
+                                        @if($disabled)
+                                            <small class="text-muted">Complete onboarding & payments first</small>
+                                        @else
+                                            <div class="d-flex gap-2">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-success" 
+                                                        wire:click="toggleClearance({{ $a->id }}, 1)">Mark Cleared</button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger" 
+                                                        wire:click="toggleClearance({{ $a->id }}, 0)">Unclear</button>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
