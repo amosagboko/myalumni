@@ -9,6 +9,20 @@
                 </div>
             @endif
 
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <div class="card mb-3 shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Student Affairs Clearance</h6>
@@ -149,18 +163,20 @@
                                             <small class="text-muted">Complete onboarding & payments first</small>
                                         @else
                                             <div class="d-flex gap-2">
-                                                <button type="button" 
-                                                        class="btn btn-sm btn-outline-success" 
-                                                        wire:click="markCleared({{ $a->id }})"
-                                                        wire:key="clear-btn-{{ $a->id }}">
-                                                    Mark Cleared
-                                                </button>
-                                                <button type="button" 
-                                                        class="btn btn-sm btn-outline-danger" 
-                                                        wire:click="markUncleared({{ $a->id }})"
-                                                        wire:key="unclear-btn-{{ $a->id }}">
-                                                    Unclear
-                                                </button>
+                                                <form method="POST" action="{{ route('student-affairs.clearance.toggle', $a->id) }}" class="d-inline">
+                                                    @csrf
+                                                    <input type="hidden" name="value" value="1">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                                        Mark Cleared
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ route('student-affairs.clearance.toggle', $a->id) }}" class="d-inline">
+                                                    @csrf
+                                                    <input type="hidden" name="value" value="0">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        Unclear
+                                                    </button>
+                                                </form>
                                             </div>
                                         @endif
                                     </td>

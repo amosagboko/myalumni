@@ -275,6 +275,7 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
 Route::middleware(['auth', 'role:student-affairs'])->prefix('student-affairs')->name('student-affairs.')->group(function () {
     Route::get('/', \App\Livewire\StudentAffairs\Dashboard::class)->name('home');
     Route::get('/clearance', \App\Livewire\StudentAffairs\Clearance::class)->name('clearance');
+    Route::post('/clearance/{alumni}/toggle', [\App\Http\Controllers\StudentAffairs\ClearanceController::class, 'toggle'])->name('clearance.toggle');
     Route::get('/audit', \App\Livewire\StudentAffairs\Audit::class)->name('audit');
 });
 
@@ -282,6 +283,7 @@ Route::middleware(['auth', 'role:student-affairs'])->prefix('student-affairs')->
 Route::middleware(['auth', 'role:academic-affairs'])->prefix('academic-affairs')->name('academic-affairs.')->group(function () {
     Route::get('/', \App\Livewire\AcademicAffairs\Dashboard::class)->name('home');
     Route::get('/clearance', \App\Livewire\AcademicAffairs\Clearance::class)->name('clearance');
+    Route::post('/clearance/{alumni}/toggle', [\App\Http\Controllers\AcademicAffairs\ClearanceController::class, 'toggle'])->name('clearance.toggle');
     Route::get('/audit', \App\Livewire\AcademicAffairs\Audit::class)->name('audit');
 });
 
