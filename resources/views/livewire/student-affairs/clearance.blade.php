@@ -148,10 +148,22 @@
                                             <div class="d-flex gap-2">
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 
-                                                        wire:click="toggleClearance({{ $a->id }}, true)">Mark Cleared</button>
+                                                        wire:click="toggleClearance({{ $a->id }}, true)"
+                                                        wire:key="clear-btn-{{ $a->id }}">
+                                                    <span wire:loading.remove wire:target="toggleClearance">Mark Cleared</span>
+                                                    <span wire:loading wire:target="toggleClearance">
+                                                        <span class="spinner-border spinner-border-sm me-1"></span>
+                                                    </span>
+                                                </button>
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-danger" 
-                                                        wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')">Unclear</button>
+                                                        wire:click="toggleClearance({{ $a->id }}, false, 'Reversal')"
+                                                        wire:key="unclear-btn-{{ $a->id }}">
+                                                    <span wire:loading.remove wire:target="toggleClearance">Unclear</span>
+                                                    <span wire:loading wire:target="toggleClearance">
+                                                        <span class="spinner-border spinner-border-sm me-1"></span>
+                                                    </span>
+                                                </button>
                                             </div>
                                         @endif
                                     </td>

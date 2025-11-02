@@ -175,9 +175,23 @@ class Clearance extends Component
 
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
+        Log::info('toggleClearance called', [
+            'alumni_id' => $alumniId,
+            'new_value' => $newValue,
+            'reason' => $reason,
+            'user_id' => Auth::id()
+        ]);
+
         $user = Auth::user();
-        if (!$user || !$user->can('toggle student affairs clearance')) {
-            session()->flash('error', 'Unauthorized.');
+        if (!$user) {
+            Log::warning('No authenticated user');
+            session()->flash('error', 'Not authenticated.');
+            return;
+        }
+
+        if (!$user->can('toggle student affairs clearance')) {
+            Log::warning('User lacks permission', ['user_id' => $user->id, 'permissions' => $user->getAllPermissions()->pluck('name')]);
+            session()->flash('error', 'Unauthorized. You do not have permission to toggle clearance.');
             return;
         }
 
@@ -187,11 +201,13 @@ class Clearance extends Component
 
             $onboardingComplete = $alumni->biodata_completed ?? true;
             $paymentsComplete = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
+            
             if (!$onboardingComplete) {
                 DB::rollBack();
                 session()->flash('error', 'Complete onboarding first.');
                 return;
             }
+            
             if (!$paymentsComplete) {
                 DB::rollBack();
                 session()->flash('error', 'Complete required payments first.');
@@ -216,11 +232,22 @@ class Clearance extends Component
 
             DB::commit();
             
+            Log::info('Clearance updated successfully', [
+                'alumni_id' => $alumniId,
+                'old_value' => $old,
+                'new_value' => (bool) $newValue
+            ]);
+            
             session()->flash('success', 'Clearance updated successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Student Affairs clearance toggle failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            session()->flash('error', 'Failed to update clearance.');
+            Log::error('Student Affairs clearance toggle failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'alumni_id' => $alumniId,
+                'user_id' => Auth::id()
+            ]);
+            session()->flash('error', 'Failed to update clearance: ' . $e->getMessage());
         }
     }
 
