@@ -18,7 +18,7 @@
                     <div class="mb-3 p-3 bg-light rounded">
                         <div class="row g-2 align-items-end">
                             <div class="col-md-3">
-                                <input type="text" wire:model.debounce.500ms="search" placeholder="Search name or matric" class="form-control">
+                                <input type="text" wire:model.live.debounce.500ms="search" placeholder="Search name or matric" class="form-control">
                             </div>
                             <div class="col-md-3">
                                 <select wire:model.defer="faculty" class="form-select">
@@ -53,14 +53,8 @@
                                 </select>
                             </div>
                             <div class="col-md-12 d-flex gap-2 mt-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm" wire:click="applyFilters" wire:loading.attr="disabled">
-                                    <span wire:loading.remove wire:target="applyFilters">Apply Filters</span>
-                                    <span wire:loading wire:target="applyFilters">Applying...</span>
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click="clearFilters" wire:loading.attr="disabled">
-                                    <span wire:loading.remove wire:target="clearFilters">Clear Filters</span>
-                                    <span wire:loading wire:target="clearFilters">Clearing...</span>
-                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" wire:click="applyFilters">Apply Filters</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click="clearFilters">Clear Filters</button>
                             </div>
                         </div>
                     </div>

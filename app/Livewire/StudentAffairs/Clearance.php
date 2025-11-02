@@ -51,10 +51,12 @@ class Clearance extends Component
 
     public function clearFilters()
     {
-        Log::info('clearFilters called in StudentAffairs/Clearance');
-        $this->reset(['search', 'faculty', 'department', 'year']);
+        // Skip updating hooks by directly setting properties
+        $this->search = '';
+        $this->faculty = '';
+        $this->department = '';
+        $this->year = '';
         $this->resetPage();
-        $this->dispatch('filters-cleared'); // Optional: dispatch event for UI feedback
     }
 
     public function toggleSelectAll()
