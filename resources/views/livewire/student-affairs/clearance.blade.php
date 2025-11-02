@@ -12,7 +12,10 @@
             <div class="card mb-3 shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Student Affairs Clearance</h6>
-                    <button wire:click="export" class="btn btn-sm btn-success">Export CSV</button>
+                    <div class="d-flex gap-2">
+                        <button wire:click="testMethod" class="btn btn-sm btn-info">Test</button>
+                        <button wire:click="export" class="btn btn-sm btn-success">Export CSV</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="mb-3 p-3 bg-light rounded">

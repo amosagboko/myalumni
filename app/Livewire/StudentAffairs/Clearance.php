@@ -176,8 +176,17 @@ class Clearance extends Component
     public $message = '';
     public $messageType = '';
 
+    public function testMethod()
+    {
+        Log::info('TEST METHOD CALLED - Livewire is working!');
+        $this->message = 'Test successful - Livewire is working!';
+        $this->messageType = 'success';
+    }
+
     public function toggleClearance($alumniId, $newValue)
     {
+        Log::info('toggleClearance CALLED', ['id' => $alumniId, 'value' => $newValue]);
+        
         $user = Auth::user();
         
         if (!$user || !$user->can('toggle student affairs clearance')) {
