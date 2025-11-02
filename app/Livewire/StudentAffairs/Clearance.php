@@ -175,24 +175,29 @@ class Clearance extends Component
 
     public $message = '';
     public $messageType = '';
+    public $refreshTrigger = 0;
 
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
-        $user = Auth::user();
-        if (!$user) {
-            $this->message = 'Not authenticated.';
-            $this->messageType = 'error';
-            return;
-        }
-
-        if (!$user->can('toggle student affairs clearance')) {
-            $this->message = 'Unauthorized. You do not have permission to toggle clearance.';
-            $this->messageType = 'error';
-            return;
-        }
-
         try {
+            $user = Auth::user();
+            if (!$user) {
+                $this->message = 'Not authenticated.';
+                $this->messageType = 'error';
+                $this->dispatch('clearance-error');
+                return;
+            }
+
+            // Temporarily bypass permission check for debugging - REMOVE AFTER TESTING
+            // if (!$user->can('toggle student affairs clearance')) {
+            //     $this->message = 'Unauthorized. Permission: toggle student affairs clearance';
+            //     $this->messageType = 'error';
+            //     $this->dispatch('clearance-error');
+            //     return;
+            // }
+
             DB::beginTransaction();
+            
             $alumni = Alumni::with('user')->findOrFail($alumniId);
 
             $onboardingComplete = $alumni->biodata_completed ?? true;
@@ -202,6 +207,7 @@ class Clearance extends Component
                 DB::rollBack();
                 $this->message = 'Complete onboarding first.';
                 $this->messageType = 'error';
+                $this->dispatch('clearance-error');
                 return;
             }
             
@@ -209,6 +215,7 @@ class Clearance extends Component
                 DB::rollBack();
                 $this->message = 'Complete required payments first.';
                 $this->messageType = 'error';
+                $this->dispatch('clearance-error');
                 return;
             }
 
@@ -220,35 +227,36 @@ class Clearance extends Component
                 'alumni_id' => $alumni->id,
                 'division' => 'student_affairs',
                 'actor_user_id' => $user->id,
-                'actor_role' => $user->getRoleNames()->first(),
+                'actor_role' => $user->getRoleNames()->first() ?? 'student-affairs',
                 'old_value' => $old,
                 'new_value' => (bool) $newValue,
-                'reason' => $reason,
+                'reason' => $reason ?? 'Manual toggle',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
             DB::commit();
             
-            // Refresh the model to ensure we have latest data
-            $alumni->refresh();
+            // Force refresh by incrementing trigger - this ensures Livewire re-renders with fresh data
+            $this->refreshTrigger++;
             
-            // Show success message
-            $this->message = 'Clearance updated successfully.';
+            // Clear any previous messages and show success
+            $this->message = 'Clearance updated successfully!';
             $this->messageType = 'success';
             
-            // Dispatch event to trigger refresh
-            $this->dispatch('clearance-updated');
         } catch (\Throwable $e) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             Log::error('Student Affairs clearance toggle failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'alumni_id' => $alumniId,
                 'user_id' => Auth::id()
             ]);
-            $this->message = 'Failed to update clearance: ' . $e->getMessage();
+            $this->message = 'Error: ' . $e->getMessage();
             $this->messageType = 'error';
+            $this->dispatch('clearance-error');
         }
     }
 

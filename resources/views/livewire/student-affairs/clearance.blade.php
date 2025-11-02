@@ -133,7 +133,7 @@
                                             <span class="badge bg-danger">✖</span>
                                         @endif
                                     </td>
-                                    <td class="text-nowrap">
+                                    <td class="text-nowrap" wire:key="sa-badge-{{ $a->id }}-{{ $a->student_affairs_cleared }}">
                                         @if($a->student_affairs_cleared)
                                             <span class="badge bg-success">✔</span>
                                         @else
