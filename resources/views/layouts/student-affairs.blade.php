@@ -49,6 +49,15 @@
                                 <span>Clearance Audit</span>
                             </a>
                         </li>
+                        <li class="nav-item mt-4">
+                            <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="nav-content-bttn open-font w-100 text-start border-0 bg-transparent text-danger">
+                                    <i data-feather="log-out" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </div>
