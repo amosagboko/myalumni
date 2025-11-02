@@ -44,11 +44,6 @@ class Clearance extends Component
     public function updatingYear() { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
 
-    public function applyFilters()
-    {
-        $this->resetPage();
-    }
-
     public function clearFilters()
     {
         $this->search = '';
@@ -174,16 +169,8 @@ class Clearance extends Component
 
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
-        Log::info('toggleClearance called', [
-            'alumni_id' => $alumniId,
-            'new_value' => $newValue,
-            'reason' => $reason,
-            'user_id' => Auth::id()
-        ]);
-
         $user = Auth::user();
         if (!$user || !$user->can('toggle student affairs clearance')) {
-            Log::warning('Unauthorized clearance toggle attempt', ['user_id' => Auth::id()]);
             session()->flash('error', 'Unauthorized.');
             return;
         }
@@ -196,11 +183,13 @@ class Clearance extends Component
             $paymentsComplete = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
             if (!$onboardingComplete) {
                 DB::rollBack();
-                return session()->flash('error', 'Complete onboarding first.');
+                session()->flash('error', 'Complete onboarding first.');
+                return;
             }
             if (!$paymentsComplete) {
                 DB::rollBack();
-                return session()->flash('error', 'Complete required payments first.');
+                session()->flash('error', 'Complete required payments first.');
+                return;
             }
 
             $old = (bool) $alumni->student_affairs_cleared;
@@ -221,16 +210,10 @@ class Clearance extends Component
 
             DB::commit();
             
-            // Refresh the alumni model to ensure we have latest data
-            $alumni->refresh();
-            
             session()->flash('success', 'Clearance updated successfully.');
-            
-            // Reset pagination to show updated record
-            $this->resetPage();
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Student Affairs clearance toggle failed', ['error' => $e->getMessage()]);
+            Log::error('Student Affairs clearance toggle failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             session()->flash('error', 'Failed to update clearance.');
         }
     }

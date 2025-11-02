@@ -18,10 +18,10 @@
                     <div class="mb-3 p-3 bg-light rounded">
                         <div class="row g-2 align-items-end">
                             <div class="col-md-3">
-                                <input type="text" wire:model.defer="search" placeholder="Search name or matric" class="form-control">
+                                <input type="text" wire:model.debounce.500ms="search" placeholder="Search name or matric" class="form-control">
                             </div>
                             <div class="col-md-3">
-                                <select wire:model.defer="faculty" class="form-select">
+                                <select wire:model="faculty" class="form-select">
                                     <option value="">All Faculties</option>
                                     @foreach($faculties as $f)
                                         <option value="{{ $f }}">{{ $f }}</option>
@@ -29,7 +29,7 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <select wire:model.defer="department" class="form-select">
+                                <select wire:model="department" class="form-select">
                                     <option value="">All Departments</option>
                                     @foreach($departments as $d)
                                         <option value="{{ $d }}">{{ $d }}</option>
@@ -37,7 +37,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <select wire:model.defer="year" class="form-select">
+                                <select wire:model="year" class="form-select">
                                     <option value="">All Years</option>
                                     @foreach($years as $y)
                                         <option value="{{ $y }}">{{ $y }}</option>
@@ -53,8 +53,7 @@
                                 </select>
                             </div>
                             <div class="col-md-12 d-flex gap-2 mt-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm" wire:click.prevent="applyFilters" wire:loading.attr="disabled">Filter</button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click.prevent="clearFilters" wire:loading.attr="disabled">Clear</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click="clearFilters">Clear Filters</button>
                             </div>
                         </div>
                     </div>
@@ -105,7 +104,7 @@
                             </thead>
                             <tbody>
                             @forelse($alumni as $a)
-                                <tr wire:key="alumni-row-{{ $a->id }}">
+                                <tr wire:key="alumni-row-{{ $a->id }}-{{ $a->student_affairs_cleared }}">
                                     <td>
                                         <input type="checkbox" class="alumni-checkbox form-check-input" 
                                                value="{{ $a->id }}"
@@ -133,7 +132,7 @@
                                             <span class="badge bg-danger">✖</span>
                                         @endif
                                     </td>
-                                    <td class="text-nowrap" wire:key="clearance-badge-{{ $a->id }}-{{ $a->student_affairs_cleared }}">
+                                    <td class="text-nowrap">
                                         @if($a->student_affairs_cleared)
                                             <span class="badge bg-success">✔</span>
                                         @else
