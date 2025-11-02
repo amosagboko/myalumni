@@ -2,11 +2,11 @@
     <div class="middle-sidebar-left" style="margin-left: 280px; margin-top: 100px;">
         <div class="row">
             <div class="col-12">
-            @if (session()->has('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
-            @if (session()->has('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
+            @if($message)
+                <div class="alert alert-{{ $messageType === 'success' ? 'success' : 'danger' }} alert-dismissible fade show" role="alert">
+                    {{ $message }}
+                    <button type="button" class="btn-close" wire:click="clearMessage" aria-label="Close"></button>
+                </div>
             @endif
 
             <div class="card mb-3 shadow-sm">

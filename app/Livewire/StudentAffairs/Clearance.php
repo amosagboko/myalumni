@@ -173,25 +173,21 @@ class Clearance extends Component
         }
     }
 
+    public $message = '';
+    public $messageType = '';
+
     public function toggleClearance($alumniId, $newValue, $reason = null)
     {
-        Log::info('toggleClearance called', [
-            'alumni_id' => $alumniId,
-            'new_value' => $newValue,
-            'reason' => $reason,
-            'user_id' => Auth::id()
-        ]);
-
         $user = Auth::user();
         if (!$user) {
-            Log::warning('No authenticated user');
-            session()->flash('error', 'Not authenticated.');
+            $this->message = 'Not authenticated.';
+            $this->messageType = 'error';
             return;
         }
 
         if (!$user->can('toggle student affairs clearance')) {
-            Log::warning('User lacks permission', ['user_id' => $user->id, 'permissions' => $user->getAllPermissions()->pluck('name')]);
-            session()->flash('error', 'Unauthorized. You do not have permission to toggle clearance.');
+            $this->message = 'Unauthorized. You do not have permission to toggle clearance.';
+            $this->messageType = 'error';
             return;
         }
 
@@ -204,13 +200,15 @@ class Clearance extends Component
             
             if (!$onboardingComplete) {
                 DB::rollBack();
-                session()->flash('error', 'Complete onboarding first.');
+                $this->message = 'Complete onboarding first.';
+                $this->messageType = 'error';
                 return;
             }
             
             if (!$paymentsComplete) {
                 DB::rollBack();
-                session()->flash('error', 'Complete required payments first.');
+                $this->message = 'Complete required payments first.';
+                $this->messageType = 'error';
                 return;
             }
 
@@ -232,13 +230,15 @@ class Clearance extends Component
 
             DB::commit();
             
-            Log::info('Clearance updated successfully', [
-                'alumni_id' => $alumniId,
-                'old_value' => $old,
-                'new_value' => (bool) $newValue
-            ]);
+            // Refresh the model to ensure we have latest data
+            $alumni->refresh();
             
-            session()->flash('success', 'Clearance updated successfully.');
+            // Show success message
+            $this->message = 'Clearance updated successfully.';
+            $this->messageType = 'success';
+            
+            // Dispatch event to trigger refresh
+            $this->dispatch('clearance-updated');
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Student Affairs clearance toggle failed', [
@@ -247,8 +247,15 @@ class Clearance extends Component
                 'alumni_id' => $alumniId,
                 'user_id' => Auth::id()
             ]);
-            session()->flash('error', 'Failed to update clearance: ' . $e->getMessage());
+            $this->message = 'Failed to update clearance: ' . $e->getMessage();
+            $this->messageType = 'error';
         }
+    }
+
+    public function clearMessage()
+    {
+        $this->message = '';
+        $this->messageType = '';
     }
 
     public function getQuery()
