@@ -151,13 +151,27 @@
                                             <div class="d-flex gap-2">
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 
-                                                        wire:click="toggleClearance({{ $a->id }}, 1)">
-                                                    Mark Cleared
+                                                        wire:click="toggleClearance('{{ $a->id }}', '1')"
+                                                        wire:key="clear-btn-{{ $a->id }}"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="toggleClearance">
+                                                    <span wire:loading.remove wire:target="toggleClearance">Mark Cleared</span>
+                                                    <span wire:loading wire:target="toggleClearance">...</span>
                                                 </button>
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-danger" 
-                                                        wire:click="toggleClearance({{ $a->id }}, 0)">
-                                                    Unclear
+                                                        wire:click="toggleClearance('{{ $a->id }}', '0')"
+                                                        wire:key="unclear-btn-{{ $a->id }}"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="toggleClearance">
+                                                    <span wire:loading.remove wire:target="toggleClearance">Unclear</span>
+                                                    <span wire:loading wire:target="toggleClearance">...</span>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-info" 
+                                                        wire:click="testToggleClearance({{ $a->id }}, 1)"
+                                                        title="Test with ID {{ $a->id }}">
+                                                    Test Toggle
                                                 </button>
                                             </div>
                                         @endif

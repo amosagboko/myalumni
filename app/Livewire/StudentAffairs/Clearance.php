@@ -183,9 +183,16 @@ class Clearance extends Component
         $this->messageType = 'success';
     }
 
+    public function testToggleClearance($alumniId, $newValue)
+    {
+        Log::info('TEST toggleClearance CALLED', ['id' => $alumniId, 'value' => $newValue, 'type_id' => gettype($alumniId), 'type_val' => gettype($newValue)]);
+        $this->message = "Test toggleClearance called with ID: {$alumniId}, Value: {$newValue}";
+        $this->messageType = 'success';
+    }
+
     public function toggleClearance($alumniId, $newValue)
     {
-        Log::info('toggleClearance CALLED', ['id' => $alumniId, 'value' => $newValue]);
+        Log::info('toggleClearance CALLED', ['id' => $alumniId, 'value' => $newValue, 'type_id' => gettype($alumniId), 'type_val' => gettype($newValue)]);
         
         $user = Auth::user();
         
@@ -195,6 +202,9 @@ class Clearance extends Component
             return;
         }
 
+        $alumniId = (int) $alumniId;
+        $newValue = (bool) ((string) $newValue === '1' || (int) $newValue === 1 || $newValue === true);
+        
         $alumni = Alumni::find($alumniId);
         if (!$alumni) {
             $this->message = 'Alumni not found.';
