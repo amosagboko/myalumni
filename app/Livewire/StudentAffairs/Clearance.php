@@ -185,11 +185,19 @@ class Clearance extends Component
         $this->messageType = 'success';
     }
 
-    public function setAlumniForToggle($alumniId, $newValue)
+    public function markCleared($alumniId)
     {
-        Log::info('setAlumniForToggle CALLED', ['id' => $alumniId, 'value' => $newValue]);
+        Log::info('markCleared CALLED', ['id' => $alumniId]);
         $this->selectedAlumniId = (int) $alumniId;
-        $this->selectedAlumniValue = (bool) ((string) $newValue === '1' || (int) $newValue === 1 || $newValue === true);
+        $this->selectedAlumniValue = true;
+        $this->toggleClearance();
+    }
+
+    public function markUncleared($alumniId)
+    {
+        Log::info('markUncleared CALLED', ['id' => $alumniId]);
+        $this->selectedAlumniId = (int) $alumniId;
+        $this->selectedAlumniValue = false;
         $this->toggleClearance();
     }
 

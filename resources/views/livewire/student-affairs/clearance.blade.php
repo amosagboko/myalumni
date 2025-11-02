@@ -151,21 +151,15 @@
                                             <div class="d-flex gap-2">
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 
-                                                        wire:click="setAlumniForToggle({{ $a->id }}, 1)"
-                                                        wire:key="clear-btn-{{ $a->id }}"
-                                                        wire:loading.attr="disabled"
-                                                        wire:target="setAlumniForToggle">
-                                                    <span wire:loading.remove wire:target="setAlumniForToggle">Mark Cleared</span>
-                                                    <span wire:loading wire:target="setAlumniForToggle">...</span>
+                                                        wire:click="markCleared({{ $a->id }})"
+                                                        wire:key="clear-btn-{{ $a->id }}">
+                                                    Mark Cleared
                                                 </button>
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-danger" 
-                                                        wire:click="setAlumniForToggle({{ $a->id }}, 0)"
-                                                        wire:key="unclear-btn-{{ $a->id }}"
-                                                        wire:loading.attr="disabled"
-                                                        wire:target="setAlumniForToggle">
-                                                    <span wire:loading.remove wire:target="setAlumniForToggle">Unclear</span>
-                                                    <span wire:loading wire:target="setAlumniForToggle">...</span>
+                                                        wire:click="markUncleared({{ $a->id }})"
+                                                        wire:key="unclear-btn-{{ $a->id }}">
+                                                    Unclear
                                                 </button>
                                             </div>
                                         @endif
