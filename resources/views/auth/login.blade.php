@@ -7,7 +7,7 @@
     <title>{{ config('app.name') }}</title>
 
     <link rel="stylesheet" href="/css/themify-icons.css">
-    <link rel="stylesheet" href="/css/feather.css">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <!-- Favicon icon -->
     <link rel="icon" type="/image/png" sizes="16x16" href="/images/favicon.png">
     <!-- Custom Stylesheet -->
@@ -25,22 +25,16 @@
     <div class="main-wrap">
 
         <div class="nav-header bg-transparent shadow-none border-0">
-            <div class="nav-top w-100">
-                <a href="{{ url('/') }}"><i class="feather-zap text-success display1-size me-2 ms-0"></i><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">FuLafia | Alumni</span> </a>
-                <a href="#" class="mob-menu ms-auto me-2 chat-active-btn"><i class="feather-message-circle text-grey-900 font-sm btn-round-md bg-greylight"></i></a>
-                
-                <a href="/login" class="header-btn d-none d-lg-block bg-dark fw-500 text-white font-xsss p-3 ms-auto w100 text-center lh-20 rounded-xl">Login</a>
-                <a href="{{ route('landing') }}" class="header-btn d-none d-lg-block bg-current fw-500 text-white font-xsss p-3 ms-2 w100 text-center lh-20 rounded-xl">Home</a>
-
+            <div class="nav-top d-flex justify-content-between align-items-center w-100">
+                <a href="{{ route('landing') }}"><i class="feather-zap text-success display1-size me-2 ms-0"></i><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">FuLafia | Alumni</span></a>
+                <a href="{{ route('landing') }}" class="header-btn d-none d-lg-block bg-current fw-500 text-white font-xsss p-3 ms-auto w100 text-center lh-20 rounded-xl">Home</a>
             </div>
-            
-            
         </div>
 
-        <div class="row">
+        <div class="row g-0">
             <div class="col-xl-5 d-none d-xl-block p-0 vh-100 bg-image-cover bg-no-repeat" style="background-image: url(images/login-bg.jpg);"></div>
-            <div class="col-xl-7 vh-100 align-items-center d-flex bg-white rounded-3 overflow-hidden">
-                <div class="card shadow-none border-0 ms-auto me-auto login-card">
+            <div class="col-xl-7 col-12 vh-100 align-items-center d-flex bg-white rounded-3 overflow-hidden">
+                <div class="card shadow-none border-0 ms-auto me-auto login-card w-100" style="max-width: 500px;">
                     <div class="card-body rounded-0 text-left">
                         <h2 class="fw-700 display1-size display2-md-size mb-3">Login into <br>your account</h2>
                         
@@ -92,10 +86,23 @@
                 </div> 
             </div>
         </div>
-    </div>  
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/js/plugin.js"></script>
     <script src="/js/scripts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/script.js"></script>
     @livewireScripts
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+            // Hide preloader after page loads
+            setTimeout(function() {
+                $('.preloader').fadeOut(300);
+            }, 500);
+        });
+    </script>
 </body>
 
 </html>
