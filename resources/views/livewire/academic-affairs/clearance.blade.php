@@ -1,6 +1,7 @@
-<div class="container mt-5 pt-5">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8">
+<div class="middle-sidebar-bottom">
+    <div class="middle-sidebar-left" style="margin-left: 280px; margin-top: 100px;">
+        <div class="row">
+            <div class="col-12">
             @if($message)
                 <div class="alert alert-{{ $messageType === 'success' ? 'success' : 'danger' }} alert-dismissible fade show" role="alert">
                     {{ $message }}
@@ -99,38 +100,38 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    <div class="table-responsive" style="overflow-x:auto;">
+                        <table class="table table-hover table-sm align-middle small">
                             <thead>
                             <tr>
                                 <th>
                                     <input type="checkbox" class="form-check-input">
                                 </th>
-                                <th>Name</th>
-                                <th>Matric</th>
-                                <th>Faculty</th>
-                                <th>Department</th>
-                                <th>Year</th>
-                                <th>Onboarding</th>
-                                <th>Payments</th>
-                                <th>Academic Affairs</th>
-                                <th>Action</th>
+                                <th class="text-nowrap">Name</th>
+                                <th class="text-nowrap">Matric</th>
+                                <th class="text-nowrap">Faculty</th>
+                                <th class="text-nowrap">Department</th>
+                                <th class="text-nowrap">Year</th>
+                                <th class="text-nowrap">Onboarding</th>
+                                <th class="text-nowrap">Payments</th>
+                                <th class="text-nowrap">AA</th>
+                                <th class="text-nowrap">Action</th>
                             </tr>
                             </thead>
                             <tbody>
                             @forelse($alumni as $a)
-                                <tr>
+                                <tr wire:key="alumni-row-{{ $a->id }}-{{ $a->academic_affairs_cleared }}">
                                     <td>
                                         <input type="checkbox" class="alumni-checkbox form-check-input" 
                                                value="{{ $a->id }}"
                                                wire:model="selectedAlumni"
                                                wire:key="checkbox-{{ $a->id }}">
                                     </td>
-                                    <td>{{ $a->user->name ?? 'N/A' }}</td>
-                                    <td>{{ $a->matric_number ?? 'N/A' }}</td>
-                                    <td>{{ $a->faculty ?? 'N/A' }}</td>
-                                    <td>{{ $a->department ?? 'N/A' }}</td>
-                                    <td>{{ $a->year_of_graduation ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->user->name ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->matric_number ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->faculty ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->department ?? 'N/A' }}</td>
+                                    <td class="text-break">{{ $a->year_of_graduation ?? 'N/A' }}</td>
                                     <td>
                                         @php($onboard = $a->biodata_completed ?? true)
                                         @if($onboard)
@@ -147,14 +148,14 @@
                                             <span class="badge bg-danger">✖</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="text-nowrap" wire:key="aa-badge-{{ $a->id }}-{{ $a->academic_affairs_cleared }}">
                                         @if($a->academic_affairs_cleared)
                                             <span class="badge bg-success">✔</span>
                                         @else
                                             <span class="badge bg-danger">✖</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="text-nowrap">
                                         @php($disabled = !($onboard && $paid))
                                         @if($disabled)
                                             <small class="text-muted">Complete onboarding & payments first</small>
