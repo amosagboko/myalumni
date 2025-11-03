@@ -1,6 +1,7 @@
-<div class="container mt-5 pt-5">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-11 col-xl-10">
+<div class="middle-sidebar-bottom">
+    <div class="middle-sidebar-left" style="margin-left: 280px; margin-top: 100px;">
+        <div class="row">
+            <div class="col-12">
             @if (session()->has('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
@@ -31,8 +32,8 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    <div class="table-responsive" style="overflow-x:auto;">
+                        <table class="table table-hover table-sm align-middle small">
                             <thead>
                             <tr>
                                 <th>Timestamp</th>
@@ -68,6 +69,7 @@
 
                     <div class="mt-3">{{ $logs->links() }}</div>
                 </div>
+            </div>
             </div>
         </div>
     </div>
