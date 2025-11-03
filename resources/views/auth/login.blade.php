@@ -31,12 +31,13 @@
             </div>
         </div>
 
-        <div class="row g-0">
-            <div class="col-xl-5 d-none d-xl-block p-0 vh-100 bg-image-cover bg-no-repeat" style="background-image: url(images/login-bg.jpg);"></div>
-            <div class="col-xl-7 col-12 vh-100 align-items-center d-flex bg-white rounded-3 overflow-hidden">
-                <div class="card shadow-none border-0 ms-auto me-auto login-card w-100" style="max-width: 500px;">
-                    <div class="card-body rounded-0 text-left">
-                        <h2 class="fw-700 display1-size display2-md-size mb-3">Login into <br>your account</h2>
+        <div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem 1rem;">
+            <div class="card shadow-lg border-0" style="max-width: 450px; width: 100%; border-radius: 15px;">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-700 mb-2" style="color: #333; font-size: 2rem;">Welcome Back</h2>
+                        <p class="text-muted mb-0">Login to your alumni account</p>
+                    </div>
                         
                         <!-- Session Status -->
                         <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -45,8 +46,9 @@
                         @if ($errors->any())
                             <div class="mb-4">
                                 @foreach ($errors->all() as $error)
-                                    <div class="p-4 mb-4 text-sm text-red-600 bg-red-50 rounded-lg font-weight-bold" role="alert">
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                         {{ $error }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                     </div>
                                 @endforeach
                             </div>
@@ -55,33 +57,40 @@
                         <form method="POST" action="{{ route('login') }}">
                             @csrf
                             <!--email inputs-->
-                            <div class="form-group icon-input mb-3">
-                                <i class="font-sm ti-email text-grey-500 pe-0"></i>
-                                <input type="text" name="email" class="style2-input ps-5 form-control text-grey-900 font-xsss fw-600" placeholder="Your Email Address" value="{{ old('email') }}" required autofocus autocomplete="username">                        
+                            <div class="mb-3">
+                                <label for="email" class="form-label text-muted small">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="ti-email text-muted"></i>
+                                    </span>
+                                    <input type="email" name="email" id="email" class="form-control border-start-0" placeholder="your.email@example.com" value="{{ old('email') }}" required autofocus autocomplete="username">
+                                </div>
                             </div>
                             <!--password inputs-->
-                            <div class="form-group icon-input mb-1">
-                                <input type="Password" name="password" class="style2-input ps-5 form-control text-grey-900 font-xss ls-3" placeholder="Password" required autocomplete="current-password">
-                                <i class="font-sm ti-lock text-grey-500 pe-0"></i>
+                            <div class="mb-3">
+                                <label for="password" class="form-label text-muted small">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="ti-lock text-muted"></i>
+                                    </span>
+                                    <input type="password" name="password" id="password" class="form-control border-start-0" placeholder="Enter your password" required autocomplete="current-password">
+                                </div>
                             </div>
-                            <!--remember inputs-->
-                            <div class="form-check text-left mb-3">
-                                <input type="checkbox" name="remember" class="form-check-input mt-2" id="remember_me">
-                                <label class="form-check-label font-xsss text-grey-500" for="remember_me">{{ __('Remember me') }}</label>
+                            <!--remember and forgot password-->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" name="remember" class="form-check-input" id="remember_me">
+                                    <label class="form-check-label text-muted small" for="remember_me">{{ __('Remember me') }}</label>
+                                </div>
                                 @if (Route::has('password.request'))
-                                <a href="{{ route('password.request') }}" class="fw-600 font-xsss text-grey-700 mt-1 float-right">{{ __('Forgot your password?') }}</a>
+                                <a href="{{ route('password.request') }}" class="text-decoration-none small text-muted">{{ __('Forgot password?') }}</a>
                                 @endif
                             </div>
-                            <div class="form-group mb-1">
-                                <button class="form-control text-center style2-input text-white fw-600 bg-dark border-0 p-0 ">{{ __('Log in') }}</button>
+                            <!--submit button-->
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-dark btn-lg rounded-3 fw-600">{{ __('Log in') }}</button>
                             </div>
                         </form>
-                         
-                        {{-- <div class="col-sm-12 p-0 text-left">
-                            
-                            <h6 class="text-grey-500 font-xsss fw-500 mt-0 mb-0 lh-32">Dont have account <a href="{{ route('register') }}" class="fw-700 ms-1">Register</a></h6>
-                        </div> --}}
-                        
                     </div>
                 </div> 
             </div>
