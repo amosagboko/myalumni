@@ -21,7 +21,10 @@
 <div class="main-wrapper">
     <div class="nav-header bg-white shadow-xs border-0">
         <div class="nav-top">
-            <a href="{{ route('academic-affairs.home') }}"><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">Academic Affairs</span></a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted font-sm">{{ auth()->user()->name ?? 'User' }}</span>
+                <a href="{{ route('academic-affairs.home') }}"><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">Academic Affairs</span></a>
+            </div>
             <button class="nav-menu me-0 ms-2"></button>
         </div>
     </div>
