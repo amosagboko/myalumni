@@ -266,7 +266,7 @@ class Clearance extends Component
 
     public function render()
     {
-        $alumni = $this->getQuery()->paginate($this->perPage);
+        $alumni = $this->getQuery()->paginate($this->perPage)->withQueryString();
         $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort()->values();
         $departments = Alumni::distinct()->pluck('department')->filter()->sort()->values();
         $years = Alumni::distinct()->pluck('year_of_graduation')->filter()->sort()->reverse()->values();

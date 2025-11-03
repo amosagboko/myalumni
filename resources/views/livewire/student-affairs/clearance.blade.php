@@ -33,47 +33,48 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3 p-3 bg-light rounded">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-3">
-                                <input type="text" wire:model.live.debounce.500ms="search" placeholder="Search name or matric" class="form-control">
+                        <form method="GET" action="{{ route('student-affairs.clearance') }}">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <input type="text" name="search" value="{{ request('search', $search) }}" placeholder="Search name or matric" class="form-control">
+                                </div>
+                                <div class="col-md-3">
+                                    <select name="faculty" class="form-select">
+                                        <option value="">All Faculties</option>
+                                        @foreach($faculties as $f)
+                                            <option value="{{ $f }}" {{ request('faculty', $faculty) == $f ? 'selected' : '' }}>{{ $f }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select name="department" class="form-select">
+                                        <option value="">All Departments</option>
+                                        @foreach($departments as $d)
+                                            <option value="{{ $d }}" {{ request('department', $department) == $d ? 'selected' : '' }}>{{ $d }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select name="year" class="form-select">
+                                        <option value="">All Years</option>
+                                        @foreach($years as $y)
+                                            <option value="{{ $y }}" {{ request('year', $year) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <select name="perPage" class="form-select">
+                                        @foreach([10,20,50,100] as $n)
+                                            <option value="{{ $n }}" {{ (int)request('perPage', $perPage) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-12 d-flex gap-2 mt-2">
+                                    <button type="submit" class="btn btn-outline-primary btn-sm">Apply Filters</button>
+                                    <a href="{{ route('student-affairs.clearance') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <select wire:model.defer="faculty" class="form-select">
-                                    <option value="">All Faculties</option>
-                                    @foreach($faculties as $f)
-                                        <option value="{{ $f }}">{{ $f }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <select wire:model.defer="department" class="form-select">
-                                    <option value="">All Departments</option>
-                                    @foreach($departments as $d)
-                                        <option value="{{ $d }}">{{ $d }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <select wire:model.defer="year" class="form-select">
-                                    <option value="">All Years</option>
-                                    @foreach($years as $y)
-                                        <option value="{{ $y }}">{{ $y }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-1">
-                                <select wire:model="perPage" class="form-select">
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select>
-                            </div>
-                            <div class="col-md-12 d-flex gap-2 mt-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm" wire:click="applyFilters">Apply Filters</button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" wire:click="clearFilters">Clear Filters</button>
-                            </div>
-                        </div>
+                        </form>
                     </div>
 
                     <!-- Bulk Actions -->
@@ -190,7 +191,7 @@
                         </table>
                     </div>
 
-                    <div class="mt-3">{{ $alumni->links() }}</div>
+                    <div class="mt-3">{{ $alumni->appends(request()->query())->links() }}</div>
                 </div>
             </div>
         </div>
