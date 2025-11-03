@@ -20,9 +20,9 @@
 <div class="preloader"></div>
 <div class="main-wrapper">
     <div class="nav-header bg-white shadow-xs border-0">
-        <div class="nav-top d-flex justify-content-between align-items-center">
+        <div class="nav-top d-flex justify-content-between align-items-center w-100">
             <a href="{{ route('student-affairs.home') }}"><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">Student Affairs</span></a>
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3 ms-auto">
                 <span class="text-muted font-sm">Welcome, {{ auth()->user()->name ?? 'User' }}</span>
                 <button class="nav-menu me-0 ms-2"></button>
             </div>
