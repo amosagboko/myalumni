@@ -185,14 +185,14 @@
                                 @if($item->venue)
                                     <p class="mb-1 small text-muted"><i class="bi bi-geo-alt"></i> {{ $item->venue }}</p>
                                 @endif
-                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Stay updated with alumni events, reunions, and networking opportunities.', 80) }}</p>
+                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Stay updated with the latest news and updates from the alumni community.', 80) }}</p>
                                 @if($item->link)
                                     <a href="{{ $item->link }}" target="_blank" class="btn btn-sm btn-outline-primary">Learn More</a>
                                 @endif
                             </div>
                         @endforeach
                     @else
-                        <p>Stay updated with alumni events, reunions, and networking opportunities.</p>
+                        <p>Stay updated with the latest news and updates from the alumni community.</p>
                     @endif
                 </div>
             </div>

@@ -21,8 +21,8 @@
                     <select wire:model.live="filterType" class="form-select form-select-sm">
                         <option value="all">All Types</option>
                         <option value="connect">Connect</option>
-                        <option value="event">Events</option>
-                        <option value="opportunity">Opportunities</option>
+                        <option value="event">News</option>
+                        <option value="opportunity">Events</option>
                     </select>
                 </div>
 
@@ -48,7 +48,13 @@
                                             @elseif($event->type === 'event') bg-primary
                                             @else bg-success
                                             @endif">
-                                            {{ ucfirst($event->type) }}
+                                            @if($event->type === 'connect')
+                                                Connect
+                                            @elseif($event->type === 'event')
+                                                News
+                                            @else
+                                                Events
+                                            @endif
                                         </span>
                                     </td>
                                     <td>{{ Str::limit($event->eventname, 30) }}</td>
@@ -93,8 +99,8 @@
                         <label class="form-label small">Content Type <span class="text-danger">*</span></label>
                         <select wire:model="type" class="form-select form-select-sm">
                             <option value="connect">Connect</option>
-                            <option value="event">Event</option>
-                            <option value="opportunity">Opportunity</option>
+                            <option value="event">News</option>
+                            <option value="opportunity">Events</option>
                         </select>
                         @error('type') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
