@@ -27,7 +27,7 @@
 
         <div class="nav-header bg-transparent shadow-none border-0">
             <div class="nav-top d-flex justify-content-between align-items-center w-100">
-                <a href="{{ route('landing') }}"><i class="feather-zap text-success display1-size me-2 ms-0"></i><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">FuLafia | Alumni</span></a>
+                <a href="{{ route('landing') }}"><img src="{{ asset('images/favicon.png') }}" alt="FuLafia Alumni" class="me-2 ms-0" style="width: 32px; height: 32px;"><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">FuLafia | Alumni</span></a>
                 <a href="{{ route('landing') }}" class="header-btn d-none d-lg-block bg-current fw-500 text-white font-xsss p-3 ms-auto w100 text-center lh-20 rounded-xl">Home</a>
             </div>
         </div>
