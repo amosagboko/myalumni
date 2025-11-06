@@ -143,25 +143,81 @@
     <!-- Features Section -->
     <section class="container my-5">
         <div class="row g-4">
+            <!-- Connect Section -->
             <div class="col-md-4">
                 <div class="feature-card text-center">
                     <i class="bi bi-people feature-icon"></i>
                     <h3>Connect</h3>
-                    <p>Connect with fellow alumni and expand your professional network.</p>
+                    @if($connectItems && $connectItems->count() > 0)
+                        @foreach($connectItems as $item)
+                            <div class="mb-3 p-2 border rounded">
+                                @if($item->image)
+                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->eventname }}" class="img-fluid mb-2 rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
+                                @endif
+                                <h5 class="mb-1">{{ $item->eventname }}</h5>
+                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Connect with fellow alumni and expand your professional network.', 80) }}</p>
+                                @if($item->link)
+                                    <a href="{{ $item->link }}" target="_blank" class="btn btn-sm btn-outline-primary">Learn More</a>
+                                @endif
+                            </div>
+                        @endforeach
+                    @else
+                        <p>Connect with fellow alumni and expand your professional network.</p>
+                    @endif
                 </div>
             </div>
+
+            <!-- Events Section -->
             <div class="col-md-4">
                 <div class="feature-card text-center">
                     <i class="bi bi-calendar-event feature-icon"></i>
                     <h3>Events</h3>
-                    <p>Stay updated with alumni events, reunions, and networking opportunities.</p>
+                    @if($eventItems && $eventItems->count() > 0)
+                        @foreach($eventItems as $item)
+                            <div class="mb-3 p-2 border rounded">
+                                @if($item->image)
+                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->eventname }}" class="img-fluid mb-2 rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
+                                @endif
+                                <h5 class="mb-1">{{ $item->eventname }}</h5>
+                                @if($item->date)
+                                    <p class="mb-1 small text-muted"><i class="bi bi-calendar"></i> {{ $item->date->format('M d, Y') }}</p>
+                                @endif
+                                @if($item->venue)
+                                    <p class="mb-1 small text-muted"><i class="bi bi-geo-alt"></i> {{ $item->venue }}</p>
+                                @endif
+                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Stay updated with alumni events, reunions, and networking opportunities.', 80) }}</p>
+                                @if($item->link)
+                                    <a href="{{ $item->link }}" target="_blank" class="btn btn-sm btn-outline-primary">Learn More</a>
+                                @endif
+                            </div>
+                        @endforeach
+                    @else
+                        <p>Stay updated with alumni events, reunions, and networking opportunities.</p>
+                    @endif
                 </div>
             </div>
+
+            <!-- Opportunities Section -->
             <div class="col-md-4">
                 <div class="feature-card text-center">
                     <i class="bi bi-briefcase feature-icon"></i>
                     <h3>Opportunities</h3>
-                    <p>Access exclusive job opportunities and career development resources.</p>
+                    @if($opportunityItems && $opportunityItems->count() > 0)
+                        @foreach($opportunityItems as $item)
+                            <div class="mb-3 p-2 border rounded">
+                                @if($item->image)
+                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->eventname }}" class="img-fluid mb-2 rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
+                                @endif
+                                <h5 class="mb-1">{{ $item->eventname }}</h5>
+                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Access exclusive job opportunities and career development resources.', 80) }}</p>
+                                @if($item->link)
+                                    <a href="{{ $item->link }}" target="_blank" class="btn btn-sm btn-outline-primary">Learn More</a>
+                                @endif
+                            </div>
+                        @endforeach
+                    @else
+                        <p>Access exclusive job opportunities and career development resources.</p>
+                    @endif
                 </div>
             </div>
         </div>

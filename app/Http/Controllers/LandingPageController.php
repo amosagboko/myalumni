@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumni;
+use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Mail;
@@ -28,7 +29,26 @@ class LandingPageController extends Controller
 
     public function index()
     {
-        return view('landing');
+        // Fetch published content for each section
+        $connectItems = Event::published()
+            ->ofType('connect')
+            ->ordered()
+            ->limit(3)
+            ->get();
+        
+        $eventItems = Event::published()
+            ->ofType('event')
+            ->ordered()
+            ->limit(3)
+            ->get();
+        
+        $opportunityItems = Event::published()
+            ->ofType('opportunity')
+            ->ordered()
+            ->limit(3)
+            ->get();
+
+        return view('landing', compact('connectItems', 'eventItems', 'opportunityItems'));
     }
 
     public function searchCredentials(Request $request)
