@@ -31,7 +31,7 @@
             </div>
         </div>
 
-        <div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem 1rem;">
+        <div class="min-vh-100 d-flex align-items-center justify-content-center bg-white" style="padding: 2rem 1rem;">
             <div class="card shadow-lg border-0" style="max-width: 450px; width: 100%; border-radius: 15px;">
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
