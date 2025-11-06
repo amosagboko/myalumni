@@ -171,7 +171,7 @@
             <div class="col-md-4">
                 <div class="feature-card text-center">
                     <i class="bi bi-calendar-event feature-icon"></i>
-                    <h3>Events</h3>
+                    <h3>News</h3>
                     @if($eventItems && $eventItems->count() > 0)
                         @foreach($eventItems as $item)
                             <div class="mb-3 p-2 border rounded">
@@ -201,7 +201,7 @@
             <div class="col-md-4">
                 <div class="feature-card text-center">
                     <i class="bi bi-briefcase feature-icon"></i>
-                    <h3>Opportunities</h3>
+                    <h3>Events</h3>
                     @if($opportunityItems && $opportunityItems->count() > 0)
                         @foreach($opportunityItems as $item)
                             <div class="mb-3 p-2 border rounded">
@@ -216,7 +216,7 @@
                             </div>
                         @endforeach
                     @else
-                        <p>Access exclusive job opportunities and career development resources.</p>
+                        <p>Stay updated with our latest events and happenings as they unfold.</p>
                     @endif
                 </div>
             </div>
