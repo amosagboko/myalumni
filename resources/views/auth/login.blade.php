@@ -7,6 +7,7 @@
     <title>{{ config('app.name') }}</title>
 
     <link rel="stylesheet" href="/css/themify-icons.css">
+    <link rel="stylesheet" href="/css/feather.css">
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <!-- Favicon icon -->
     <link rel="icon" type="/image/png" sizes="16x16" href="/images/favicon.png">
@@ -61,7 +62,7 @@
                                 <label for="email" class="form-label text-muted small">Email Address</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0">
-                                        <i class="ti-email text-muted"></i>
+                                        <i data-feather="mail" class="text-muted" style="width: 18px; height: 18px;"></i>
                                     </span>
                                     <input type="email" name="email" id="email" class="form-control border-start-0" placeholder="your.email@example.com" value="{{ old('email') }}" required autofocus autocomplete="username">
                                 </div>
@@ -71,7 +72,7 @@
                                 <label for="password" class="form-label text-muted small">Password</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0">
-                                        <i class="ti-lock text-muted"></i>
+                                        <i data-feather="lock" class="text-muted" style="width: 18px; height: 18px;"></i>
                                     </span>
                                     <input type="password" name="password" id="password" class="form-control border-start-0" placeholder="Enter your password" required autocomplete="current-password">
                                 </div>
