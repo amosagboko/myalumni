@@ -88,7 +88,7 @@
                                                 <i class="feather-upload me-1"></i> Upload Alumni
                                             </a>
                                             <a href="{{ route('create.event.index') }}" class="btn btn-info btn-sm">
-                                                <i class="feather-calendar me-1"></i> Create Event
+                                                <i class="feather-calendar me-1"></i> Manage Homepage Content
                                             </a>
                                             <a href="{{ route('retrieve.credentials') }}" class="btn btn-warning btn-sm">
                                                 <i class="feather-key me-1"></i> Retrieve Credentials

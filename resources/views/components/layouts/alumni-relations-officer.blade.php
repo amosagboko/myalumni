@@ -82,7 +82,7 @@
                             <li class="nav-item">
                                 <a href="{{ route('create.event.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('create.event*') ? 'active' : '' }}">
                                     <i data-feather="calendar" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
-                                    <span>Create Event</span>
+                                    <span>Manage Homepage Content</span>
                                 </a>
                             </li>
                             <li class="nav-item">
