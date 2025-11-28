@@ -8,6 +8,12 @@
                 <div class="card-body">
                     @if(!$alumni)
                         <div class="alert alert-warning mb-0">No alumni record found.</div>
+                    @elseif(!$requiresClearance)
+                        <div class="alert alert-info mb-0">
+                            <strong>Clearance Not Required</strong><br>
+                            Clearance is only required for alumni graduating in 2025 or later. 
+                            Your graduation year ({{ $alumni->year_of_graduation ?? 'N/A' }}) does not require clearance.
+                        </div>
                     @else
                         <div class="mb-3">
                             <div class="d-flex justify-content-between">
@@ -17,6 +23,10 @@
                             <div class="d-flex justify-content-between">
                                 <div><strong>Matriculation Number:</strong></div>
                                 <div>{{ $alumni->matric_number ?? 'N/A' }}</div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div><strong>Year of Graduation:</strong></div>
+                                <div>{{ $alumni->year_of_graduation ?? 'N/A' }}</div>
                             </div>
                         </div>
                         <hr>

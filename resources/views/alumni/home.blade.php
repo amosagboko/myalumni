@@ -12,19 +12,26 @@
                     $activeFees = $alumni ? $alumni->getActiveFees() : collect([]);
                     $unpaidFees = $activeFees->filter(function($fee) { return !$fee->isPaid(); });
                     $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
-                    $studentCleared = (bool) ($alumni->student_affairs_cleared ?? false);
-                    $academicCleared = (bool) ($alumni->academic_affairs_cleared ?? false);
-                    $overallCleared = $studentCleared && $academicCleared;
+                    
+                    // Only show clearance statuses for alumni graduating 2025 or later
+                    $yearOfGraduation = $alumni->year_of_graduation ?? null;
+                    $requiresClearance = $yearOfGraduation && $yearOfGraduation >= 2025;
+                    
+                    $studentCleared = $requiresClearance ? (bool) ($alumni->student_affairs_cleared ?? false) : null;
+                    $academicCleared = $requiresClearance ? (bool) ($alumni->academic_affairs_cleared ?? false) : null;
+                    $overallCleared = $requiresClearance ? ($studentCleared && $academicCleared) : null;
                 @endphp
                 <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-3">
                     <div class="card-body p-3">
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             <span class="badge {{ $needsBioData ? 'bg-danger' : 'bg-success' }}">Onboarding: {{ $needsBioData ? 'Pending ✖' : 'Completed ✔' }}</span>
                             <span class="badge {{ $needsPayments ? 'bg-danger' : 'bg-success' }}">Payments: {{ $needsPayments ? 'Pending ✖' : 'Completed ✔' }}</span>
-                            <span class="badge {{ $studentCleared ? 'bg-success' : 'bg-danger' }}">Student Affairs: {{ $studentCleared ? 'Cleared ✔' : 'Not Cleared ✖' }}</span>
-                            <span class="badge {{ $academicCleared ? 'bg-success' : 'bg-danger' }}">Academic Affairs: {{ $academicCleared ? 'Cleared ✔' : 'Not Cleared ✖' }}</span>
-                            <span class="badge {{ $overallCleared ? 'bg-success' : 'bg-warning' }}">Overall: {{ $overallCleared ? 'Cleared' : 'Pending' }}</span>
-                            <a href="{{ route('alumni.clearance-status') }}" class="btn btn-sm btn-outline-primary ms-auto">View Clearance Status</a>
+                            @if($requiresClearance)
+                                <span class="badge {{ $studentCleared ? 'bg-success' : 'bg-danger' }}">Student Affairs: {{ $studentCleared ? 'Cleared ✔' : 'Not Cleared ✖' }}</span>
+                                <span class="badge {{ $academicCleared ? 'bg-success' : 'bg-danger' }}">Academic Affairs: {{ $academicCleared ? 'Cleared ✔' : 'Not Cleared ✖' }}</span>
+                                <span class="badge {{ $overallCleared ? 'bg-success' : 'bg-warning' }}">Overall: {{ $overallCleared ? 'Cleared' : 'Pending' }}</span>
+                                <a href="{{ route('alumni.clearance-status') }}" class="btn btn-sm btn-outline-primary ms-auto">View Clearance Status</a>
+                            @endif
                         </div>
                     </div>
                 </div>

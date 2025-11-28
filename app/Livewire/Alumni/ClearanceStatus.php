@@ -11,9 +11,13 @@ class ClearanceStatus extends Component
     {
         $user = Auth::user();
         $alumni = $user?->alumni;
+        
+        $yearOfGraduation = $alumni->year_of_graduation ?? null;
+        $requiresClearance = $yearOfGraduation && $yearOfGraduation >= 2025;
 
         return view('livewire.alumni.clearance-status', [
             'alumni' => $alumni,
+            'requiresClearance' => $requiresClearance,
         ])->layout('layouts.alumni');
     }
 }
