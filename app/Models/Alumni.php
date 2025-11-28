@@ -130,11 +130,71 @@ class Alumni extends Model
             return collect([]);
         }
 
-        // For 2025+ graduates only, get fees based on the alumni's category and graduation year
+        // For 2025+ graduates only, get fees based on the alumni's category (with postgraduate specialization) and graduation year
         if ($this->year_of_graduation >= 2025) {
-            // Get fees specific to this alumni's category and graduation year
+            $effectiveCategoryId = $this->category_id;
+            $effectiveCategorySlug = $this->category?->slug;
+            $effectiveCategoryName = $this->category?->name ?? 'Unknown';
+
+            if ($effectiveCategorySlug === 'postgraduate') {
+                $qualificationType = $this->qualification_type;
+
+                if ($qualificationType) {
+                    $normalizedQualification = strtolower(str_replace(['.', ' ', '_'], '', trim($qualificationType)));
+                    $qualificationMap = [
+                        'phd' => 'phd',
+                        'ph.d' => 'phd',
+                        'doctorofphilosophy' => 'phd',
+                        'msc' => 'msc',
+                        'm.sc' => 'msc',
+                        'masters' => 'msc',
+                        'masterofscience' => 'msc',
+                        'pgd' => 'pgd',
+                        'pg.d' => 'pgd',
+                        'postgraduatediploma' => 'pgd',
+                    ];
+
+                    $qualificationKey = $qualificationMap[$normalizedQualification] ?? null;
+
+                    if ($qualificationKey) {
+                        $specializedSlug = "postgraduate-{$qualificationKey}";
+                        $specializedCategory = AlumniCategory::where('slug', $specializedSlug)->first();
+
+                        if ($specializedCategory) {
+                            $effectiveCategoryId = $specializedCategory->id;
+                            $effectiveCategorySlug = $specializedCategory->slug;
+                            $effectiveCategoryName = $specializedCategory->name;
+                        } else {
+                            Log::warning('Specialized postgraduate category not found', [
+                                'alumni_id' => $this->id,
+                                'requested_slug' => $specializedSlug,
+                                'qualification_type' => $this->qualification_type,
+                            ]);
+                        }
+                    } else {
+                        Log::warning('Unsupported postgraduate qualification type for fee mapping', [
+                            'alumni_id' => $this->id,
+                            'qualification_type' => $this->qualification_type,
+                        ]);
+                    }
+                } else {
+                    Log::info('Postgraduate alumni missing qualification type, using base category fees', [
+                        'alumni_id' => $this->id,
+                    ]);
+                }
+            }
+
+            if (!$effectiveCategoryId) {
+                Log::warning('No effective category found for alumni when fetching fees', [
+                    'alumni_id' => $this->id,
+                    'graduation_year' => $this->year_of_graduation,
+                ]);
+                return collect([]);
+            }
+
+            // Get fees specific to this alumni's (possibly specialized) category and graduation year
             $fees = FeeTemplate::where('graduation_year', $this->year_of_graduation)
-                ->where('category_id', $this->category_id) // Filter by alumni's category
+                ->where('category_id', $effectiveCategoryId)
                 ->where('is_active', true)
                 ->where('valid_from', '<=', now())
                 ->where(function ($query) {
@@ -146,8 +206,9 @@ class Alumni extends Model
             Log::info('Category-based fees for 2025+ alumni', [
                 'alumni_id' => $this->id,
                 'graduation_year' => $this->year_of_graduation,
-                'category_id' => $this->category_id,
-                'category_name' => $this->category?->name ?? 'Unknown',
+                'category_id' => $effectiveCategoryId,
+                'category_slug' => $effectiveCategorySlug,
+                'category_name' => $effectiveCategoryName,
                 'fee_count' => $fees->count(),
                 'total_amount' => $fees->sum('amount'),
                 'fees' => $fees->map(function($fee) {
