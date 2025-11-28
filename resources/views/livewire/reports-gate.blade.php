@@ -25,22 +25,6 @@
                                 <span class="badge bg-danger">✖ Pending</span>
                             @endif
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Student Affairs Clearance</span>
-                            @if($studentCleared)
-                                <span class="badge bg-success">✔ Cleared</span>
-                            @else
-                                <span class="badge bg-danger">✖ Not Cleared</span>
-                            @endif
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Academic Affairs Clearance</span>
-                            @if($academicCleared)
-                                <span class="badge bg-success">✔ Cleared</span>
-                            @else
-                                <span class="badge bg-danger">✖ Not Cleared</span>
-                            @endif
-                        </li>
                     </ul>
 
                     <div class="d-flex flex-column gap-2">
@@ -50,7 +34,6 @@
                         @if($needsPayments)
                             <a href="{{ route('alumni.payments.index') }}" class="btn btn-primary">View & Pay Fees</a>
                         @endif
-                        <a href="{{ route('alumni.clearance-status') }}" class="btn btn-outline-secondary">View Clearance Status</a>
                     </div>
                 </div>
             </div>

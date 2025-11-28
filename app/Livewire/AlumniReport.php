@@ -39,11 +39,9 @@ class AlumniReport extends Component
         $activeFees = $alumni ? $alumni->getActiveFees() : collect([]);
         $unpaidFees = $activeFees->filter(function ($fee) { return !$fee->isPaid(); });
         $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
-        $studentCleared = (bool) ($alumni->student_affairs_cleared ?? false);
-        $academicCleared = (bool) ($alumni->academic_affairs_cleared ?? false);
-        $allOk = !$needsBioData && !$needsPayments && $studentCleared && $academicCleared;
+        $allOk = !$needsBioData && !$needsPayments;
 
-        return compact('needsBioData', 'needsPayments', 'studentCleared', 'academicCleared', 'allOk');
+        return compact('needsBioData', 'needsPayments', 'allOk');
     }
 
     public function render()
