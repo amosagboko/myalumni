@@ -72,20 +72,16 @@ class LandingPageController extends Controller
             return redirect()->back()->with('error', 'No alumni found with this matriculation number.');
         }
 
-        // 2025+ graduates must go through login process
-        if ($alumni->year_of_graduation >= 2025) {
-            return redirect()->route('login')
-                ->with('info', 'Please login to access your alumni account.');
-        }
-
-        // For 2023 and earlier, and 2024 graduates
+        // All graduates can retrieve credentials via landing page
         $user = $alumni->user;
         $tempEmail = strtolower(str_replace('/', '', $alumni->matric_number)) . '@alumni.fulafia.edu.ng';
 
-        // Add a message for 2024 graduates about fee exemption
+        // Add messages based on graduation year
         $message = null;
         if ($alumni->year_of_graduation == 2024) {
             $message = 'As a 2024 graduate, you are exempted from all fees but must complete your bio data.';
+        } elseif ($alumni->year_of_graduation >= 2025) {
+            $message = 'As a 2025+ graduate, you must complete your bio data and pay category-based fees.';
         }
 
         return view('landing.credentials', [
@@ -182,14 +178,7 @@ class LandingPageController extends Controller
                 ]);
             }
 
-            // Check graduation year
-            if ($alumni->year_of_graduation >= 2025) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please login to access your alumni account.'
-                ]);
-            }
-
+            // All graduates can resend credentials
             $user = $alumni->user;
             $tempEmail = strtolower(str_replace('/', '', $alumni->matric_number)) . '@alumni.fulafia.edu.ng';
 
