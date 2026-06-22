@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             RolePermissionSeeder::class,
             FeeTemplatePermissionSeeder::class,
+            BackupPermissionSeeder::class,
             AlumniYearSeeder::class,
             AlumniCategorySeeder::class
         ]);

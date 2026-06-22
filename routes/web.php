@@ -83,6 +83,14 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::get('/onboarding-settings', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'index'])->name('onboarding-settings.index');
     Route::post('/onboarding-settings/close', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'close'])->name('onboarding-settings.close');
     Route::post('/onboarding-settings/reopen', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'reopen'])->name('onboarding-settings.reopen');
+
+    // Backup & Restore Management
+    Route::get('/backups', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
+    Route::post('/backups/run', [\App\Http\Controllers\Admin\BackupController::class, 'run'])->name('backups.run')->middleware('throttle:5,1');
+    Route::get('/backups/progress', [\App\Http\Controllers\Admin\BackupController::class, 'progress'])->name('backups.progress');
+    Route::get('/backups/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->name('backups.download');
+    Route::delete('/backups', [\App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('backups.destroy');
+    Route::post('/backups/restore', [\App\Http\Controllers\Admin\BackupController::class, 'restore'])->name('backups.restore')->middleware('throttle:3,60');
 });
 
 // Add specific route for users management

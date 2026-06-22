@@ -45,6 +45,7 @@ class RolePermissionSeeder extends Seeder
             'toggle academic affairs clearance',
             'view clearance audit',
             'export clearance audit',
+            'manage backups',
         ];
     
         // Create permissions
@@ -120,6 +121,7 @@ class RolePermissionSeeder extends Seeder
             'job post',
             'view clearance audit',
             'export clearance audit',
+            'manage backups',
         ]);
 
         $elcomChairman->givePermissionTo([

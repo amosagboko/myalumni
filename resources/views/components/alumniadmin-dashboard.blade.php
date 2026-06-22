@@ -77,6 +77,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('admin.backups.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.backups*') ? 'active' : '' }}">
+                                    <i data-feather="database" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Backup &amp; Restore</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('fee-templates.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('fee-templates*') ? 'active' : '' }}">
                                     <i data-feather="file-text" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Fee Management</span>
