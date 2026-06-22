@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Backup\BackupDestination\Backup;
 use Spatie\Backup\BackupDestination\BackupDestination;
+use Spatie\Backup\Config\Config as BackupConfig;
 use Spatie\Backup\Tasks\Monitor\BackupDestinationStatusFactory;
 use Symfony\Component\Process\Process;
 use ZipArchive;
@@ -44,7 +45,9 @@ class BackupRestoreService
     {
         $statuses = [];
 
-        foreach (BackupDestinationStatusFactory::createForMonitorConfig(config('backup.monitor_backups')) as $status) {
+        $monitorConfig = app(BackupConfig::class)->monitoredBackups;
+
+        foreach (BackupDestinationStatusFactory::createForMonitorConfig($monitorConfig) as $status) {
             $statuses[] = [
                 'name' => $status->backupDestination()->backupName(),
                 'disk' => $status->backupDestination()->diskName(),
