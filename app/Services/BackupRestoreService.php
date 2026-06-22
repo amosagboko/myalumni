@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Spatie\Backup\BackupDestination\Backup;
 use Spatie\Backup\BackupDestination\BackupDestination;
 use Spatie\Backup\Config\Config as BackupConfig;
+use Spatie\Backup\Config\MonitoredBackupsConfig;
 use Spatie\Backup\Tasks\Monitor\BackupDestinationStatusFactory;
 use Symfony\Component\Process\Process;
 use ZipArchive;
@@ -24,16 +25,22 @@ class BackupRestoreService
     {
         $backups = [];
 
-        foreach ($this->backupDisks() as $diskName) {
-            $destination = BackupDestination::create($diskName, config('backup.backup.name'));
+        try {
+            foreach ($this->backupDisks() as $diskName) {
+                $destination = BackupDestination::create($diskName, config('backup.backup.name'));
 
-            if (! $destination->isReachable()) {
-                continue;
-            }
+                if (! $destination->isReachable()) {
+                    continue;
+                }
 
-            foreach ($destination->backups() as $backup) {
-                $backups[] = $this->formatBackup($backup, $diskName);
+                foreach ($destination->backups() as $backup) {
+                    $backups[] = $this->formatBackup($backup, $diskName);
+                }
             }
+        } catch (\Throwable $e) {
+            Log::error('Failed to list backups', ['error' => $e->getMessage()]);
+
+            return [];
         }
 
         usort($backups, fn (array $a, array $b) => $b['timestamp'] <=> $a['timestamp']);
@@ -45,17 +52,29 @@ class BackupRestoreService
     {
         $statuses = [];
 
-        $monitorConfig = app(BackupConfig::class)->monitoredBackups;
+        try {
+            $monitorConfig = app(BackupConfig::class)->monitoredBackups;
+        } catch (\Throwable $e) {
+            Log::warning('Falling back to raw backup monitor config', ['error' => $e->getMessage()]);
+            $monitorConfig = MonitoredBackupsConfig::fromArray(config('backup.monitor_backups', []));
+        }
 
         foreach (BackupDestinationStatusFactory::createForMonitorConfig($monitorConfig) as $status) {
-            $statuses[] = [
-                'name' => $status->backupDestination()->backupName(),
-                'disk' => $status->backupDestination()->diskName(),
-                'reachable' => $status->backupDestination()->isReachable(),
-                'healthy' => $status->isHealthy(),
-                'newest_backup' => $status->backupDestination()->newestBackup()?->date()?->toDateTimeString(),
-                'used_storage_mb' => round($status->backupDestination()->usedStorage() / 1024 / 1024, 2),
-            ];
+            try {
+                $statuses[] = [
+                    'name' => $status->backupDestination()->backupName(),
+                    'disk' => $status->backupDestination()->diskName(),
+                    'reachable' => $status->backupDestination()->isReachable(),
+                    'healthy' => $status->isHealthy(),
+                    'newest_backup' => $status->backupDestination()->newestBackup()?->date()?->toDateTimeString(),
+                    'used_storage_mb' => round($status->backupDestination()->usedStorage() / 1024 / 1024, 2),
+                ];
+            } catch (\Throwable $e) {
+                Log::warning('Backup health check failed for destination', [
+                    'disk' => $status->backupDestination()->diskName(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $statuses;

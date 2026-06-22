@@ -25,6 +25,13 @@
                         </div>
                     @endif
 
+                    @if(!empty($loadError))
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            Some backup details could not be loaded: {{ $loadError }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
                     <div id="operation-alert" class="alert d-none" role="alert"></div>
                     <div id="operation-progress" class="progress mb-4 d-none" style="height: 24px;">
                         <div id="operation-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>

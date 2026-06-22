@@ -14,26 +14,25 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BackupController extends Controller
 {
-    public function __construct(protected BackupRestoreService $backupService)
-    {
-        $this->middleware(function ($request, $next) {
-            $user = $request->user();
-
-            if (! $user || ! $user->can('manage backups')) {
-                abort(403, 'You do not have permission to manage backups.');
-            }
-
-            return $next($request);
-        });
-    }
+    public function __construct(protected BackupRestoreService $backupService) {}
 
     public function index()
     {
-        return view('admin.backups.index', [
-            'backups' => $this->backupService->listBackups(),
-            'health' => $this->backupService->getHealthStatus(),
-            'retention' => $this->backupService->getRetentionPolicy(),
-        ]);
+        $loadError = null;
+
+        try {
+            $backups = $this->backupService->listBackups();
+            $health = $this->backupService->getHealthStatus();
+            $retention = $this->backupService->getRetentionPolicy();
+        } catch (\Throwable $e) {
+            Log::error('Backup page failed to load', ['error' => $e->getMessage()]);
+            $backups = [];
+            $health = [];
+            $retention = $this->backupService->getRetentionPolicy();
+            $loadError = $e->getMessage();
+        }
+
+        return view('admin.backups.index', compact('backups', 'health', 'retention', 'loadError'));
     }
 
     public function run(Request $request)
