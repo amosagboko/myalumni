@@ -108,6 +108,9 @@ Route::middleware(['auth', 'role:administrator|alumni-relations-officer'])->grou
     Route::resource('alumni-years', AlumniYearController::class);
     Route::post('alumni-years/{alumniYear}/activate', [AlumniYearController::class, 'activate'])->name('alumni-years.activate');
     Route::post('alumni-years/{alumniYear}/deactivate', [AlumniYearController::class, 'deactivate'])->name('alumni-years.deactivate');
+
+    Route::get('/create-event', [CreateAllEvent::class, 'index'])->name('create.event.index');
+    Route::post('/create-event', [CreateAllEvent::class, 'store'])->name('create.event.store');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -136,8 +139,6 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:alumni-relations-officer'])->group(function () {
         Route::get('/alumni-relations-officer/home', [App\Http\Controllers\ARODashboardController::class, 'index'])->name('alumni-relations-officer.home');
         Route::get('/alumni-relations-officer/users', App\Livewire\Admin\ManageAlumni::class)->name('alumni-relations-officer.users');
-        Route::get('/create-event', [CreateAllEvent::class, 'index'])->name('create.event.index');
-        Route::post('/create-event', [CreateAllEvent::class, 'store'])->name('create.event.store');
     });
 
     // Alumni onboarding route (outside role middleware to avoid circular dependency)
@@ -431,7 +432,6 @@ require __DIR__.'/auth.php';
 // Route::get('/uploadalumni', [AlumniController::class, 'alumniUpload'])->name('upload.alumni');
 Route::post('students/upload', [AlumniController::class, 'upload'])->name('students.upload');
 Route::get('students', [AlumniController::class, 'index'])->name('students.index');
-Route::get('/create-events', [CreateAllEvent::class, 'index'])->name('create.event.index');
 
 Route::get('/alumni/{id}/print', function ($id) {
     $alumni = \App\Models\Alumni::findOrFail($id);
