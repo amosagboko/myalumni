@@ -24,15 +24,17 @@ class BackupController extends Controller
             $backups = $this->backupService->listBackups();
             $health = $this->backupService->getHealthStatus();
             $retention = $this->backupService->getRetentionPolicy();
+            $storageDiagnostics = $this->backupService->getStorageDiagnostics();
         } catch (\Throwable $e) {
             Log::error('Backup page failed to load', ['error' => $e->getMessage()]);
             $backups = [];
             $health = [];
             $retention = $this->backupService->getRetentionPolicy();
+            $storageDiagnostics = $this->backupService->getStorageDiagnostics();
             $loadError = $e->getMessage();
         }
 
-        return view('admin.backups.index', compact('backups', 'health', 'retention', 'loadError'));
+        return view('admin.backups.index', compact('backups', 'health', 'retention', 'loadError', 'storageDiagnostics'));
     }
 
     public function run(Request $request)

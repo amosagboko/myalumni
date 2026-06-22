@@ -82,7 +82,22 @@
                         </div>
                         <div class="card-body p-0">
                             @if(count($backups) === 0)
-                                <div class="p-4 text-muted">No backups found yet. Run a backup to get started.</div>
+                                <div class="p-4">
+                                    <p class="text-muted mb-2">No backups found in the admin list yet.</p>
+                                    @if(($storageDiagnostics['zip_count_on_disk'] ?? 0) > 0)
+                                        <div class="alert alert-warning mb-0">
+                                            <strong>{{ $storageDiagnostics['zip_count_on_disk'] }} backup zip file(s) exist on disk</strong> but the web server cannot list them.
+                                            This usually happens when <code>php artisan backup:run</code> was run as <code>root</code> while the site runs as <code>www-data</code>.
+                                            <hr class="my-2">
+                                            <p class="mb-1"><strong>Path:</strong> <code>{{ $storageDiagnostics['storage_path'] }}</code></p>
+                                            <p class="mb-0">On the server, run:</p>
+                                            <pre class="mb-0 mt-2"><code>chown -R www-data:www-data storage/app/private
+chmod -R 775 storage/app/private</code></pre>
+                                        </div>
+                                    @else
+                                        <p class="text-muted mb-0">Run a backup to get started, or check that files exist under <code>{{ $storageDiagnostics['storage_path'] ?? 'storage/app/private/{APP_NAME}' }}</code>.</p>
+                                    @endif
+                                </div>
                             @else
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">

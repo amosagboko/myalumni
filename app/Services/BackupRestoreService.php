@@ -27,13 +27,22 @@ class BackupRestoreService
 
         try {
             foreach ($this->backupDisks() as $diskName) {
-                $destination = BackupDestination::create($diskName, config('backup.backup.name'));
+                $destination = BackupDestination::create($diskName, $this->backupName());
 
                 if (! $destination->isReachable()) {
-                    continue;
+                    Log::warning('Backup destination not reachable from web process', [
+                        'disk' => $diskName,
+                        'backup_name' => $this->backupName(),
+                        'storage_path' => $this->backupStoragePath(),
+                        'error' => $destination->connectionError()?->getMessage(),
+                    ]);
                 }
 
                 foreach ($destination->backups() as $backup) {
+                    if (! $backup->exists()) {
+                        continue;
+                    }
+
                     $backups[] = $this->formatBackup($backup, $diskName);
                 }
             }
@@ -46,6 +55,42 @@ class BackupRestoreService
         usort($backups, fn (array $a, array $b) => $b['timestamp'] <=> $a['timestamp']);
 
         return $backups;
+    }
+
+    public function getStorageDiagnostics(): array
+    {
+        $path = $this->backupStoragePath();
+        $zipFiles = [];
+
+        if (is_dir($path) && is_readable($path)) {
+            $zipFiles = array_values(array_filter(
+                scandir($path) ?: [],
+                fn (string $file) => str_ends_with(strtolower($file), '.zip')
+            ));
+        }
+
+        return [
+            'backup_name' => $this->backupName(),
+            'storage_path' => $path,
+            'directory_exists' => is_dir($path),
+            'web_readable' => is_dir($path) && is_readable($path),
+            'zip_count_on_disk' => count($zipFiles),
+            'newest_zip' => $zipFiles[0] ?? null,
+        ];
+    }
+
+    public function backupStoragePath(): string
+    {
+        return storage_path('app/private/'.$this->backupName());
+    }
+
+    protected function backupName(): string
+    {
+        try {
+            return app(BackupConfig::class)->backup->name;
+        } catch (\Throwable) {
+            return (string) config('backup.backup.name', config('app.name', 'laravel-backup'));
+        }
     }
 
     public function getHealthStatus(): array
@@ -328,7 +373,7 @@ class BackupRestoreService
 
         if (preg_match('#(^|/)storage/app/private/(.+)$#i', $relative, $matches)) {
             $privatePath = storage_path('app/private/'.$matches[2]);
-            $backupName = config('backup.backup.name');
+            $backupName = $this->backupName();
 
             if (str_starts_with($matches[2], $backupName.'/')) {
                 return null;
@@ -453,7 +498,7 @@ class BackupRestoreService
             throw new \InvalidArgumentException('Invalid backup disk.');
         }
 
-        $backupName = config('backup.backup.name');
+        $backupName = $this->backupName();
         $expectedPrefix = $backupName.'/';
 
         if (! str_starts_with($path, $expectedPrefix) || str_contains($path, '..')) {
@@ -485,7 +530,11 @@ class BackupRestoreService
 
     protected function backupDisks(): array
     {
-        return config('backup.backup.destination.disks', ['local']);
+        try {
+            return app(BackupConfig::class)->backup->destination->disks;
+        } catch (\Throwable) {
+            return config('backup.backup.destination.disks', ['local']);
+        }
     }
 
     protected function formatBytes(float $bytes): string
