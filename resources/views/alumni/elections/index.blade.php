@@ -183,8 +183,14 @@
 
             {{-- Past elections --}}
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
                     <h3 class="card-title mb-0 h4 h-md-3">Past Elections</h3>
+                    @if($pastElections->count() === 1)
+                        @php $solePastElection = $pastElections->first(); @endphp
+                        <span class="badge fs-6 {{ $solePastElection->isArchived() ? 'bg-secondary' : 'bg-success' }}">
+                            {{ $solePastElection->isArchived() ? 'Archived' : 'Completed' }}
+                        </span>
+                    @endif
                 </div>
                 <div class="card-body">
                     @if($pastElections->isEmpty())
@@ -207,12 +213,7 @@
                                                 </div>
                                             @endif
                                         </div>
-                                        <div class="col-auto">
-                                            <span class="badge text-nowrap {{ $election->isArchived() ? 'bg-secondary' : 'bg-success' }}">
-                                                {{ $election->isArchived() ? 'Archived' : 'Completed' }}
-                                            </span>
-                                        </div>
-                                        <div class="col-auto">
+                                        <div class="col-auto ms-md-auto">
                                             <a href="{{ route('alumni.elections.results', $election) }}"
                                                class="btn btn-sm btn-outline-success text-nowrap">
                                                 <i class="bi bi-trophy me-1"></i>
