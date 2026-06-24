@@ -169,7 +169,7 @@
                             <div class="nav-caption fw-600 font-xssss text-grey-500"><span></span> Account</div>
                             <ul class="mb-1">
                                 <li class="logo d-none d-xl-block d-lg-block"></li>
-                                <li><a href="{{ route('profile.update') }}" class="nav-content-bttn open-font h-auto pt-2 pb-2"><i data-feather="settings" class="font-sm me-3 text-grey-500"></i><span>My Profile</span></a></li>
+                                <li><a href="{{ route('profile.edit') }}" class="nav-content-bttn open-font h-auto pt-2 pb-2"><i data-feather="settings" class="font-sm me-3 text-grey-500"></i><span>My Profile</span></a></li>
                                 <li><a href="#" class="nav-content-bttn open-font h-auto pt-2 pb-2"><i data-feather="message-square" class="font-sm me-3 text-grey-500"></i><span>Messages</span><span class="circle-count bg-warning mt-0">23</span></a></li>
                             </ul>
                         </div>

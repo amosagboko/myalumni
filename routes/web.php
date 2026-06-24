@@ -32,7 +32,7 @@ use App\Http\Controllers\Agent\CandidateController;
 use App\Http\Controllers\Candidate\AgentController;
 use App\Http\Controllers\ARODashboardController;
 use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\AdminStatisticsController;
+use App\Providers\RouteServiceProvider;
 
 Route::get('/', function () {
     return view('welcome');
@@ -115,7 +115,7 @@ Route::middleware(['auth', 'role:administrator|alumni-relations-officer'])->grou
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        return RouteServiceProvider::redirectToHome();
     })->name('dashboard');
 
     // Profile routes

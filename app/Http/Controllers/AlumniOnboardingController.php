@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Providers\RouteServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -38,8 +38,8 @@ class AlumniOnboardingController extends Controller
             $user = Auth::user();
             
             // Check if user is an alumni
-            if (!$user->hasRole('alumni')) {
-                return redirect()->route('dashboard');
+            if (!$user->hasRole('alumni') && !$user->alumni) {
+                return RouteServiceProvider::redirectToHome();
             }
 
             // Check if password needs to be updated (first login)

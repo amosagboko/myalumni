@@ -29,39 +29,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $user = Auth::user();
-
-        // If user is an admin, redirect to admin dashboard
-        if ($user->hasRole('administrator')) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        // If user is an ELCOM chairman, redirect to ELCOM chairman dashboard
-        if ($user->hasRole('elcom-chairman')) {
-            return redirect()->route('elcom-chairman.dashboard');
-        }
-
-        // If user is an ARO, redirect to ARO dashboard
-        if ($user->hasRole('alumni-relations-officer')) {
-            return redirect()->route('alumni-relations-officer.home');
-        }
-
-        // If user is Student Affairs, redirect to SA dashboard
-        if ($user->hasRole('student-affairs')) {
-            return redirect()->route('student-affairs.home');
-        }
-
-        // If user is Academic Affairs, redirect to AA dashboard
-        if ($user->hasRole('academic-affairs')) {
-            return redirect()->route('academic-affairs.home');
-        }
-
-        // For alumni, redirect to alumni home
-        if ($user->hasRole('alumni')) {
-            return redirect()->route('alumni.home');
-        }
-
-        return redirect()->intended(route(RouteServiceProvider::getHomeRoute()));
+        return RouteServiceProvider::redirectToHome();
     }
 
     /**

@@ -20,49 +20,68 @@ class RouteServiceProvider extends ServiceProvider
     public const HOME = 'dashboard';
 
     /**
-     * Get the appropriate home route based on user role.
+     * Resolve the named route for the authenticated user's home/dashboard.
      */
     public static function getHomeRoute(): string
     {
         if (!auth()->check()) {
-            return self::HOME;
+            return 'login';
         }
 
         $user = auth()->user();
-        
-        // Administrator
+
         if ($user->hasRole('administrator')) {
             return 'admin.dashboard';
         }
-        
-        // ELCOM Chairman
+
         if ($user->hasRole('elcom-chairman')) {
             return 'elcom-chairman.dashboard';
         }
-        
-        // ELCOM Member
+
         if ($user->hasRole('elcom')) {
             return 'elcom.elections.index';
         }
-        
-        // Alumni Relations Officer
+
         if ($user->hasRole('alumni-relations-officer')) {
             return 'alumni-relations-officer.home';
         }
-        
-        // Alumni Agent
+
+        if ($user->hasRole('student-affairs')) {
+            return 'student-affairs.home';
+        }
+
+        if ($user->hasRole('academic-affairs')) {
+            return 'academic-affairs.home';
+        }
+
         if ($user->hasRole('alumni-agent')) {
             return 'agent.dashboard';
         }
-        
-        // Alumni
+
         if ($user->hasRole('alumni')) {
             return 'alumni.home';
         }
-        
-        // If user has no role or unknown role, redirect to login
-        // This prevents the fallback to non-existent dashboard
+
+        // Legacy accounts: linked alumni record but missing Spatie role assignment.
+        if ($user->alumni) {
+            return 'alumni.home';
+        }
+
         return 'login';
+    }
+
+    /**
+     * Redirect authenticated users to the correct home after login or legacy /dashboard visits.
+     */
+    public static function redirectToHome(): \Illuminate\Http\RedirectResponse
+    {
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('alumni') && $user->is_first_login) {
+            return redirect()->route('alumni.onboarding');
+        }
+
+        return redirect()->intended(route(self::getHomeRoute(), absolute: false));
     }
 
     /**
