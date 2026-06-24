@@ -49,6 +49,7 @@
                                         $statusBadge = match($election->status) {
                                             'draft' => 'secondary',
                                             'eoi' => 'warning',
+                                            'eoi_closed' => 'secondary',
                                             'accreditation' => 'info',
                                             'voting' => 'primary',
                                             'completed' => 'success',
@@ -204,17 +205,17 @@
                                                     Not set
                                                 @endif
                                             </p>
-                                            @if($election->isEoiPeriodActive())
+                                            @if($election->canAcceptEoiSubmissions())
                                                 <span class="badge bg-success">Active</span>
-                                            @elseif($election->hasEoiEnded())
-                                                <span class="badge bg-secondary">Ended</span>
+                                            @elseif($election->status === 'eoi_closed' || $election->hasEoiEnded())
+                                                <span class="badge bg-secondary">Closed</span>
                                             @else
                                                 <span class="badge bg-warning">Not Started</span>
                                             @endif
 
                                             @if(auth()->user()->hasRole(['administrator', 'elcom-chair']))
                                                 <div class="mt-2">
-                                                    @if(!$election->hasEoiStarted() && $election->canStartEoi())
+                                                    @if($election->canStartEoi())
                                                         <form action="{{ route('elcom.elections.start-eoi', $election) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="btn btn-sm btn-success">
@@ -297,7 +298,7 @@
                                                 </form>
                                             @endif
 
-                                            @if($election->status === 'accreditation' && $election->isAccreditationPeriodActive() && $election->canEndAccreditation())
+                                            @if($election->canEndAccreditation())
                                                 <form action="{{ route('elcom.elections.end-accreditation', $election) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-sm btn-warning">

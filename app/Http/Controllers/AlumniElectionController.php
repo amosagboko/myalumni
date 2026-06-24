@@ -106,7 +106,7 @@ class AlumniElectionController extends Controller
         
         // Calculate time remaining
         $timeRemaining = null;
-        if ($election->status === 'voting' && now()->between($election->voting_start, $election->voting_end)) {
+        if ($election->canAcceptVoteSubmissions()) {
             $timeRemaining = $election->voting_end->diffForHumans(['parts' => 2]);
         }
         
@@ -173,7 +173,7 @@ class AlumniElectionController extends Controller
         $alumni = Auth::user()->alumni;
 
         // Check if EOI period is active
-        if (!$election->isEoiPeriodActive()) {
+        if (!$election->canAcceptEoiSubmissions()) {
             if ($election->hasEoiEnded()) {
                 return redirect()
                     ->route('alumni.elections')
@@ -232,6 +232,12 @@ class AlumniElectionController extends Controller
     {
         if ($redirect = $this->redirectIfArchived($election)) {
             return $redirect;
+        }
+
+        if (!$election->canAcceptEoiSubmissions()) {
+            return redirect()
+                ->route('alumni.elections')
+                ->with('error', 'The Expression of Interest period is not open for submissions.');
         }
 
         $alumni = Auth::user()->alumni;
@@ -311,6 +317,13 @@ class AlumniElectionController extends Controller
     {
         if ($redirect = $this->redirectIfArchived($election)) {
             return $redirect;
+        }
+
+        if (!$election->canAcceptEoiSubmissions()) {
+            session()->forget('eoi_preview');
+            return redirect()
+                ->route('alumni.elections')
+                ->with('error', 'The Expression of Interest period is not open for submissions.');
         }
 
         $alumni = Auth::user()->alumni;
@@ -510,7 +523,9 @@ class AlumniElectionController extends Controller
 
         // If no EOI found, redirect to EOI form for the current election/office if possible
         // Try to find an active election and office for EOI
-        $activeElection = \App\Models\Election::where('status', 'eoi')->orderBy('accreditation_start', 'desc')->first();
+        $activeElection = \App\Models\Election::whereIn('status', ['eoi', 'eoi_closed'])
+            ->orderBy('accreditation_start', 'desc')
+            ->first();
         if ($activeElection) {
             $office = $activeElection->offices()->first();
             if ($office) {
@@ -544,8 +559,7 @@ class AlumniElectionController extends Controller
         $alumni = Auth::user()->alumni;
 
         // Check if accreditation period is active
-        if (!$election->status === 'accreditation' || 
-            !now()->between($election->accreditation_start, $election->accreditation_end)) {
+        if (!$election->canAcceptAccreditationSubmissions()) {
             return back()->with('error', 'Accreditation period is not active.');
         }
 
@@ -608,8 +622,7 @@ class AlumniElectionController extends Controller
         $alumni = Auth::user()->alumni;
 
         // Check if voting period is active
-        if (!$election->status === 'voting' || 
-            !now()->between($election->voting_start, $election->voting_end)) {
+        if (!$election->canAcceptVoteSubmissions()) {
             return back()->with('error', 'Voting period is not active.');
         }
 
@@ -678,8 +691,7 @@ class AlumniElectionController extends Controller
         $alumni = Auth::user()->alumni;
 
         // Check if voting period is active
-        if (!$election->status === 'voting' || 
-            !now()->between($election->voting_start, $election->voting_end)) {
+        if (!$election->canAcceptVoteSubmissions()) {
             return back()->with('error', 'Voting period is not active.');
         }
 

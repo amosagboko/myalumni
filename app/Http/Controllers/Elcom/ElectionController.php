@@ -359,6 +359,20 @@ class ElectionController extends Controller
     }
 
     /**
+     * End the accreditation period early.
+     */
+    public function endAccreditation(Election $election)
+    {
+        $this->cycleService->assertMutable($election);
+
+        if (!$election->endAccreditation()) {
+            return back()->with('error', 'Cannot end accreditation at this time.');
+        }
+
+        return back()->with('success', 'Accreditation period has been closed.');
+    }
+
+    /**
      * Start the voting period for the election.
      */
     public function startVoting(Election $election)
@@ -490,7 +504,7 @@ class ElectionController extends Controller
     {
         $this->cycleService->assertMutable($election);
 
-        if (!in_array($election->status, ['draft', 'eoi', 'accreditation'])) {
+        if (!in_array($election->status, ['draft', 'eoi', 'eoi_closed', 'accreditation'])) {
             return back()->with('error', 'Candidates can only be screened during draft, EOI, or accreditation.');
         }
 

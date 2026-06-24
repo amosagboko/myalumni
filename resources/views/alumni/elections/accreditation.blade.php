@@ -13,12 +13,9 @@
                         $alumni = auth()->user()->alumni;
                         $isEligible = $election->isAlumniEligibleToVote($alumni);
                         $isAccredited = $election->accreditedVoters()->where('alumni_id', $alumni->id)->exists();
-                        $accreditationPeriodActive = $election->status === 'accreditation' && 
-                            now()->between($election->accreditation_start, $election->accreditation_end);
-                        $accreditationEnded = $election->status === 'accreditation' && 
-                            now()->greaterThan($election->accreditation_end);
-                        $accreditationNotStarted = $election->status === 'accreditation' && 
-                            now()->lessThan($election->accreditation_start);
+                        $accreditationPeriodActive = $election->canAcceptAccreditationSubmissions();
+                        $accreditationEnded = $election->status === 'accreditation' && $election->hasAccreditationEnded();
+                        $accreditationNotStarted = $election->status === 'accreditation' && !$election->hasAccreditationStarted();
                     @endphp
 
                     <!-- Accreditation Period Status -->

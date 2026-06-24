@@ -40,7 +40,7 @@ class AlumniElectionParticipationService
             return 'Completed';
         }
 
-        if ($election->isEoiPeriodActive()) {
+        if ($election->canAcceptEoiSubmissions()) {
             return 'Expression of Interest';
         }
 
@@ -48,7 +48,11 @@ class AlumniElectionParticipationService
             return 'EOI scheduled';
         }
 
-        if ($election->isAccreditationPeriodActive()) {
+        if ($election->status === 'eoi_closed') {
+            return 'EOI closed';
+        }
+
+        if ($election->canAcceptAccreditationSubmissions()) {
             return 'Accreditation';
         }
 
@@ -56,7 +60,7 @@ class AlumniElectionParticipationService
             return 'Accreditation scheduled';
         }
 
-        if ($election->isVotingPeriodActive()) {
+        if ($election->canAcceptVoteSubmissions()) {
             return 'Voting';
         }
 
@@ -80,21 +84,21 @@ class AlumniElectionParticipationService
             ];
         }
 
-        $canAccredit = $election->isAccreditationPeriodActive()
+        $canAccredit = $election->canAcceptAccreditationSubmissions()
             && !$participation['is_accredited']
             && $election->isAlumniEligibleToVote($alumni);
 
-        $canVote = $election->isVotingPeriodActive()
+        $canVote = $election->canAcceptVoteSubmissions()
             && $participation['is_accredited']
             && !$participation['has_voted'];
 
         return [
             'view_results' => false,
             'view_candidates' => true,
-            'express_interest' => $election->isEoiPeriodActive(),
+            'express_interest' => $election->canAcceptEoiSubmissions(),
             'accredit' => $canAccredit,
             'vote' => $canVote,
-            'live_results' => $election->status === 'voting' && $election->isVotingPeriodActive(),
+            'live_results' => $election->canAcceptVoteSubmissions(),
             'view_accreditation_status' => $election->status === 'accreditation'
                 || $participation['is_accredited'],
             'view_vote_page' => $election->status === 'voting'

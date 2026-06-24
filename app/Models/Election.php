@@ -162,25 +162,26 @@ class Election extends Model
     // Methods
     public function canStartAccreditation(): bool
     {
-        // Can start accreditation if:
-        // 1. Status is 'draft' OR (status is 'eoi' AND EOI has ended)
-        // 2. Accreditation time has started
-        // 3. Accreditation period hasn't ended
-        $validStatus = $this->status === 'draft' || ($this->status === 'eoi' && $this->hasEoiEnded());
-        return $validStatus && $this->hasAccreditationStarted() && !$this->hasAccreditationEnded();
+        $validStatus = in_array($this->status, ['draft', 'eoi_closed'], true)
+            || ($this->status === 'eoi' && $this->hasEoiEnded());
+
+        return $validStatus
+            && $this->hasAccreditationStarted()
+            && !$this->hasAccreditationEnded();
     }
 
     public function canEndAccreditation(): bool
     {
-        return $this->status === 'accreditation' && 
-               $this->hasAccreditationStarted() && 
-               !$this->hasAccreditationEnded() &&
-               now() >= $this->accreditation_end;
+        return $this->status === 'accreditation'
+            && $this->hasAccreditationStarted()
+            && $this->isAccreditationPeriodActive();
     }
 
     public function canStartVoting(): bool
     {
-        return $this->status === 'accreditation' && now() >= $this->voting_start;
+        return $this->status === 'accreditation'
+            && $this->hasVotingStarted()
+            && !$this->isAccreditationPeriodActive();
     }
 
     public function canEndVoting(): bool
@@ -335,10 +336,10 @@ class Election extends Model
      */
     public function canStartEoi(): bool
     {
-        return $this->status === 'draft' && 
-               $this->eoi_start && 
-               $this->eoi_end && 
-               !$this->hasEoiStarted();
+        return $this->status === 'draft'
+            && $this->eoi_start
+            && $this->eoi_end
+            && !$this->hasEoiEnded();
     }
 
     /**
@@ -373,7 +374,7 @@ class Election extends Model
             return false;
         }
 
-        $this->update(['status' => 'draft']);
+        $this->update(['status' => 'eoi_closed']);
         return true;
     }
 
@@ -556,6 +557,44 @@ class Election extends Model
     public function hasVotingEnded(): bool
     {
         return $this->voting_end && now()->greaterThan($this->voting_end);
+    }
+
+    /**
+     * Alumni may submit EOI only when ELCOM has opened EOI and the calendar window is active.
+     */
+    public function canAcceptEoiSubmissions(): bool
+    {
+        return $this->status === 'eoi' && $this->isEoiPeriodActive();
+    }
+
+    /**
+     * Alumni may accredit only when accreditation is the active phase and within its window.
+     */
+    public function canAcceptAccreditationSubmissions(): bool
+    {
+        return $this->status === 'accreditation' && $this->isAccreditationPeriodActive();
+    }
+
+    /**
+     * Alumni may vote only when voting is the active phase and within its window.
+     */
+    public function canAcceptVoteSubmissions(): bool
+    {
+        return $this->status === 'voting' && $this->isVotingPeriodActive();
+    }
+
+    /**
+     * Close the accreditation window early (status remains accreditation until voting starts).
+     */
+    public function endAccreditation(): bool
+    {
+        if (!$this->canEndAccreditation()) {
+            return false;
+        }
+
+        $this->update(['accreditation_end' => now()->subSecond()]);
+
+        return true;
     }
 
     /**

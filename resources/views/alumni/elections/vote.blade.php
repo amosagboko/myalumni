@@ -61,8 +61,7 @@
                             ->where('alumni_id', $alumni->id)
                             ->where('has_voted', true)
                             ->exists();
-                        $votingPeriodActive = $election->status === 'voting' && 
-                            now()->between($election->voting_start, $election->voting_end);
+                        $votingPeriodActive = $election->canAcceptVoteSubmissions();
                     @endphp
 
                     <!-- Voting Period Status -->

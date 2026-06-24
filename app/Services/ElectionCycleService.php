@@ -30,7 +30,7 @@ class ElectionCycleService
     {
         $conflicting = Election::operational()
             ->where('id', '!=', $election->id)
-            ->whereIn('status', ['eoi', 'accreditation', 'voting'])
+            ->whereIn('status', ['eoi', 'eoi_closed', 'accreditation', 'voting'])
             ->exists();
 
         if ($conflicting) {

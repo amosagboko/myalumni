@@ -74,6 +74,7 @@
                                                 $badge = match($election->status) {
                                                     'draft' => 'secondary',
                                                     'eoi' => 'warning',
+                                                    'eoi_closed' => 'secondary',
                                                     'accreditation' => 'info',
                                                     'voting' => 'primary',
                                                     'completed' => 'success',

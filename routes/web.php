@@ -337,6 +337,8 @@ Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('
     // Election Process Routes
     Route::post('/elections/{election}/start-accreditation', [ElectionController::class, 'startAccreditation'])
         ->name('elections.start-accreditation');
+    Route::post('/elections/{election}/end-accreditation', [ElectionController::class, 'endAccreditation'])
+        ->name('elections.end-accreditation');
     Route::post('/elections/{election}/start-voting', [ElectionController::class, 'startVoting'])
         ->name('elections.start-voting');
     Route::post('/elections/{election}/end-voting', [ElectionController::class, 'endVoting'])
