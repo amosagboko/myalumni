@@ -185,7 +185,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-white d-flex align-items-center justify-content-between gap-10">
                     <h3 class="card-title mb-0 h4 h-md-3">Past Elections</h3>
-                    @if($pastElections->count() === 1)
+                    @if($pastElections->total() === 1)
                         @php $solePastElection = $pastElections->first(); @endphp
                         <span class="badge fs-6 flex-shrink-0 {{ $solePastElection->isArchived() ? 'bg-secondary' : 'bg-success' }}">
                             {{ $solePastElection->isArchived() ? 'Archived' : 'Completed' }}
@@ -223,6 +223,10 @@
                                     </div>
                                 </div>
                             @endforeach
+                        </div>
+
+                        <div class="d-flex justify-content-center mt-3">
+                            {{ $pastElections->links('pagination::bootstrap-5') }}
                         </div>
                     @endif
                 </div>

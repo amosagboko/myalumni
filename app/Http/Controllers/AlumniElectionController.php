@@ -52,7 +52,8 @@ class AlumniElectionController extends Controller
             ->with('offices')
             ->orderByDesc('election_year')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $participation = null;
         $phaseLabel = null;
