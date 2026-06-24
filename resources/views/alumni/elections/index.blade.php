@@ -183,7 +183,7 @@
 
             {{-- Past elections --}}
             <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                <div class="card-header bg-white d-flex align-items-center gap-2 flex-wrap">
                     <h3 class="card-title mb-0 h4 h-md-3">Past Elections</h3>
                     @if($pastElections->count() === 1)
                         @php $solePastElection = $pastElections->first(); @endphp
