@@ -15,6 +15,34 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label for="election_year" class="form-label">Election Year</label>
+                                    <input type="number"
+                                        class="form-control @error('election_year') is-invalid @enderror"
+                                        id="election_year"
+                                        name="election_year"
+                                        value="{{ old('election_year', date('Y')) }}"
+                                        min="2000"
+                                        max="2100"
+                                        required>
+                                    @error('election_year')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="cycle_label" class="form-label">Cycle Label (optional)</label>
+                                    <input type="text"
+                                        class="form-control @error('cycle_label') is-invalid @enderror"
+                                        id="cycle_label"
+                                        name="cycle_label"
+                                        value="{{ old('cycle_label') }}"
+                                        placeholder="e.g. 2025 Alumni Elections">
+                                    @error('cycle_label')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="mb-3">
                                     <label for="title" class="form-label">Election Title</label>
                                     <input type="text" 
                                         class="form-control @error('title') is-invalid @enderror" 

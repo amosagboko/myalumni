@@ -371,11 +371,11 @@ class Alumni extends Model
     }
 
     /**
-     * Get the candidates where this alumni is the approved agent.
+     * Get candidates where this alumni's user account is the approved agent.
      */
     public function approvedAgentCandidates(): HasMany
     {
-        return $this->hasMany(Candidate::class, 'approved_agent_id');
+        return $this->hasMany(Candidate::class, 'approved_agent_id', 'user_id');
     }
 }
 

@@ -1,10 +1,6 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="main-content bg-lightblue theme-dark-bg right-chat-active">
-    <div class="middle-sidebar-bottom">
-        <div class="middle-sidebar-left">
-            <div class="middle-wrap">
                 <!-- Status Badges Row -->
                 @php
                     $alumni = Auth::user()->alumni;
@@ -84,10 +80,6 @@
                         <livewire:returnpost />
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Onboarding Modal -->
 @if(Auth::user()->hasRole('alumni'))

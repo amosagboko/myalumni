@@ -15,31 +15,62 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use Spatie\Activitylog\Facades\Activity;
 use App\Models\FeeTemplate;
+use App\Services\AlumniElectionParticipationService;
 
 class AlumniElectionController extends Controller
 {
+    public function __construct(
+        private AlumniElectionParticipationService $participationService
+    ) {}
+
+    private function redirectIfArchived(Election $election)
+    {
+        if ($election->isArchived()) {
+            return redirect()
+                ->route('alumni.elections.results', $election)
+                ->with('info', 'This election has been archived. You can view historical results only.');
+        }
+
+        return null;
+    }
+
     /**
      * Show a list of elections the alumni is eligible for.
      */
     public function index()
     {
         $alumni = Auth::user()->alumni;
-        $now = now();
-        $elections = Election::where('status', '!=', 'draft')
-            ->where(function($query) use ($now) {
-                // Show elections that are in EOI period
-                $query->where('status', 'eoi')
-                    // OR elections between accreditation_start and voting_end
-                    ->orWhere(function($q) use ($now) {
-                        $q->where('accreditation_start', '<=', $now)
-                          ->where('voting_end', '>=', $now);
-                    })
-                    // OR completed elections (so alumni can view results)
-                    ->orWhere('status', 'completed');
-            })
-            ->orderBy('accreditation_start', 'desc')
+
+        $currentElection = Election::query()
+            ->where('is_active', true)
+            ->operational()
+            ->with('offices')
+            ->first();
+
+        $pastElections = Election::query()
+            ->historical()
+            ->with('offices')
+            ->orderByDesc('election_year')
+            ->orderByDesc('id')
             ->get();
-        return view('alumni.elections.index', compact('elections'));
+
+        $participation = null;
+        $phaseLabel = null;
+        $actions = null;
+
+        if ($currentElection && $alumni) {
+            $participation = $this->participationService->participationFor($currentElection, $alumni);
+            $phaseLabel = $this->participationService->phaseLabel($currentElection);
+            $actions = $this->participationService->actionsFor($currentElection, $alumni, $participation);
+        }
+
+        return view('alumni.elections.index', compact(
+            'currentElection',
+            'pastElections',
+            'participation',
+            'phaseLabel',
+            'actions'
+        ));
     }
 
     /**
@@ -47,7 +78,10 @@ class AlumniElectionController extends Controller
      */
     public function accreditation(Election $election)
     {
-        // Show accreditation form or status for this election
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         return view('alumni.elections.accreditation', compact('election'));
     }
 
@@ -56,6 +90,10 @@ class AlumniElectionController extends Controller
      */
     public function vote(Election $election)
     {
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         // Show voting form for this election - ONLY approved candidates
         $offices = $election->offices()->with(['candidates' => function($query) {
             $query->where('status', 'approved'); // Only approved candidates appear on ballot
@@ -80,7 +118,7 @@ class AlumniElectionController extends Controller
     public function results(Election $election)
     {
         // Only show results if election is completed
-        if ($election->status !== 'completed') {
+        if (!in_array($election->status, ['completed', 'archived'])) {
             return redirect()
                 ->route('alumni.elections')
                 ->with('error', 'Election results are not yet available. Results will be published after the election is completed.');
@@ -127,6 +165,10 @@ class AlumniElectionController extends Controller
      */
     public function expressionOfInterestForm(Election $election, ElectionOffice $office)
     {
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         $alumni = Auth::user()->alumni;
 
         // Check if EOI period is active
@@ -187,6 +229,10 @@ class AlumniElectionController extends Controller
      */
     public function previewExpressionOfInterest(Request $request, Election $election, ElectionOffice $office)
     {
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         $alumni = Auth::user()->alumni;
 
         // Validate eligibility
@@ -262,6 +308,10 @@ class AlumniElectionController extends Controller
      */
     public function submitExpressionOfInterest(Request $request, Election $election, ElectionOffice $office)
     {
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         $alumni = Auth::user()->alumni;
 
         // First check if they already have an expression of interest
@@ -486,6 +536,10 @@ class AlumniElectionController extends Controller
      */
     public function submitAccreditation(Request $request, Election $election)
     {
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         $alumni = Auth::user()->alumni;
 
         // Check if accreditation period is active
@@ -546,6 +600,10 @@ class AlumniElectionController extends Controller
      */
     public function previewVote(Request $request, Election $election)
     {
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         $alumni = Auth::user()->alumni;
 
         // Check if voting period is active
@@ -612,6 +670,10 @@ class AlumniElectionController extends Controller
      */
     public function submitVote(Request $request, Election $election)
     {
+        if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
         $alumni = Auth::user()->alumni;
 
         // Check if voting period is active

@@ -66,11 +66,18 @@ class Candidate extends Model
     }
 
     /**
-     * Get the approved agent for the candidate.
+     * Get the approved agent user for the candidate.
+     * approved_agent_id always references users.id.
      */
-    public function approvedAgent()
+    public function approvedAgent(): BelongsTo
     {
-        return $this->belongsTo(Alumni::class, 'approved_agent_id');
+        return $this->belongsTo(User::class, 'approved_agent_id');
+    }
+
+    public function isApprovedAgent(User $user): bool
+    {
+        return $this->approved_agent_id !== null
+            && (int) $this->approved_agent_id === (int) $user->id;
     }
 
     public function votes(): HasMany

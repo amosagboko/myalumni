@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Election;
+use App\Policies\ElectionPolicy;
+use App\Policies\CandidatePolicy;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -20,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFive();
+
+        Gate::policy(Election::class, ElectionPolicy::class);
+        Gate::policy(\App\Models\Candidate::class, CandidatePolicy::class);
+
         // Register Livewire components
         Livewire::component('admin.manage-users', \App\Livewire\Admin\ManageUsers::class);
         Livewire::component('admin.dashboard', \App\Livewire\Admin\Dashboard::class);

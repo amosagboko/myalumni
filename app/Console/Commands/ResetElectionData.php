@@ -13,6 +13,11 @@ class ResetElectionData extends Command
 
     public function handle()
     {
+        if (!app()->environment('local')) {
+            $this->error('election:reset is only available in the local environment.');
+            return 1;
+        }
+
         if (!$this->confirm('This will reset all election data. Are you sure you want to continue?')) {
             $this->info('Operation cancelled.');
             return 0;
@@ -28,6 +33,9 @@ class ResetElectionData extends Command
             // Reset election statuses
             DB::table('elections')->update([
                 'status' => 'draft',
+                'is_active' => false,
+                'archived_at' => null,
+                'archived_by' => null,
                 'updated_at' => now()
             ]);
 

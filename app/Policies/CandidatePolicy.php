@@ -25,9 +25,9 @@ class CandidatePolicy
             return $candidate->alumni_id === $user->alumni->id;
         }
 
-        // For alumni agents, only allow if they are the approved agent
+        // For alumni agents, only allow if they are the approved agent (users.id)
         if ($user->hasRole('alumni-agent')) {
-            return $candidate->approved_agent_id === $user->alumni->id;
+            return $candidate->isApprovedAgent($user);
         }
 
         return false;

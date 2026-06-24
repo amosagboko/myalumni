@@ -13,6 +13,21 @@
                     <p class="text-muted mb-0 small">Final results declared on {{ $election->results->first()?->declared_at?->format('M d, Y h:i A') ?? 'N/A' }}</p>
                 </div>
                 <div class="card-body">
+                    @if(session('info'))
+                        <div class="alert alert-info">{{ session('info') }}</div>
+                    @endif
+
+                    @if($election->isArchived())
+                        <div class="alert alert-secondary mb-4">
+                            <i class="bi bi-archive me-2"></i>
+                            <strong>Archived election</strong>
+                            @if($election->archived_at)
+                                — archived on {{ $election->archived_at->format('M d, Y') }}.
+                            @endif
+                            Results are read-only historical records.
+                        </div>
+                    @endif
+
                     <!-- Election Statistics -->
                     <div class="row g-3 mb-4">
                         <div class="col-6 col-md-3">
@@ -238,6 +253,14 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{{ route('alumni.elections') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            <span class="d-none d-sm-inline">Back to Elections</span>
+                            <span class="d-inline d-sm-none">Back</span>
+                        </a>
                     </div>
                 </div>
             </div>

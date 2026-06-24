@@ -1,7 +1,13 @@
 <div wire:poll.30s="updateResults">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Real-Time Election Results</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('elcom.elections.basic-results', $election) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Basic Results
+            </a>
+            <h1 class="h3 mb-0">Real-Time Election Results</h1>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <a href="{{ route('elcom.elections.print-full-results', $election) }}" 
                 class="btn btn-outline-primary btn-sm" 
                 target="_blank"

@@ -242,7 +242,11 @@ class BackupRestoreService
                 Artisan::call('up');
             }
 
-            if (File::exists($sourcePath) && str_contains($sourcePath, 'backup-restore-uploads')) {
+            if (
+                File::exists($sourcePath)
+                && str_contains($sourcePath, 'backup-restore-uploads')
+                && preg_match('/^restore_[a-f0-9-]+\.(zip|sql)$/i', basename($sourcePath))
+            ) {
                 File::delete($sourcePath);
             }
         }
@@ -263,7 +267,7 @@ class BackupRestoreService
             return;
         }
 
-        $this->importSqlViaPhp($sqlPath);
+        $this->importSqlViaPhp($this->prepareSqlDumpForLocalImport($sqlPath));
     }
 
     public function getProgress(string $type, string $operationId): ?array
@@ -415,8 +419,11 @@ class BackupRestoreService
 
     protected function importSqlViaMysqlCli(string $sqlPath, array $config): void
     {
+        $mysql = $this->resolveMysqlBinary();
+        $importPath = $this->prepareSqlDumpForLocalImport($sqlPath);
+
         $command = [
-            'mysql',
+            $mysql,
             '-h', $config['host'],
             '-P', (string) ($config['port'] ?? 3306),
             '-u', $config['username'],
@@ -430,12 +437,68 @@ class BackupRestoreService
             $process->setEnv(array_merge($_ENV, ['MYSQL_PWD' => $config['password']]));
         }
 
-        $process->setInput(file_get_contents($sqlPath));
-        $process->run();
+        try {
+            $process->setInput(file_get_contents($importPath));
+            $process->run();
 
-        if (! $process->isSuccessful()) {
-            throw new \RuntimeException('MySQL import failed: '.$process->getErrorOutput());
+            if (! $process->isSuccessful()) {
+                throw new \RuntimeException('MySQL import failed: '.$process->getErrorOutput());
+            }
+        } finally {
+            if ($importPath !== $sqlPath && File::exists($importPath)) {
+                File::delete($importPath);
+            }
         }
+    }
+
+    protected function prepareSqlDumpForLocalImport(string $sqlPath): string
+    {
+        $input = fopen($sqlPath, 'r');
+        if ($input === false) {
+            throw new \RuntimeException('Unable to read SQL file.');
+        }
+
+        $sanitizedPath = storage_path('app/backup-temp/sanitized-'.Str::uuid().'.sql');
+
+        if (! File::isDirectory(dirname($sanitizedPath))) {
+            File::makeDirectory(dirname($sanitizedPath), 0755, true);
+        }
+
+        $output = fopen($sanitizedPath, 'w');
+        if ($output === false) {
+            fclose($input);
+            throw new \RuntimeException('Unable to create sanitized SQL file.');
+        }
+
+        fwrite($output, "SET FOREIGN_KEY_CHECKS=0;\nSET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n");
+
+        while (($line = fgets($input)) !== false) {
+            fwrite($output, $this->stripDefinerClauses($line));
+        }
+
+        fwrite($output, "SET FOREIGN_KEY_CHECKS=1;\n");
+
+        fclose($input);
+        fclose($output);
+
+        return $sanitizedPath;
+    }
+
+    protected function stripDefinerClauses(string $line): string
+    {
+        $line = preg_replace(
+            '/\/\*!50013\s+DEFINER\s*=\s*[^*]+SQL SECURITY DEFINER\s*\*\//i',
+            '',
+            $line
+        ) ?? $line;
+
+        $line = preg_replace(
+            '/\s*DEFINER\s*=\s*(?:`[^`]+`|\'[^\']+\')@(?:`[^`]+`|\'[^\']+\')/i',
+            '',
+            $line
+        ) ?? $line;
+
+        return $line;
     }
 
     protected function importSqlViaPhp(string $sqlPath): void
@@ -486,10 +549,34 @@ class BackupRestoreService
 
     protected function mysqlCliIsAvailable(): bool
     {
+        $mysql = $this->resolveMysqlBinary();
+
+        if ($mysql !== 'mysql' && is_file($mysql)) {
+            return true;
+        }
+
         $process = new Process(['mysql', '--version']);
         $process->run();
 
         return $process->isSuccessful();
+    }
+
+    protected function resolveMysqlBinary(): string
+    {
+        $configured = env('MYSQL_BINARY');
+        if ($configured && is_file($configured)) {
+            return $configured;
+        }
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            foreach (glob('C:\\Program Files\\MySQL\\MySQL Server *\\bin\\mysql.exe') ?: [] as $path) {
+                if (is_file($path)) {
+                    return $path;
+                }
+            }
+        }
+
+        return 'mysql';
     }
 
     protected function resolveBackup(string $disk, string $path): Backup

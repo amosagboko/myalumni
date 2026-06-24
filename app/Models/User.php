@@ -131,6 +131,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Alumni::class);
     }
 
+    public function approvedAgentCandidates(): HasMany
+    {
+        return $this->hasMany(Candidate::class, 'approved_agent_id');
+    }
+
 
 
     

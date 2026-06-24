@@ -309,6 +309,8 @@ Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('
     Route::get('/elections', [ElectionController::class, 'index'])->name('elections.index');
     Route::get('/elections/create', [ElectionController::class, 'create'])->name('elections.create');
     Route::post('/elections', [ElectionController::class, 'store'])->name('elections.store');
+    Route::get('/elections/new-cycle', [ElectionController::class, 'newCycle'])->name('elections.new-cycle');
+    Route::post('/elections/new-cycle', [ElectionController::class, 'storeNewCycle'])->name('elections.new-cycle.store');
     Route::get('/elections/{election}', [ElectionController::class, 'show'])->name('elections.show');
     Route::get('/elections/{election}/edit', [ElectionController::class, 'edit'])->name('elections.edit');
     Route::put('/elections/{election}', [ElectionController::class, 'update'])->name('elections.update');
@@ -362,6 +364,14 @@ Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('
         ->name('elections.print-winners');
     Route::get('/elections/{election}/print-certificates', [ElectionController::class, 'printCertificates'])
         ->name('elections.print-certificates');
+
+    // Archive & cycle management
+    Route::post('/elections/{election}/archive', [ElectionController::class, 'archive'])->name('elections.archive');
+
+    // Rejected candidates report
+    Route::get('/elections/{election}/rejected-candidates', [ElectionController::class, 'rejectedCandidates'])->name('elections.rejected-candidates');
+    Route::get('/elections/{election}/rejected-candidates/print', [ElectionController::class, 'printRejectedCandidates'])->name('elections.rejected-candidates.print');
+    Route::get('/elections/{election}/rejected-candidates/export', [ElectionController::class, 'exportRejectedCandidates'])->name('elections.rejected-candidates.export');
     
     // Certificate Verification Route
     Route::get('/verify-certificate/{election}/{office}/{winner}/{code}', [ElectionController::class, 'verifyCertificate'])

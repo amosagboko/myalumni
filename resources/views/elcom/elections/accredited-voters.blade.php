@@ -63,11 +63,11 @@
                             <tbody>
                                 @forelse($accreditedVoters as $voter)
                                     <tr>
-                                        <td>{{ $voter->alumni->user->name }}</td>
-                                        <td>{{ $voter->alumni->matriculation_id }}</td>
-                                        <td>{{ $voter->alumni->qualification_type }} - {{ $voter->alumni->qualification_details }}</td>
-                                        <td>{{ $voter->alumni->year_of_graduation }}</td>
-                                        <td>{{ $voter->accredited_at->format('M d, Y h:i A') }}</td>
+                                        <td>{{ $voter->alumni->user->name ?? 'N/A' }}</td>
+                                        <td>{{ $voter->alumni->matric_number ?? 'N/A' }}</td>
+                                        <td>{{ $voter->alumni?->qualification_type ?? 'N/A' }}@if($voter->alumni?->qualification_details) - {{ $voter->alumni->qualification_details }}@endif</td>
+                                        <td>{{ $voter->alumni?->year_of_graduation ?? 'N/A' }}</td>
+                                        <td>{{ $voter->accredited_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
                                         <td>
                                             @if($voter->has_voted)
                                                 <span class="badge bg-success">Voted</span>
@@ -89,7 +89,7 @@
                     </div>
 
                     <div class="d-flex justify-content-center mt-4">
-                        {{ $accreditedVoters->links() }}
+                        {{ $accreditedVoters->withQueryString()->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>

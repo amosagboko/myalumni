@@ -45,32 +45,66 @@
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <h6 class="card-subtitle mb-2">Status</h6>
-                                    <span class="badge bg-{{ $election->status === 'draft' ? 'secondary' : 
-                                        ($election->status === 'accreditation' ? 'info' : 
-                                        ($election->status === 'voting' ? 'primary' : 
-                                        ($election->status === 'completed' ? 'success' : 'danger'))) }}">
-                                        {{ ucfirst($election->status) }}
-                                    </span>
+                                    @php
+                                        $statusBadge = match($election->status) {
+                                            'draft' => 'secondary',
+                                            'eoi' => 'warning',
+                                            'accreditation' => 'info',
+                                            'voting' => 'primary',
+                                            'completed' => 'success',
+                                            'archived' => 'dark',
+                                            default => 'danger',
+                                        };
+                                    @endphp
+                                    <span class="badge bg-{{ $statusBadge }}">{{ ucfirst($election->status) }}</span>
+                                    @if($election->is_active)
+                                        <span class="badge bg-success ms-1">Active Cycle</span>
+                                    @endif
+                                    @if($election->election_year)
+                                        <div class="mt-2 small text-muted">Election year: {{ $election->election_year }}</div>
+                                    @endif
+                                    @if($election->isArchived() && $election->archived_at)
+                                        <div class="mt-2 small text-muted">Archived {{ $election->archived_at->format('M d, Y') }}</div>
+                                    @endif
 
                                     <h6 class="card-subtitle mb-2 mt-3">Statistics</h6>
                                     <ul class="list-unstyled">
                                         <li>Total Offices: {{ $election->offices->count() }}</li>
                                         <li>Total EOI: {{ $election->getPaidEoiApplicationsCount() }}</li>
                                         <li>Total Accredited: {{ $election->getTotalAccreditedVoters() }}</li>
+                                        <li>Ballots Cast: {{ number_format($election->getTotalVotes()) }}</li>
                                     </ul>
+
+                                    <a href="{{ route('elcom.elections.rejected-candidates', $election) }}" class="btn btn-outline-danger btn-sm w-100 mt-2">
+                                        <i class="bi bi-x-circle me-2"></i>Rejected Candidates Report
+                                    </a>
 
                                     @if($election->status !== 'draft')
                                         <a href="{{ route('elcom.elections.accredited-voters', $election) }}" class="btn btn-info btn-sm w-100 mt-2">
                                             <i class="bi bi-people me-2"></i>View Accredited Voters
                                         </a>
-                                        @if(in_array($election->status, ['voting', 'completed']))
+                                        @if(in_array($election->status, ['voting', 'completed', 'archived']))
                                             <a href="{{ route('elcom.elections.basic-results', $election) }}" class="btn btn-primary btn-sm w-100 mt-2">
                                                 <i class="bi bi-bar-chart me-2"></i>View Basic Results
                                             </a>
                                         @endif
                                     @endif
 
-                                    @if($election->canStartAccreditation())
+                                    @if($election->canArchive())
+                                        <form action="{{ route('elcom.elections.archive', $election) }}" method="POST" class="mt-3">
+                                            @csrf
+                                            <button type="submit" class="btn btn-dark btn-sm w-100"
+                                                onclick="return confirm('Archive this election? All data will be preserved but no further changes will be allowed.')">
+                                                <i class="bi bi-archive me-2"></i>Archive Election
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    @if($election->isArchived())
+                                        <div class="alert alert-secondary mt-3 mb-0 small">
+                                            This election is archived and read-only.
+                                        </div>
+                                    @elseif($election->canStartAccreditation())
                                         <form action="{{ route('elcom.elections.start-accreditation', $election) }}" method="POST" class="mt-3">
                                             @csrf
                                             <button type="submit" class="btn btn-success btn-sm w-100" 

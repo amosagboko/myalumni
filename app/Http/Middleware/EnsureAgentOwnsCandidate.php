@@ -20,7 +20,7 @@ class EnsureAgentOwnsCandidate
     {
         $candidate = $request->route('candidate');
         
-        if (!$candidate || $candidate->approved_agent_id !== Auth::id()) {
+        if (!$candidate || !$candidate->isApprovedAgent(Auth::user())) {
             abort(403, 'You are not authorized to access this candidate.');
         }
 

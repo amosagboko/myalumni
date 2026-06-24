@@ -8,6 +8,10 @@ use App\Models\ElectionOffice;
 use App\Models\Candidate;
 use App\Models\ElectionResult;
 use App\Models\User;
+use App\Services\ElectionArchiveService;
+use App\Services\ElectionCycleService;
+use App\Services\ElectionResultService;
+use App\Exceptions\ElectionImmutableException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -15,19 +19,35 @@ use Spatie\Activitylog\Facades\LogBatch;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Carbon\Carbon;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ElectionController extends Controller
 {
+    public function __construct(
+        private ElectionCycleService $cycleService,
+        private ElectionArchiveService $archiveService,
+        private ElectionResultService $resultService
+    ) {}
     /**
      * Display a listing of the elections.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $elections = Election::with(['offices', 'candidates'])
-            ->latest()
-            ->paginate(10);
+        $filter = $request->get('filter', 'active');
 
-        return view('elcom.elections.index', compact('elections'));
+        $query = Election::with(['offices', 'candidates'])->latest();
+
+        $query = match ($filter) {
+            'active' => $query->operational(),
+            'completed' => $query->completedUnarchived(),
+            'archived' => $query->archived(),
+            default => $query,
+        };
+
+        $elections = $query->paginate(10)->withQueryString();
+        $canStartNewCycle = Election::canStartNewCycle();
+
+        return view('elcom.elections.index', compact('elections', 'filter', 'canStartNewCycle'));
     }
 
     /**
@@ -35,6 +55,12 @@ class ElectionController extends Controller
      */
     public function create()
     {
+        if (!Election::canStartNewCycle()) {
+            return redirect()
+                ->route('elcom.elections.index')
+                ->with('error', 'Archive the completed election or finish the active cycle before creating a new election.');
+        }
+
         $feeTypes = \App\Models\FeeType::where('is_active', true)->get();
         return view('elcom.elections.create', compact('feeTypes'));
     }
@@ -45,12 +71,16 @@ class ElectionController extends Controller
     public function store(Request $request)
     {
         try {
+            $this->cycleService->assertCanStartNewCycle();
+
             \Illuminate\Support\Facades\Log::info('Starting election creation with data:', [
                 'request_data' => $request->except(['_token']),
             ]);
 
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
+                'election_year' => 'required|integer|min:2000|max:2100',
+                'cycle_label' => 'nullable|string|max:100',
                 'description' => 'required|string',
                 'eligibility_criteria' => 'required|string',
                 'eoi_start' => 'required|date',
@@ -92,6 +122,8 @@ class ElectionController extends Controller
             \Illuminate\Support\Facades\Log::info('Creating election record...');
             $election = Election::create([
                 'title' => $validated['title'],
+                'election_year' => $validated['election_year'],
+                'cycle_label' => $validated['cycle_label'] ?? null,
                 'description' => $validated['description'],
                 'eligibility_criteria' => $validated['eligibility_criteria'],
                 'eoi_start' => $validated['eoi_start'],
@@ -101,7 +133,10 @@ class ElectionController extends Controller
                 'voting_start' => $validated['voting_start'],
                 'voting_end' => $validated['voting_end'],
                 'status' => 'draft',
+                'is_active' => true,
             ]);
+
+            $this->cycleService->activate($election);
 
             \Illuminate\Support\Facades\Log::info('Election created, creating offices...', [
                 'election_id' => $election->id,
@@ -129,6 +164,9 @@ class ElectionController extends Controller
             return redirect()
                 ->route('elcom.elections.show', $election)
                 ->with('success', 'Election created successfully.');
+        } catch (ElectionImmutableException $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', $e->getMessage());
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Validation failed:', [
@@ -163,6 +201,8 @@ class ElectionController extends Controller
      */
     public function edit(Election $election)
     {
+        $this->cycleService->assertMutable($election);
+
         if ($election->status !== 'draft') {
             return redirect()
                 ->route('elcom.elections.show', $election)
@@ -178,6 +218,8 @@ class ElectionController extends Controller
     public function update(Request $request, Election $election)
     {
         try {
+            $this->cycleService->assertMutable($election);
+
             if ($election->status !== 'draft') {
                 return redirect()
                     ->route('elcom.elections.show', $election)
@@ -302,6 +344,12 @@ class ElectionController extends Controller
      */
     public function startAccreditation(Election $election)
     {
+        try {
+            $this->cycleService->beginOperationalPhase($election);
+        } catch (ElectionImmutableException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
         if (!$election->canStartAccreditation()) {
             return back()->with('error', 'Cannot start accreditation at this time.');
         }
@@ -315,6 +363,12 @@ class ElectionController extends Controller
      */
     public function startVoting(Election $election)
     {
+        try {
+            $this->cycleService->beginOperationalPhase($election);
+        } catch (ElectionImmutableException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
         if (!$election->canStartVoting()) {
             return back()->with('error', 'Cannot start voting at this time.');
         }
@@ -328,6 +382,8 @@ class ElectionController extends Controller
      */
     public function endVoting(Election $election)
     {
+        $this->cycleService->assertMutable($election);
+
         if (!$election->canEndVoting()) {
             return back()->with('error', 'Cannot end voting at this time.');
         }
@@ -335,40 +391,13 @@ class ElectionController extends Controller
         try {
             DB::beginTransaction();
 
-            // Calculate results for each office
-            foreach ($election->offices as $office) {
-                $candidates = $office->candidates()
-                    ->withCount('votes')
-                    ->orderByDesc('votes_count')
-                    ->get();
-
-                if ($candidates->isNotEmpty()) {
-                    $winner = $candidates->first();
-                    $totalVotes = $candidates->sum('votes_count');
-
-                    // Create or update election result
-                    ElectionResult::updateOrCreate(
-                        [
-                            'election_id' => $election->id,
-                            'election_office_id' => $office->id,
-                            'candidate_id' => $winner->id,
-                        ],
-                        [
-                            'total_votes' => $totalVotes,
-                            'is_winner' => true,
-                            'declared_at' => now(),
-                        ]
-                    );
-                }
-            }
+            $this->resultService->declareResults($election);
 
             // Remove ELCOM chairman role after election completion
             $elcomChairman = User::role('elcom-chairman')->first();
             if ($elcomChairman) {
-                // Keep the alumni role but remove elcom-chairman role
                 $elcomChairman->removeRole('elcom-chairman');
-                
-                // Log the role removal using the activity log facade
+
                 activity()
                     ->causedBy(Auth::user())
                     ->performedOn($elcomChairman)
@@ -380,7 +409,6 @@ class ElectionController extends Controller
                     ->log('ELCOM chairman role removed after election completion');
             }
 
-            $election->update(['status' => 'completed']);
             DB::commit();
 
             return redirect()
@@ -397,7 +425,7 @@ class ElectionController extends Controller
      */
     public function realTimeResults(Election $election)
     {
-        if (!in_array($election->status, ['voting', 'completed'])) {
+        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
             return back()->with('error', 'Results are only available during voting or after completion.');
         }
 
@@ -409,7 +437,7 @@ class ElectionController extends Controller
      */
     public function printFullResults(Election $election)
     {
-        if (!in_array($election->status, ['voting', 'completed'])) {
+        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
             return back()->with('error', 'Results are only available during voting or after completion.');
         }
 
@@ -426,7 +454,7 @@ class ElectionController extends Controller
      */
     public function printWinners(Election $election)
     {
-        if (!in_array($election->status, ['voting', 'completed'])) {
+        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
             return back()->with('error', 'Results are only available during voting or after completion.');
         }
 
@@ -443,7 +471,7 @@ class ElectionController extends Controller
      */
     public function printCertificates(Election $election)
     {
-        if ($election->status !== 'completed') {
+        if (!in_array($election->status, ['completed', 'archived'])) {
             return back()->with('error', 'Certificates are only available after election completion.');
         }
 
@@ -460,21 +488,28 @@ class ElectionController extends Controller
      */
     public function screenCandidate(Request $request, Election $election, ElectionOffice $office, Candidate $candidate)
     {
-        if (!in_array($election->status, ['draft', 'accreditation'])) {
-            return back()->with('error', 'Candidates can only be screened during the draft or accreditation phase.');
+        $this->cycleService->assertMutable($election);
+
+        if (!in_array($election->status, ['draft', 'eoi', 'accreditation'])) {
+            return back()->with('error', 'Candidates can only be screened during draft, EOI, or accreditation.');
         }
 
         $validated = $request->validate([
             'status' => 'required|in:approved,rejected',
-            'remarks' => 'nullable|string',
+            'rejection_reason' => 'required_if:status,rejected|nullable|string|max:2000',
+            'remarks' => 'nullable|string|max:2000',
         ]);
 
-        $candidate->update([
-            'status' => $validated['status'],
-            'remarks' => $validated['remarks'],
-            'screened_at' => now(),
-            'screened_by' => auth()->id(),
-        ]);
+        $reason = $validated['rejection_reason'] ?? $validated['remarks'] ?? null;
+
+        if ($validated['status'] === 'approved') {
+            $candidate->approve($reason);
+        } else {
+            if (empty($reason)) {
+                return back()->with('error', 'A rejection reason is required.');
+            }
+            $candidate->reject($reason);
+        }
 
         return back()->with('success', 'Candidate has been ' . $validated['status']);
     }
@@ -493,8 +528,8 @@ class ElectionController extends Controller
      */
     public function approveCandidate(Election $election, ElectionOffice $office, Candidate $candidate)
     {
-        $candidate->status = 'approved';
-        $candidate->save();
+        $this->cycleService->assertMutable($election);
+        $candidate->approve();
         return back()->with('success', 'Candidate approved successfully.');
     }
 
@@ -503,9 +538,13 @@ class ElectionController extends Controller
      */
     public function rejectCandidate(Request $request, Election $election, ElectionOffice $office, Candidate $candidate)
     {
-        $candidate->status = 'rejected';
-        $candidate->rejection_reason = $request->input('rejection_reason');
-        $candidate->save();
+        $this->cycleService->assertMutable($election);
+
+        $validated = $request->validate([
+            'rejection_reason' => 'required|string|max:2000',
+        ]);
+
+        $candidate->reject($validated['rejection_reason']);
         return back()->with('success', 'Candidate rejected successfully.');
     }
 
@@ -514,6 +553,8 @@ class ElectionController extends Controller
      */
     public function createOffice(Election $election)
     {
+        $this->cycleService->assertMutable($election);
+
         if ($election->status !== 'draft') {
             return redirect()
                 ->route('elcom.elections.show', $election)
@@ -529,6 +570,8 @@ class ElectionController extends Controller
      */
     public function storeOffice(Request $request, Election $election)
     {
+        $this->cycleService->assertMutable($election);
+
         if ($election->status !== 'draft') {
             return redirect()
                 ->route('elcom.elections.show', $election)
@@ -620,6 +663,12 @@ class ElectionController extends Controller
 
     public function startEoi(Election $election)
     {
+        try {
+            $this->cycleService->beginOperationalPhase($election);
+        } catch (ElectionImmutableException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
         if (!$election->canStartEoi()) {
             return back()->with('error', 'Cannot start EOI period at this time.');
         }
@@ -630,6 +679,8 @@ class ElectionController extends Controller
 
     public function endEoi(Election $election)
     {
+        $this->cycleService->assertMutable($election);
+
         if (!$election->canEndEoi()) {
             return back()->with('error', 'Cannot end EOI period at this time.');
         }
@@ -643,6 +694,8 @@ class ElectionController extends Controller
      */
     public function extendEoi(Request $request, Election $election)
     {
+        $this->cycleService->assertMutable($election);
+
         if (!$election->canExtendEoiPeriod()) {
             return back()->with('error', 'Cannot extend EOI period at this time.');
         }
@@ -688,7 +741,8 @@ class ElectionController extends Controller
         $accreditedVoters = $election->accreditedVoters()
             ->with(['alumni.user'])
             ->orderBy('accredited_at', 'desc')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         return view('elcom.elections.accredited-voters', compact('election', 'accreditedVoters'));
     }
@@ -847,9 +901,9 @@ class ElectionController extends Controller
             return back()->with('error', 'Suggested agent not found.');
         }
 
-        // Update the candidate with the approved agent
+        // Update the candidate with the approved agent (always users.id)
         $candidate->update([
-            'approved_agent_id' => $candidate->suggested_agent_id,
+            'approved_agent_id' => $suggestedAgent->user_id,
             'agent_status' => 'approved',
             'agent_rejection_reason' => null
         ]);
@@ -1005,7 +1059,7 @@ class ElectionController extends Controller
     public function basicResults(Election $election)
     {
         // Only show results if election is in voting or completed state
-        if (!in_array($election->status, ['voting', 'completed'])) {
+        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
             return back()->with('error', 'Results are not available for this election yet.');
         }
 
@@ -1060,5 +1114,140 @@ class ElectionController extends Controller
             'certificateNumber' => $code,
             'issueDate' => now()->format('F j, Y')
         ]);
+    }
+
+    public function archive(Election $election)
+    {
+        $this->authorize('archive', $election);
+
+        try {
+            $this->archiveService->archive($election, Auth::user());
+
+            return redirect()
+                ->route('elcom.elections.show', $election)
+                ->with('success', 'Election has been archived. Historical data is now read-only.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function newCycle()
+    {
+        if (!Election::canStartNewCycle()) {
+            return redirect()
+                ->route('elcom.elections.index')
+                ->with('error', 'Archive the completed election before starting a new cycle.');
+        }
+
+        $sourceElections = Election::archived()
+            ->with('offices')
+            ->orderByDesc('election_year')
+            ->get();
+
+        return view('elcom.elections.new-cycle', compact('sourceElections'));
+    }
+
+    public function storeNewCycle(Request $request)
+    {
+        $this->authorize('startCycle', Election::class);
+
+        try {
+            $validated = $request->validate([
+                'clone_from_election_id' => 'nullable|exists:elections,id',
+                'title' => 'required|string|max:255',
+                'election_year' => 'required|integer|min:2000|max:2100|unique:elections,election_year',
+                'cycle_label' => 'nullable|string|max:100',
+                'description' => 'required|string',
+                'eligibility_criteria' => 'required|string',
+                'eoi_start' => 'required|date',
+                'eoi_end' => 'required|date|after:eoi_start',
+                'accreditation_start' => 'required|date|after:eoi_end',
+                'accreditation_end' => 'required|date|after:accreditation_start',
+                'voting_start' => 'required|date|after:accreditation_end',
+                'voting_end' => [
+                    'required',
+                    'date',
+                    'after:voting_start',
+                    function ($attribute, $value, $fail) use ($request) {
+                        $start = Carbon::parse($request->voting_start);
+                        $end = Carbon::parse($value);
+
+                        if (!$start->isSameDay($end)) {
+                            $fail('Voting must start and end on the same day.');
+                        }
+
+                        if ($start->isSameDay($end) && $end->lte($start)) {
+                            $fail('Voting end time must be after start time.');
+                        }
+                    },
+                ],
+            ]);
+
+            $source = null;
+            if (!empty($validated['clone_from_election_id'])) {
+                $source = Election::archived()->with('offices')->findOrFail($validated['clone_from_election_id']);
+            }
+
+            $election = $this->cycleService->createFromStructure($source, $validated);
+
+            return redirect()
+                ->route('elcom.elections.show', $election)
+                ->with('success', 'New election cycle created successfully. Review offices and dates before starting EOI.');
+        } catch (ElectionImmutableException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to start new cycle: ' . $e->getMessage());
+        }
+    }
+
+    public function rejectedCandidates(Election $election)
+    {
+        $rejected = $election->candidates()
+            ->where('status', 'rejected')
+            ->with(['alumni.user', 'office', 'screener'])
+            ->orderBy('screened_at', 'desc')
+            ->get();
+
+        return view('elcom.elections.rejected-candidates', compact('election', 'rejected'));
+    }
+
+    public function printRejectedCandidates(Election $election)
+    {
+        $rejected = $election->candidates()
+            ->where('status', 'rejected')
+            ->with(['alumni.user', 'office', 'screener'])
+            ->get()
+            ->sortBy(fn ($c) => $c->office?->title);
+
+        return view('elcom.elections.print-rejected-candidates', compact('election', 'rejected'));
+    }
+
+    public function exportRejectedCandidates(Election $election): StreamedResponse
+    {
+        $rejected = $election->candidates()
+            ->where('status', 'rejected')
+            ->with(['alumni.user', 'office', 'screener'])
+            ->orderBy('screened_at', 'desc')
+            ->get();
+
+        $filename = 'rejected-candidates-' . ($election->election_year ?? $election->id) . '.csv';
+
+        return response()->streamDownload(function () use ($rejected) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Name', 'Matric', 'Office', 'Rejected At', 'Screened By', 'Rejection Reason']);
+
+            foreach ($rejected as $candidate) {
+                fputcsv($handle, [
+                    $candidate->alumni?->user?->name,
+                    $candidate->alumni?->matriculation_number,
+                    $candidate->office?->title,
+                    $candidate->screened_at?->format('Y-m-d H:i'),
+                    $candidate->screener?->name,
+                    $candidate->rejection_reason,
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 }

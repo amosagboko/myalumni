@@ -8,6 +8,9 @@
 
     <!-- Feather Icons -->
     <script src="{{ asset('js/feather-icons/feather.min.js') }}"></script>
+
+    <!-- Bootstrap Icons (election views) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <link rel="stylesheet" href="/css/themify-icons.css">
     <link rel="stylesheet" href="/css/feather.css">
@@ -135,30 +138,6 @@
                                             <span>EOI Status</span>
                                         </a>
                                     </li>
-                                    <li>
-                                        <a href="{{ $electionLinksDisabled ? '#' : route('alumni.elections') . '#accreditation' }}"
-                                           class="nav-content-bttn open-font{{ $electionLinksDisabled ? ' disabled-link' : '' }}"
-                                           @if($electionLinksDisabled)
-                                               onclick="event.preventDefault(); alert('Please complete your profile and payments to access Accreditation.');"
-                                               tabindex="-1" aria-disabled="true"
-                                           @endif
-                                        >
-                                            <i data-feather="user-check" class="me-3"></i>
-                                            <span>Accreditation</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ $electionLinksDisabled ? '#' : route('alumni.elections') . '#results' }}"
-                                           class="nav-content-bttn open-font{{ $electionLinksDisabled ? ' disabled-link' : '' }}"
-                                           @if($electionLinksDisabled)
-                                               onclick="event.preventDefault(); alert('Please complete your profile and payments to access Election Results.');"
-                                               tabindex="-1" aria-disabled="true"
-                                           @endif
-                                        >
-                                            <i data-feather="bar-chart-2" class="me-3"></i>
-                                            <span>Election Results</span>
-                                        </a>
-                                    </li>
                                 @endif
 
                                 {{-- Agent Menu Items --}}
@@ -212,12 +191,18 @@
             </div>
         @endif
 
-        <main>
-            @if(View::hasSection('content'))
-                @yield('content')
-            @else
-                {{ $slot ?? '' }}
-            @endif
+        <main class="main-content bg-lightblue theme-dark-bg right-chat-active">
+            <div class="middle-sidebar-bottom">
+                <div class="middle-sidebar-left">
+                    <div class="middle-wrap">
+                        @if(View::hasSection('content'))
+                            @yield('content')
+                        @else
+                            {{ $slot ?? '' }}
+                        @endif
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- jQuery first -->

@@ -205,8 +205,8 @@
                                                         </div>
                                                         <div class="modal-body">
                                                             <div class="mb-3">
-                                                                <label for="remarks" class="form-label">Reason for Rejection</label>
-                                                                <textarea class="form-control" id="remarks" name="remarks" rows="3" required></textarea>
+                                                                <label for="rejection_reason{{ $candidate->id }}" class="form-label">Reason for Rejection</label>
+                                                                <textarea class="form-control" id="rejection_reason{{ $candidate->id }}" name="rejection_reason" rows="3" required></textarea>
                                                                 <div class="form-text">Please provide a clear reason for rejection.</div>
                                                             </div>
                                                             <input type="hidden" name="status" value="rejected">

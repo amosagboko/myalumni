@@ -16,6 +16,8 @@ class Election extends Model
 
     protected $fillable = [
         'title',
+        'election_year',
+        'cycle_label',
         'description',
         'eoi_start',
         'eoi_end',
@@ -26,7 +28,10 @@ class Election extends Model
         'voting_end',
         'status',
         'screening_fee',
-        'is_active'
+        'is_active',
+        'archived_at',
+        'archived_by',
+        'cloned_from_election_id',
     ];
 
     protected $casts = [
@@ -37,7 +42,9 @@ class Election extends Model
         'voting_start' => 'datetime',
         'voting_end' => 'datetime',
         'screening_fee' => 'decimal:2',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'archived_at' => 'datetime',
+        'election_year' => 'integer',
     ];
 
     // Relationships
@@ -71,6 +78,16 @@ class Election extends Model
         return $this->hasMany(ElectionResult::class);
     }
 
+    public function archivedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'archived_by');
+    }
+
+    public function clonedFrom(): BelongsTo
+    {
+        return $this->belongsTo(Election::class, 'cloned_from_election_id');
+    }
+
     public function expressionsOfInterest(): HasMany
     {
         return $this->hasMany(ExpressionOfInterest::class);
@@ -80,6 +97,52 @@ class Election extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->where('status', 'archived');
+    }
+
+    public function scopeCompletedUnarchived($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    public function scopeOperational($query)
+    {
+        return $query->whereNotIn('status', ['completed', 'archived']);
+    }
+
+    public function scopeHistorical($query)
+    {
+        return $query->whereIn('status', ['completed', 'archived']);
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->status === 'archived';
+    }
+
+    public function isHistorical(): bool
+    {
+        return in_array($this->status, ['completed', 'archived'], true);
+    }
+
+    public function isMutable(): bool
+    {
+        return !$this->isArchived();
+    }
+
+    public function canArchive(): bool
+    {
+        return $this->status === 'completed' && !$this->isArchived();
+    }
+
+    public static function canStartNewCycle(): bool
+    {
+        return !static::completedUnarchived()->exists()
+            && !static::operational()->where('is_active', true)->exists();
     }
 
     public function scopeInAccreditation($query)
@@ -233,29 +296,7 @@ class Election extends Model
             return false;
         }
 
-        DB::transaction(function() {
-            // Update election status
-            $this->update(['status' => 'completed']);
-
-            // Calculate and store results for each office
-            foreach ($this->offices as $office) {
-                $candidates = $office->candidates()
-                    ->withCount('votes as total_votes')
-                    ->orderByDesc('total_votes')
-                    ->get();
-
-                foreach ($candidates as $candidate) {
-                    ElectionResult::create([
-                        'election_id' => $this->id,
-                        'election_office_id' => $office->id,
-                        'candidate_id' => $candidate->id,
-                        'total_votes' => $candidate->total_votes,
-                        'is_winner' => $candidate === $candidates->first(),
-                        'declared_at' => now()
-                    ]);
-                }
-            }
-        });
+        app(\App\Services\ElectionResultService::class)->declareResults($this);
 
         return true;
     }

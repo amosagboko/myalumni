@@ -59,7 +59,7 @@ class AgentController extends Controller
 
         // Check if the suggested agent is already an agent for another candidate in this election
         $isAgent = $election->candidates()
-            ->where('approved_agent_id', $suggestedAgent->id)
+            ->where('approved_agent_id', $suggestedAgent->user_id)
             ->exists();
         
         if ($isAgent) {

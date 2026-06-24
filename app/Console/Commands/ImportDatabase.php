@@ -9,7 +9,8 @@ class ImportDatabase extends Command
 {
     protected $signature = 'db:import
                             {file : Path to a .sql file or Spatie .zip backup}
-                            {--restore-env : Restore .env from zip backup (use with caution)}';
+                            {--restore-env : Restore .env from zip backup (use with caution)}
+                            {--force : Skip confirmation prompt}';
 
     protected $description = 'Restore the database (and files from zip backups) from a backup file';
 
@@ -25,7 +26,7 @@ class ImportDatabase extends Command
 
         $operationId = 'cli-'.uniqid();
 
-        if (! $this->confirm('This will overwrite current data. Continue?', false)) {
+        if (! $this->option('force') && ! $this->confirm('This will overwrite current data. Continue?', false)) {
             $this->warn('Restore cancelled.');
 
             return Command::SUCCESS;
