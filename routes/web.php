@@ -84,6 +84,16 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::post('/onboarding-settings/close', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'close'])->name('onboarding-settings.close');
     Route::post('/onboarding-settings/reopen', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'reopen'])->name('onboarding-settings.reopen');
 
+    // Payment year & annual dues management
+    Route::get('/payment-years', [\App\Http\Controllers\Admin\PaymentYearController::class, 'index'])->name('payment-years.index');
+    Route::get('/payment-years/create', [\App\Http\Controllers\Admin\PaymentYearController::class, 'create'])->name('payment-years.create');
+    Route::post('/payment-years', [\App\Http\Controllers\Admin\PaymentYearController::class, 'store'])->name('payment-years.store');
+    Route::get('/payment-years/{paymentYear}', [\App\Http\Controllers\Admin\PaymentYearController::class, 'show'])->name('payment-years.show');
+    Route::post('/payment-years/{paymentYear}/annual-due', [\App\Http\Controllers\Admin\PaymentYearController::class, 'storeAnnualDue'])->name('payment-years.annual-due.store');
+    Route::put('/payment-years/{paymentYear}/annual-due/{feeTemplate}', [\App\Http\Controllers\Admin\PaymentYearController::class, 'updateAnnualDue'])->name('payment-years.annual-due.update');
+    Route::post('/payment-years/{paymentYear}/activate', [\App\Http\Controllers\Admin\PaymentYearController::class, 'activate'])->name('payment-years.activate');
+    Route::post('/payment-years/{paymentYear}/copy-annual-due', [\App\Http\Controllers\Admin\PaymentYearController::class, 'copyAnnualDue'])->name('payment-years.copy-annual-due');
+
     // Backup & Restore Management
     Route::get('/backups', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
     Route::post('/backups/run', [\App\Http\Controllers\Admin\BackupController::class, 'run'])->name('backups.run')->middleware('throttle:5,1');
@@ -343,6 +353,12 @@ Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('
         ->name('elections.start-voting');
     Route::post('/elections/{election}/end-voting', [ElectionController::class, 'endVoting'])
         ->name('elections.end-voting');
+    Route::get('/elections/{election}/resolution', [ElectionController::class, 'resolution'])
+        ->name('elections.resolution');
+    Route::get('/elections/{election}/schedule-by-election', [ElectionController::class, 'scheduleByElection'])
+        ->name('elections.schedule-by-election');
+    Route::post('/elections/{election}/schedule-by-election', [ElectionController::class, 'storeByElection'])
+        ->name('elections.schedule-by-election.store');
     
     // EOI Period Management
     Route::post('/elections/{election}/start-eoi', [ElectionController::class, 'startEoi'])
@@ -385,8 +401,6 @@ Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('
 
     // ELCOM Screening Routes
     Route::get('/elections/{election}/offices/{office}/candidates/screen', [ElectionController::class, 'screenCandidates'])->name('elections.offices.candidates.screen');
-    Route::post('/elections/{election}/offices/{office}/candidates/{candidate}/approve', [ElectionController::class, 'approveCandidate'])->name('elections.offices.candidates.approve');
-    Route::post('/elections/{election}/offices/{office}/candidates/{candidate}/reject', [ElectionController::class, 'rejectCandidate'])->name('elections.offices.candidates.reject');
 
     // Accredited Voters Routes
     Route::get('/elections/{election}/accredited-voters', [ElectionController::class, 'accreditedVoters'])->name('elections.accredited-voters');

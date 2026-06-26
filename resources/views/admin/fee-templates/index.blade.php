@@ -63,6 +63,14 @@
                                                 @endforeach
                                             </select>
                                         </div>
+                                        <div class="col-md-3">
+                                            <label for="fee_purpose" class="form-label">Purpose</label>
+                                            <select name="fee_purpose" id="fee_purpose" class="form-select">
+                                                <option value="">All purposes</option>
+                                                <option value="onboarding" {{ request('fee_purpose') === 'onboarding' ? 'selected' : '' }}>Onboarding</option>
+                                                <option value="annual_renewal" {{ request('fee_purpose') === 'annual_renewal' ? 'selected' : '' }}>Annual renewal</option>
+                                            </select>
+                                        </div>
                                         <div class="col-md-3 d-flex align-items-end">
                                             <button type="submit" class="btn btn-outline-primary me-2">
                                                 <i data-feather="search" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
@@ -81,6 +89,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Fee Type</th>
+                                                <th>Purpose</th>
                                                 <th>Year</th>
                                                 <th>Category</th>
                                                 <th>Amount</th>
@@ -96,7 +105,22 @@
                                                         <div class="fw-bold">{{ $template->feeType->name }}</div>
                                                         <small class="text-muted">{{ $template->feeType->code }}</small>
                                                     </td>
-                                                    <td>{{ $template->graduation_year }}</td>
+                                                    <td>
+                                                        @if($template->fee_purpose === 'onboarding')
+                                                            <span class="badge bg-info text-dark">Onboarding</span>
+                                                        @elseif($template->fee_purpose === 'annual_renewal')
+                                                            <span class="badge bg-secondary">Annual</span>
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if((int) $template->graduation_year === 0)
+                                                            <span class="badge bg-info text-dark">All years</span>
+                                                        @else
+                                                            {{ $template->graduation_year }}
+                                                        @endif
+                                                    </td>
                                                     <td>
                                                         @if($template->category)
                                                             <span class="badge bg-primary">{{ $template->category->name }}</span>
@@ -160,7 +184,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="7" class="text-center">No fee templates found.</td>
+                                                    <td colspan="8" class="text-center">No fee templates found.</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>

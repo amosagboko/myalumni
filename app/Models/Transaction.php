@@ -21,7 +21,9 @@ class Transaction extends Model
         'payment_provider_reference',
         'payment_link',
         'payment_details',
-        'paid_at'
+        'metadata',
+        'is_test_mode',
+        'paid_at',
     ];
 
     protected $casts = [
@@ -30,7 +32,9 @@ class Transaction extends Model
         'paid_at' => 'datetime',
         'fee_valid_from' => 'datetime',
         'fee_valid_until' => 'datetime',
-        'fee_is_active' => 'boolean'
+        'fee_is_active' => 'boolean',
+        'is_test_mode' => 'boolean',
+        'metadata' => 'array',
     ];
 
     /**
@@ -63,6 +67,58 @@ class Transaction extends Model
     public function officeContestApplication(): HasOne
     {
         return $this->hasOne(OfficeContestApplication::class);
+    }
+
+    /**
+     * Human-readable fee line for receipts and history.
+     */
+    public function getDisplayDescriptionAttribute(): string
+    {
+        return $this->feeTemplate?->description
+            ?? $this->feeTemplate?->feeType?->name
+            ?? 'Payment';
+    }
+
+    /**
+     * Short category label (onboarding, annual due, EOI, etc.).
+     */
+    public function getFeeCategoryLabelAttribute(): string
+    {
+        $feeType = $this->feeTemplate?->feeType;
+        if ($feeType?->isEoiFee()) {
+            return 'Election (EOI)';
+        }
+
+        $purpose = $this->feeTemplate?->fee_purpose;
+
+        return match ($purpose) {
+            FeeTemplate::PURPOSE_ANNUAL_RENEWAL => 'Annual due',
+            FeeTemplate::PURPOSE_ONBOARDING => 'Onboarding',
+            default => match ($feeType?->code) {
+                'subscription', 'annual_due' => 'Annual due',
+                default => $feeType?->name ?? 'Payment',
+            },
+        };
+    }
+
+    /**
+     * Payment year for annual dues (from metadata, not template graduation_year 0).
+     */
+    public function getPaymentYearLabelAttribute(): ?string
+    {
+        $year = $this->metadata['payment_year']
+            ?? ($this->payment_details['payment_year'] ?? null);
+
+        if ($year) {
+            return (string) $year;
+        }
+
+        $gradYear = $this->feeTemplate?->graduation_year;
+        if ($gradYear && (int) $gradYear !== FeeTemplate::PAYMENT_YEAR_ALL) {
+            return (string) $gradYear;
+        }
+
+        return null;
     }
 
     /**
@@ -116,11 +172,11 @@ class Transaction extends Model
     }
 
     /**
-     * Scope a query to only include completed transactions.
+     * @deprecated Use scopePaid() — transaction status is normalized to "paid".
      */
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->paid();
     }
 
     /**
@@ -144,7 +200,7 @@ class Transaction extends Model
      */
     public function isPaid(): bool
     {
-        return in_array($this->status, ['paid', 'completed']);
+        return $this->status === 'paid';
     }
 
     /**

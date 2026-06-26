@@ -23,11 +23,14 @@ class ElectionResultsUpdated implements ShouldBroadcast
         $this->election = $election;
         $this->election->load(['offices.candidates.alumni.user', 'offices.candidates.votes']);
         
+        $timeDisplay = $election->getVotingTimeDisplay();
+
         $this->results = [
             'totalAccredited' => $election->getTotalAccreditedVoters(),
             'totalVotes' => $election->getTotalVotes(),
             'voterTurnout' => number_format(($election->getTotalVotes() / max($election->getTotalAccreditedVoters(), 1)) * 100, 1),
-            'timeRemaining' => $election->voting_end->diffForHumans(),
+            'timeRemaining' => $timeDisplay['value'],
+            'timeRemainingLabel' => $timeDisplay['label'],
             'offices' => $election->offices->map(function ($office) {
                 $totalVotes = $office->candidates->sum(function ($candidate) {
                     return $candidate->votes->count();

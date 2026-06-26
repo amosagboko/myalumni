@@ -78,6 +78,8 @@
                                     Period: {{ $election->voting_start->format('M d, Y h:i A') }} - 
                                     {{ $election->voting_end->format('M d, Y h:i A') }}
                                 </small>
+                            @elseif($election->isIncomplete())
+                                This election is incomplete. Voting is closed while pending offices await a by-election.
                             @elseif($election->status === 'completed')
                                 This election has been completed. Voting is no longer available.
                             @elseif($election->status === 'accreditation')

@@ -20,39 +20,20 @@ class EnsurePaymentsComplete
     {
         if (Auth::check() && Auth::user()->alumni) {
             $alumni = Auth::user()->alumni;
-            
-            // Enforce payment completion based on graduation year rules
-            $needsPaymentEnforcement = false;
-            
-            // 2023 and earlier: Must pay subscription fees
-            if ($alumni->year_of_graduation <= 2023) {
-                $needsPaymentEnforcement = true;
-            }
-            // 2024: Exempted from all fees (no enforcement needed)
-            elseif ($alumni->year_of_graduation === 2024) {
-                $needsPaymentEnforcement = false;
-            }
-            // 2025+: Must pay category-based fees
-            elseif ($alumni->year_of_graduation >= 2025) {
-                $needsPaymentEnforcement = true;
-            }
-            
-            if ($needsPaymentEnforcement) {
-                // Get active fees and check if any are unpaid
-                $hasUnpaidFees = $alumni->getActiveFees()->contains(function($fee) {
-                    return !$fee->isPaid();
-                });
 
-                Log::info('Payment enforcement check', [
-                    'alumni_id' => $alumni->id,
-                    'year_of_graduation' => $alumni->year_of_graduation,
-                    'needs_enforcement' => $needsPaymentEnforcement,
-                    'has_unpaid_fees' => $hasUnpaidFees,
-                    'active_fees_count' => $alumni->getActiveFees()->count(),
-                    'current_route' => $request->route() ? $request->route()->getName() : 'unknown'
-                ]);
+            $hasUnpaidFees = $alumni->getActiveFees()->contains(function ($fee) {
+                return !$fee->isPaid();
+            });
 
-                if ($hasUnpaidFees) {
+            Log::info('Payment enforcement check', [
+                'alumni_id' => $alumni->id,
+                'year_of_graduation' => $alumni->year_of_graduation,
+                'has_unpaid_fees' => $hasUnpaidFees,
+                'active_fees_count' => $alumni->getActiveFees()->count(),
+                'current_route' => $request->route() ? $request->route()->getName() : 'unknown',
+            ]);
+
+            if ($hasUnpaidFees) {
                     // Exclude payment-related routes and logout route from redirect
                     if (!$request->is('payments*') && !$request->is('logout')) {
                         Log::info('Redirecting alumni to payments page', [
@@ -64,7 +45,6 @@ class EnsurePaymentsComplete
                         return redirect()->route('alumni.payments.index')
                             ->with('warning', 'Please complete your payments to access this feature.');
                     }
-                }
             }
         }
 

@@ -198,7 +198,16 @@
 
     @foreach($election->offices as $office)
         <div class="office-section">
-            <h2 class="office-title">{{ $office->title }}</h2>
+            <h2 class="office-title">
+                {{ $office->title }}
+                @if($office->resolution_status === 'tied')
+                    <small style="color: #dc3545;">(TIE — no winner declared)</small>
+                @elseif($office->resolution_status === 'uncontested')
+                    <small style="color: #6c757d;">(Uncontested — no winner declared)</small>
+                @elseif($office->resolution_status === 'decided')
+                    <small style="color: #28a745;">(Winner declared)</small>
+                @endif
+            </h2>
             <div class="candidate-list">
                 @php
                     $totalVotes = $office->candidates->sum(function ($candidate) {
@@ -210,8 +219,14 @@
                 @endphp
 
                 @foreach($candidates as $candidate)
-                    <div class="candidate-item">
-                        <h4>{{ $candidate->alumni->user->name }}</h4>
+                    @php $isDeclaredWinner = isset($declaredWinnerIds[$candidate->id]); @endphp
+                    <div class="candidate-item" style="{{ $isDeclaredWinner ? 'border-color: #28a745; background: #f8fff9;' : '' }}">
+                        <h4>
+                            {{ $candidate->alumni->user->name }}
+                            @if($isDeclaredWinner)
+                                <span style="color: #28a745; font-size: 14px;">— Declared Winner</span>
+                            @endif
+                        </h4>
                         <div class="candidate-stats">
                             <span>Votes Received: {{ number_format($candidate->votes->count()) }}</span>
                             <span>Percentage: {{ number_format(($candidate->votes->count() / max($totalVotes, 1)) * 100, 1) }}%</span>

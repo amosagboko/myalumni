@@ -21,6 +21,21 @@
                             <p class="text-muted small mt-2 mb-0">Check past elections below for historical results.</p>
                         </div>
                     @else
+                        @if($currentElection->isByElection() && $parentElection)
+                            <div class="alert alert-info py-2 small mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                This is a <strong>by-election</strong> for
+                                <a href="{{ route('alumni.elections.results', $parentElection) }}">{{ $parentElection->title }}</a>.
+                            </div>
+                        @elseif($currentElection->isIncomplete())
+                            <div class="alert alert-warning py-2 small mb-3">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Main election is <strong>incomplete</strong> — some offices await a by-election.
+                                @if($actions['view_results'] ?? false)
+                                    <a href="{{ route('alumni.elections.results', $currentElection) }}">View partial results</a>
+                                @endif
+                            </div>
+                        @endif
                         <div class="mb-3">
                             <h5 class="fw-bold mb-1">{{ $currentElection->title }}</h5>
                             @if($currentElection->cycle_label)
@@ -43,7 +58,7 @@
                                                     <span class="fw-medium small d-block">Expression of Interest</span>
                                                     @if($participation['eoi'])
                                                         <span class="badge bg-{{ $participation['eoi']['status'] === 'approved' ? 'success' : ($participation['eoi']['status'] === 'rejected' ? 'danger' : 'warning') }}">
-                                                            {{ ucfirst($participation['eoi']['status']) }}
+                                                            {{ $participation['eoi']['status_label'] ?? ucfirst(str_replace('_', ' ', $participation['eoi']['status'])) }}
                                                         </span>
                                                         @if($participation['eoi']['office'])
                                                             <small class="text-muted d-block mt-1">{{ $participation['eoi']['office'] }}</small>
@@ -108,13 +123,29 @@
                                                 </div>
                                                 <div class="col-12 col-md-6">
                                                     <div class="d-flex flex-wrap gap-1">
-                                                        @if($actions['express_interest'] ?? false)
-                                                            <a href="{{ route('alumni.elections.expression-of-interest.form', [$currentElection, $office]) }}"
-                                                               class="btn btn-sm btn-success w-100 w-md-auto">
-                                                                <i class="bi bi-pencil-square me-1"></i>
-                                                                <span class="d-none d-sm-inline">Express Interest</span>
-                                                                <span class="d-inline d-sm-none">EOI</span>
-                                                            </a>
+                                                        @if($office->isRunoffByElectionOffice())
+                                                            <span class="badge bg-info text-dark w-100 w-md-auto py-2">
+                                                                <i class="bi bi-arrow-repeat me-1"></i>Runoff — candidates on ballot
+                                                            </span>
+                                                        @elseif($actions['express_interest'] ?? false)
+                                                            @if($office->isAcceptingApplications())
+                                                                <a href="{{ route('alumni.elections.expression-of-interest.form', [$currentElection, $office]) }}"
+                                                                   class="btn btn-sm btn-success w-100 w-md-auto">
+                                                                    <i class="bi bi-pencil-square me-1"></i>
+                                                                    <span class="d-none d-sm-inline">Express Interest</span>
+                                                                    <span class="d-inline d-sm-none">EOI</span>
+                                                                </a>
+                                                                @if($office->getRemainingApplicantSlots() <= 3)
+                                                                    <small class="text-muted w-100 w-md-auto">
+                                                                        {{ $office->getRemainingApplicantSlots() }} slot{{ $office->getRemainingApplicantSlots() === 1 ? '' : 's' }} left
+                                                                    </small>
+                                                                @endif
+                                                            @else
+                                                                <span class="badge bg-secondary w-100 w-md-auto py-2">
+                                                                    <i class="bi bi-lock me-1"></i>
+                                                                    EOI closed — slots full
+                                                                </span>
+                                                            @endif
                                                         @endif
                                                         @if($actions['view_candidates'] ?? false)
                                                             <a href="{{ route('alumni.elections.published-candidates', [$currentElection, $office]) }}"

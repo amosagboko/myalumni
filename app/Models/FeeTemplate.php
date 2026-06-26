@@ -10,10 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class FeeTemplate extends Model
 {
+    public const PURPOSE_ONBOARDING = 'onboarding';
+
+    public const PURPOSE_ANNUAL_RENEWAL = 'annual_renewal';
+
+    /** graduation_year value: applies to every configured payment year */
+    public const PAYMENT_YEAR_ALL = 0;
+
     protected $table = 'fee_templates';
 
     protected $fillable = [
         'fee_type_id',
+        'fee_purpose',
         'category_id',
         'graduation_year',
         'amount',
@@ -77,6 +85,89 @@ class FeeTemplate extends Model
         return $query->where('graduation_year', $year);
     }
 
+    public function scopeAnnualRenewal($query)
+    {
+        return $query->where('fee_purpose', self::PURPOSE_ANNUAL_RENEWAL);
+    }
+
+    public function scopeOnboarding($query)
+    {
+        return $query->where('fee_purpose', self::PURPOSE_ONBOARDING);
+    }
+
+    public function isAnnualRenewal(): bool
+    {
+        return $this->fee_purpose === self::PURPOSE_ANNUAL_RENEWAL;
+    }
+
+    public function isOnboarding(): bool
+    {
+        return $this->fee_purpose === self::PURPOSE_ONBOARDING;
+    }
+
+    public function isAnnualDueType(): bool
+    {
+        if ($this->isAnnualRenewal()) {
+            return true;
+        }
+
+        return in_array($this->feeType?->code, ['subscription', FeeType::ANNUAL_DUE_CODE], true);
+    }
+
+    /**
+     * Payment year this fee applies to (for annual dues).
+     */
+    public function paymentYearLabel(?AlumniYear $activePaymentYear = null): ?string
+    {
+        if (!$this->isAnnualDueType()) {
+            return null;
+        }
+
+        if ($activePaymentYear) {
+            return (string) $activePaymentYear->year;
+        }
+
+        if ($this->graduation_year && (int) $this->graduation_year !== self::PAYMENT_YEAR_ALL) {
+            return (string) $this->graduation_year;
+        }
+
+        $year = AlumniYear::where('is_active', true)->value('year');
+
+        return $year ? (string) $year : null;
+    }
+
+    /**
+     * Label for UI lists and modals (includes payment year or cohort where relevant).
+     */
+    public function displayLabel(?AlumniYear $activePaymentYear = null): string
+    {
+        $name = $this->description ?: $this->feeType?->name ?: 'Fee';
+
+        if ($paymentYear = $this->paymentYearLabel($activePaymentYear)) {
+            return "{$name} — payment year {$paymentYear}";
+        }
+
+        if ($this->isOnboarding() && $this->graduation_year) {
+            return "{$name} — class of {$this->graduation_year}";
+        }
+
+        return $name;
+    }
+
+    /**
+     * Due date for display (annual dues use the active payment year end date).
+     */
+    public function dueDateForDisplay(?AlumniYear $activePaymentYear = null): ?\Illuminate\Support\Carbon
+    {
+        if ($this->isAnnualDueType()) {
+            $year = $activePaymentYear ?? AlumniYear::where('is_active', true)->first();
+
+            return $year?->end_date;
+        }
+
+        return null;
+    }
+
     /**
      * Get the formatted amount with currency symbol.
      */
@@ -119,24 +210,43 @@ class FeeTemplate extends Model
      */
     public function isPaid()
     {
+        if (Auth::check() && Auth::user()->alumni) {
+            return $this->isPaidByAlumni(Auth::user()->alumni);
+        }
+
         if (!Auth::check()) {
             Log::info('User not authenticated for fee template payment check', ['fee_template_id' => $this->id]);
+
             return false;
         }
 
-        $exists = $this->transactions()
-            ->whereHas('alumni', function($q) {
+        return $this->transactions()
+            ->whereHas('alumni', function ($q) {
                 $q->where('user_id', Auth::id());
             })
             ->where('status', 'paid')
             ->exists();
+    }
 
-        Log::info('Fee template payment check result', [
-            'fee_template_id' => $this->id,
-            'user_id' => Auth::id(),
-            'is_paid' => $exists
-        ]);
+    public function isPaidByAlumni(Alumni $alumni): bool
+    {
+        return $this->transactions()
+            ->where('alumni_id', $alumni->id)
+            ->where('status', 'paid')
+            ->exists();
+    }
 
-        return $exists;
+    public function getCompletedTransaction(): ?Transaction
+    {
+        $alumniId = Auth::user()?->alumni?->id;
+        if (!$alumniId) {
+            return null;
+        }
+
+        return $this->transactions()
+            ->where('alumni_id', $alumniId)
+            ->where('status', 'paid')
+            ->latest('id')
+            ->first();
     }
 }

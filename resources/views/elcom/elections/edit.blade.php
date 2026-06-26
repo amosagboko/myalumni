@@ -76,7 +76,7 @@
                                 </div>
                                 <div class="card-body">
                                     <p class="mb-1"><strong>Description:</strong> {{ $office->description }}</p>
-                                    <p class="mb-1"><strong>Max Candidates:</strong> {{ $office->max_candidates }}</p>
+                                    <p class="mb-1"><strong>Max Applicants:</strong> {{ $office->max_candidates }}</p>
                                     <p class="mb-1"><strong>Term Duration:</strong> {{ $office->term_duration }} years</p>
                                     <a href="{{ route('elcom.election-offices.candidates.index', [$election, $office]) }}" class="btn btn-sm btn-info mt-2">Manage Candidates</a>
                                 </div>

@@ -254,13 +254,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Maximum Candidates</label>
+                        <label class="form-label">Maximum Applicants</label>
                         <input type="number" 
                             class="form-control" 
                             name="offices[${officeCount}][max_candidates]" 
                             min="1" 
                             value="1" 
                             required>
+                        <div class="form-text">EOI closes when applicant slots are full.</div>
                     </div>
                 </div>
                 <div class="col-md-6">

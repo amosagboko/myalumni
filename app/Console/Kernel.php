@@ -21,6 +21,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('content:cleanup')->daily();
         $schedule->command('chat:cleanup')->daily(); // Clean up old chat messages daily
         $schedule->command('eoi:sync-candidate-payments')->everyTwoMinutes();
+        $schedule->command('eoi:cleanup-abandoned')->hourly();
+        $schedule->command('dues:assign-annual')->dailyAt('00:05');
 
         $schedule->command('backup:clean')->daily()->at('01:00');
         $schedule->command('backup:run')->daily()->at('01:30');
@@ -45,6 +47,7 @@ class Kernel extends ConsoleKernel
             Commands\ExportDatabase::class,
             Commands\ImportDatabase::class,
             \App\Console\Commands\SyncEoiCandidatePayments::class,
+            \App\Console\Commands\CleanupAbandonedEoiApplications::class,
             \App\Console\Commands\CleanupOldChats::class,
             \App\Console\Commands\TestChatCleanup::class,
             \App\Console\Commands\TestContentCleanup::class,

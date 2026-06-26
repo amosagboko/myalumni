@@ -182,36 +182,28 @@
         <p><strong>Total Accredited Voters:</strong> {{ number_format($election->getTotalAccreditedVoters()) }}</p>
         <p><strong>Total Votes Cast:</strong> {{ number_format($election->getTotalVotes()) }}</p>
         <p><strong>Voter Turnout:</strong> {{ number_format(($election->getTotalVotes() / max($election->getTotalAccreditedVoters(), 1)) * 100, 1) }}%</p>
+        @if($election->isIncomplete() && ($pendingOffices ?? 0) > 0)
+            <p><strong>Pending offices (no winner declared):</strong> {{ $pendingOffices }}</p>
+        @endif
     </div>
 
     <div class="winners-list">
-        @foreach($election->offices as $office)
-            @php
-                $winner = $office->candidates->sortByDesc(function ($candidate) {
-                    return $candidate->votes->count();
-                })->first();
-                
-                if ($winner) {
-                    $totalVotes = $office->candidates->sum(function ($candidate) {
-                        return $candidate->votes->count();
-                    });
-                    $winnerVotes = $winner->votes->count();
-                    $percentage = $totalVotes > 0 ? ($winnerVotes / $totalVotes) * 100 : 0;
-                }
-            @endphp
-            
-            @if($winner)
-                <div class="winner-item">
-                    <h3>{{ $office->title }}</h3>
-                    <div class="winner-details">
-                        <p><strong>Winner:</strong> {{ $winner->alumni->user->name }}</p>
-                        <p><strong>Votes Received:</strong> {{ number_format($winnerVotes) }}</p>
-                        <p><strong>Percentage of Votes:</strong> {{ number_format($percentage, 1) }}%</p>
-                        <p><strong>Term Duration:</strong> {{ $office->term_duration }} years</p>
-                    </div>
+        @forelse($declaredWinners as $entry)
+            <div class="winner-item">
+                <h3>{{ $entry['office']->title }}</h3>
+                <div class="winner-details">
+                    <p><strong>Winner:</strong> {{ $entry['candidate']->alumni->user->name }}</p>
+                    <p><strong>Votes Received:</strong> {{ number_format($entry['votes']) }}</p>
+                    <p><strong>Percentage of Votes:</strong> {{ number_format($entry['percentage'], 1) }}%</p>
+                    <p><strong>Term Duration:</strong> {{ $entry['office']->term_duration }} years</p>
+                    @if($entry['declared_at'])
+                        <p><strong>Declared:</strong> {{ $entry['declared_at']->format('F j, Y h:i A') }}</p>
+                    @endif
                 </div>
-            @endif
-        @endforeach
+            </div>
+        @empty
+            <p class="text-muted">No offices have declared winners yet.</p>
+        @endforelse
     </div>
 
     <div class="signature-section">

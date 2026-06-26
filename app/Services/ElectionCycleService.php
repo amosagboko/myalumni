@@ -17,7 +17,7 @@ class ElectionCycleService
 
     public function assertCanStartNewCycle(): void
     {
-        if (Election::completedUnarchived()->exists()) {
+        if (Election::unresolvedCycle()->exists()) {
             throw ElectionImmutableException::unarchivedCompletedExists();
         }
 
@@ -28,12 +28,15 @@ class ElectionCycleService
 
     public function assertSingleOperationalElection(Election $election): void
     {
-        $conflicting = Election::operational()
+        $query = Election::operational()
             ->where('id', '!=', $election->id)
-            ->whereIn('status', ['eoi', 'eoi_closed', 'accreditation', 'voting'])
-            ->exists();
+            ->whereIn('status', ['eoi', 'eoi_closed', 'accreditation', 'voting']);
 
-        if ($conflicting) {
+        if ($election->isByElection() && $election->parent_election_id) {
+            $query->where('id', '!=', $election->parent_election_id);
+        }
+
+        if ($query->exists()) {
             throw ElectionImmutableException::concurrentOperationalElection();
         }
     }
@@ -47,8 +50,33 @@ class ElectionCycleService
 
     public function activate(Election $election): void
     {
+        if ($election->isByElection()) {
+            $this->activateByElection($election);
+            return;
+        }
+
         Election::where('id', '!=', $election->id)->update(['is_active' => false]);
         $election->update(['is_active' => true]);
+    }
+
+    public function activateByElection(Election $byElection): void
+    {
+        Election::query()
+            ->where('id', '!=', $byElection->id)
+            ->when($byElection->parent_election_id, fn ($q) => $q->where('id', '!=', $byElection->parent_election_id))
+            ->where(function ($q) {
+                $q->operational()
+                    ->orWhereIn('status', ['incomplete']);
+            })
+            ->where('is_active', true)
+            ->where('election_type', '!=', 'by_election')
+            ->update(['is_active' => false]);
+
+        $byElection->update(['is_active' => true]);
+
+        if ($parent = $byElection->parentElection) {
+            $parent->update(['is_active' => true]);
+        }
     }
 
     public function createFromStructure(?Election $source, array $meta): Election

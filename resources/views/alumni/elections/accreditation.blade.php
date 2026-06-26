@@ -39,6 +39,8 @@
                                 You can no longer submit accreditation requests for this election.
                             @elseif($election->status === 'voting')
                                 Accreditation period has ended. The election is now in the voting phase.
+                            @elseif($election->isIncomplete())
+                                This election is incomplete. Accreditation is closed while pending offices await a by-election.
                             @elseif($election->status === 'completed')
                                 This election has been completed. Accreditation is no longer available.
                             @else

@@ -12,9 +12,31 @@ class Candidate extends Model
 {
     use SoftDeletes;
 
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_PAID_AWAITING_SCREENING = 'paid_awaiting_screening';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    /** Statuses where the applicant still holds an EOI slot (not rejected). */
+    public const ACTIVE_APPLICANT_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_PAID_AWAITING_SCREENING,
+        self::STATUS_APPROVED,
+    ];
+
+    /** Statuses ELCOM may screen (approve or reject). */
+    public const SCREENABLE_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_PAID_AWAITING_SCREENING,
+    ];
+
     protected $fillable = [
         'election_id',
         'election_office_id',
+        'parent_candidate_id',
         'alumni_id',
         'suggested_agent_id',
         'approved_agent_id',
@@ -107,7 +129,7 @@ class Candidate extends Model
     {
         $this->update([
             'status' => 'approved',
-            'rejection_reason' => $remarks,
+            'rejection_reason' => null,
             'screened_at' => now(),
             'screened_by' => Auth::id()
         ]);
@@ -180,19 +202,19 @@ class Candidate extends Model
         ]);
     }
 
-    /**
-     * Get the screening status in a human-readable format.
-     */
     public function getScreeningStatusAttribute(): string
     {
-        if (!$this->screened_at) {
-            return 'Pending Screening';
-        }
+        return $this->status_label;
+    }
 
-        return match($this->status) {
-            'approved' => 'Approved',
-            'rejected' => 'Rejected',
-            default => 'Pending Screening'
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            self::STATUS_PENDING => 'Pending payment',
+            self::STATUS_PAID_AWAITING_SCREENING => 'Paid, awaiting ELCOM screening',
+            self::STATUS_APPROVED => 'Approved',
+            self::STATUS_REJECTED => 'Rejected',
+            default => ucfirst(str_replace('_', ' ', (string) $this->status)),
         };
     }
 
@@ -220,24 +242,52 @@ class Candidate extends Model
         return $this->belongsTo(User::class, 'screened_by');
     }
 
-    public function markScreeningFeeAsPaid()
+    public function markScreeningFeeAsPaid(): void
     {
-        $this->update(['has_paid_screening_fee' => true]);
+        $this->update([
+            'has_paid_screening_fee' => true,
+            'status' => self::STATUS_PAID_AWAITING_SCREENING,
+        ]);
     }
 
     public function isApproved(): bool
     {
-        return $this->status === 'approved';
+        return $this->status === self::STATUS_APPROVED;
     }
 
     public function isRejected(): bool
     {
-        return $this->status === 'rejected';
+        return $this->status === self::STATUS_REJECTED;
     }
 
+    /** Submitted EOI, screening fee not yet paid. */
+    public function isUnpaidPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isPaidAwaitingScreening(): bool
+    {
+        return $this->status === self::STATUS_PAID_AWAITING_SCREENING;
+    }
+
+    /** ELCOM may approve or reject (unpaid or paid, not yet screened). */
+    public function canBeScreened(): bool
+    {
+        return in_array($this->status, self::SCREENABLE_STATUSES, true);
+    }
+
+    /**
+     * @deprecated Use isUnpaidPending() or canBeScreened() for clarity.
+     */
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->canBeScreened();
+    }
+
+    public function scopeScreenable($query)
+    {
+        return $query->whereIn('status', self::SCREENABLE_STATUSES);
     }
 
     /**
@@ -246,6 +296,40 @@ class Candidate extends Model
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
+    }
+
+    /**
+     * Applicants holding an EOI slot (paid, approved, or unpaid within the payment grace window).
+     * Rejected applicants and stale unpaid applications do not count toward the office cap.
+     */
+    public function scopeActiveApplicants($query)
+    {
+        $graceHours = (int) config('election.eoi_payment_grace_hours', 48);
+        $cutoff = now()->subHours($graceHours);
+
+        return $query->where('status', '!=', self::STATUS_REJECTED)
+            ->where(function ($q) use ($cutoff) {
+                $q->whereIn('status', [
+                    self::STATUS_PAID_AWAITING_SCREENING,
+                    self::STATUS_APPROVED,
+                ])->orWhere(function ($q2) use ($cutoff) {
+                    $q2->where('status', self::STATUS_PENDING)
+                        ->where('created_at', '>=', $cutoff);
+                });
+            });
+    }
+
+    /**
+     * Unpaid EOI applications past the payment grace window (eligible for cleanup).
+     */
+    public function scopeAbandonedUnpaid($query)
+    {
+        $graceHours = (int) config('election.eoi_payment_grace_hours', 48);
+        $cutoff = now()->subHours($graceHours);
+
+        return $query->where('status', self::STATUS_PENDING)
+            ->where('has_paid_screening_fee', false)
+            ->where('created_at', '<', $cutoff);
     }
 
     /**

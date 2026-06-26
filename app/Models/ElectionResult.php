@@ -13,12 +13,14 @@ class ElectionResult extends Model
         'candidate_id',
         'total_votes',
         'is_winner',
+        'is_tied',
         'declared_at'
     ];
 
     protected $casts = [
         'total_votes' => 'integer',
         'is_winner' => 'boolean',
+        'is_tied' => 'boolean',
         'declared_at' => 'datetime'
     ];
 

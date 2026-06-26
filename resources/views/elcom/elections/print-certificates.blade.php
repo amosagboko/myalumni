@@ -279,91 +279,80 @@
         </a>
     </div>
 
-    @foreach($election->offices as $office)
+    @foreach($declaredWinners as $entry)
         @php
-            $winner = $office->candidates->sortByDesc(function ($candidate) {
-                return $candidate->votes->count();
-            })->first();
-            
-            if ($winner) {
-                $totalVotes = $office->candidates->sum(function ($candidate) {
-                    return $candidate->votes->count();
-                });
-                $winnerVotes = $winner->votes->count();
-                $percentage = $totalVotes > 0 ? ($winnerVotes / $totalVotes) * 100 : 0;
-                
-                // Generate a unique certificate number
-                $certificateNumber = strtoupper(substr(md5($election->id . $office->id . $winner->id), 0, 8));
-                
-                // Create verification URL
-                $verificationUrl = route('elcom.verify.certificate', [
-                    'election' => $election->id,
-                    'office' => $office->id,
-                    'winner' => $winner->id,
-                    'code' => $certificateNumber
-                ]);
-            }
+            $office = $entry['office'];
+            $winner = $entry['candidate'];
+            $certificateNumber = strtoupper(substr(md5($election->id . $office->id . $winner->id), 0, 8));
+            $verificationUrl = route('elcom.verify.certificate', [
+                'election' => $election->id,
+                'office' => $office->id,
+                'winner' => $winner->id,
+                'code' => $certificateNumber,
+            ]);
+            $issueDate = $entry['declared_at'] ?? $election->voting_end ?? now();
         @endphp
-        
-        @if($winner)
-            <div class="certificate-container">
-                <div class="certificate">
-                    <div class="watermark">CERTIFICATE OF ELECTION</div>
-                    <div class="certificate-border"></div>
-                    
-                    <div class="certificate-number">
-                        Certificate #: {{ $certificateNumber }}
-                    </div>
-                    
-                    <div class="certificate-header">
-                        <img src="{{ asset('images/alumni-logo.JPG') }}" alt="FULAFIA Alumni Logo">
-                        <h1 class="certificate-title">Certificate of Election</h1>
-                        <div class="certificate-subtitle">Federal University of Lafia Alumni Association</div>
-                    </div>
 
-                    <div class="certificate-content">
-                        <p>This is to certify that</p>
-                        <div class="winner-name">{{ $winner->alumni->user->name }}</div>
-                        <p>has been duly elected to the position of</p>
-                        <div class="office-title">{{ $office->title }}</div>
-                        <p>in the {{ $election->title }} held on {{ $election->voting_end->format('F j, Y') }}.</p>
-                        
-                        <div class="certificate-details">
-                            <p><strong>Total Votes Received:</strong> {{ number_format($winnerVotes) }}</p>
-                            <p><strong>Percentage of Votes:</strong> {{ number_format($percentage, 1) }}%</p>
-                            <p><strong>Term Duration:</strong> {{ $office->term_duration }} years</p>
+        <div class="certificate-container">
+            <div class="certificate">
+                <div class="watermark">CERTIFICATE OF ELECTION</div>
+                <div class="certificate-border"></div>
+
+                <div class="certificate-number">
+                    Certificate #: {{ $certificateNumber }}
+                </div>
+
+                <div class="certificate-header">
+                    <img src="{{ asset('images/alumni-logo.JPG') }}" alt="FULAFIA Alumni Logo">
+                    <h1 class="certificate-title">Certificate of Election</h1>
+                    <div class="certificate-subtitle">Federal University of Lafia Alumni Association</div>
+                </div>
+
+                <div class="certificate-content">
+                    <p>This is to certify that</p>
+                    <div class="winner-name">{{ $winner->alumni->user->name }}</div>
+                    <p>has been duly elected to the position of</p>
+                    <div class="office-title">{{ $office->title }}</div>
+                    <p>in the {{ $election->title }}@if($election->voting_end) held on {{ $election->voting_end->format('F j, Y') }}@endif.</p>
+
+                    <div class="certificate-details">
+                        <p><strong>Total Votes Received:</strong> {{ number_format($entry['votes']) }}</p>
+                        <p><strong>Percentage of Votes:</strong> {{ number_format($entry['percentage'], 1) }}%</p>
+                        <p><strong>Term Duration:</strong> {{ $office->term_duration }} years</p>
+                        @if($entry['declared_at'])
+                            <p><strong>Result Declared:</strong> {{ $entry['declared_at']->format('F j, Y h:i A') }}</p>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="certificate-footer">
+                    <div class="signature-box">
+                        <div class="signature-line">
+                            <p>ELCOM Chairman</p>
                         </div>
                     </div>
-
-                    <div class="certificate-footer">
-                        <div class="signature-box">
-                            <div class="signature-line">
-                                <p>ELCOM Chairman</p>
-                            </div>
-                        </div>
-                        <div class="signature-box">
-                            <div class="signature-line">
-                                <p>ELCOM Secretary</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="certificate-date">
-                        <p>Issued on: {{ now()->format('F j, Y') }}</p>
-                    </div>
-
-                    <div class="certificate-verification">
-                        {!! QrCode::size(100)
-                            ->format('svg')
-                            ->errorCorrection('H')
-                            ->generate($verificationUrl) !!}
-                        <div class="verification-text">
-                            Scan to verify certificate authenticity
+                    <div class="signature-box">
+                        <div class="signature-line">
+                            <p>ELCOM Secretary</p>
                         </div>
                     </div>
                 </div>
+
+                <div class="certificate-date">
+                    <p>Issued on: {{ $issueDate instanceof \Carbon\Carbon ? $issueDate->format('F j, Y') : now()->format('F j, Y') }}</p>
+                </div>
+
+                <div class="certificate-verification">
+                    {!! QrCode::size(100)
+                        ->format('svg')
+                        ->errorCorrection('H')
+                        ->generate($verificationUrl) !!}
+                    <div class="verification-text">
+                        Scan to verify certificate authenticity
+                    </div>
+                </div>
             </div>
-        @endif
+        </div>
     @endforeach
 </body>
-</html> 
+</html>

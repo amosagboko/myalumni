@@ -14,6 +14,11 @@
 							</div>
 						@endif
 
+						<div class="alert alert-light border small mb-3" id="annual_due_hint" style="display: none;">
+							<strong>Annual due:</strong> choose <em>All payment years</em> if the same amount applies every year, or a specific payment year.
+							You can also configure annual dues per year under <a href="{{ route('admin.payment-years.index') }}">Dues Config</a>.
+						</div>
+
 						<form action="{{ route('admin.fee-templates.store') }}" method="POST">
 							@csrf
 
@@ -34,17 +39,13 @@
 									@enderror
 								</div>
 
-								<!-- Graduation Year -->
+								<!-- Year -->
 								<div class="col-md-6">
-									<label for="graduation_year" class="form-label">Graduation Year *</label>
+									<label for="graduation_year" class="form-label" id="year_field_label">Graduation Year *</label>
 									<select name="graduation_year" id="graduation_year" class="form-select" required>
 										<option value="">Select Year</option>
-										@for($year = date('Y') + 1; $year >= 2020; $year--)
-											<option value="{{ $year }}" {{ old('graduation_year') == $year ? 'selected' : '' }}>
-												{{ $year }}
-											</option>
-										@endfor
 									</select>
+									<div class="form-text" id="year_field_help"></div>
 									@error('graduation_year')
 										<div class="form-text text-danger">{{ $message }}</div>
 									@enderror
@@ -102,7 +103,7 @@
 								<textarea name="description" id="description" rows="3" class="form-control">{{ old('description') }}</textarea>
 								@error('description')
 									<div class="form-text text-danger">{{ $message }}</div>
-								@enderror>
+								@enderror
 							</div>
 
 							<!-- Active Status -->
@@ -124,24 +125,89 @@
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
+			const feeTypeSelect = document.getElementById('fee_type_id');
 			const graduationYearSelect = document.getElementById('graduation_year');
 			const categorySection = document.getElementById('category_section');
 			const categorySelect = document.getElementById('category_id');
-			
+			const yearFieldLabel = document.getElementById('year_field_label');
+			const yearFieldHelp = document.getElementById('year_field_help');
+			const annualDueHint = document.getElementById('annual_due_hint');
+
+			const annualDueTypeIds = @json($annualDueTypeIds);
+			const paymentYears = @json($paymentYears->values());
+			const onboardingYears = @json(range(date('Y') + 1, 2020));
+			const selectedYear = @json(old('graduation_year'));
+
+			function isAnnualRenewalType() {
+				return annualDueTypeIds.includes(parseInt(feeTypeSelect.value, 10));
+			}
+
+			function rebuildYearOptions() {
+				const current = graduationYearSelect.value;
+				graduationYearSelect.innerHTML = '<option value="">Select Year</option>';
+
+				if (isAnnualRenewalType()) {
+					yearFieldLabel.textContent = 'Payment Year *';
+					yearFieldHelp.textContent = 'Use “All payment years” for one amount across every year, or pick a specific year from Dues Config.';
+
+					const allOpt = document.createElement('option');
+					allOpt.value = '0';
+					allOpt.textContent = 'All payment years';
+					if (String(selectedYear) === '0' || current === '0') {
+						allOpt.selected = true;
+					}
+					graduationYearSelect.appendChild(allOpt);
+
+					paymentYears.forEach(function(year) {
+						const opt = document.createElement('option');
+						opt.value = year;
+						opt.textContent = year + ' (payment year)';
+						if (String(selectedYear) === String(year) || current === String(year)) {
+							opt.selected = true;
+						}
+						graduationYearSelect.appendChild(opt);
+					});
+				} else {
+					yearFieldLabel.textContent = 'Graduation Year *';
+					yearFieldHelp.textContent = 'Cohort year for onboarding fees (2025+ requires a category).';
+
+					onboardingYears.forEach(function(year) {
+						const opt = document.createElement('option');
+						opt.value = year;
+						opt.textContent = year;
+						if (String(selectedYear) === String(year) || current === String(year)) {
+							opt.selected = true;
+						}
+						graduationYearSelect.appendChild(opt);
+					});
+				}
+			}
+
 			function toggleCategorySection() {
-				const selectedYear = parseInt(graduationYearSelect.value);
-				if (selectedYear >= 2025) {
+				const selectedYear = parseInt(graduationYearSelect.value, 10);
+				if (!isAnnualRenewalType() && selectedYear >= 2025) {
 					categorySection.classList.remove('d-none');
 					categorySelect.required = true;
 				} else {
 					categorySection.classList.add('d-none');
 					categorySelect.required = false;
-					categorySelect.value = '';
+					if (isAnnualRenewalType()) {
+						categorySelect.value = '';
+					}
 				}
 			}
-			
+
+			function refreshForm() {
+				rebuildYearOptions();
+				toggleCategorySection();
+				if (annualDueHint) {
+					annualDueHint.style.display = isAnnualRenewalType() ? 'block' : 'none';
+				}
+			}
+
+			feeTypeSelect.addEventListener('change', refreshForm);
 			graduationYearSelect.addEventListener('change', toggleCategorySection);
-			toggleCategorySection();
+			refreshForm();
 		});
 	</script>
 </x-alumniadmin-dashboard>

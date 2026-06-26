@@ -12,8 +12,9 @@ class CredoCentralService
     protected $publicKey;
     protected $secretKey;
 
-    public function __construct()
-    {
+    public function __construct(
+        protected PaymentCompletionService $paymentCompletion
+    ) {
         $this->baseUrl = rtrim(config('services.credocentral.base_url', 'https://api.credocentral.com'), '/');
         $this->publicKey = config('services.credocentral.public_key');
         $this->secretKey = config('services.credocentral.secret_key');
@@ -65,7 +66,8 @@ class CredoCentralService
         
         // Get service codes for this fee type
         $feeTypeServiceCodes = config('services.credocentral.service_codes.' . $feeTypeCode);
-        
+        $serviceCode = null;
+
         // If it's a simple string (backward compatibility), use it directly
         if (is_string($feeTypeServiceCodes)) {
             $serviceCode = $feeTypeServiceCodes;
@@ -105,6 +107,11 @@ class CredoCentralService
             // If not resolved yet, try category-specific service code for non-postgraduate categories
             if (empty($serviceCode) && $categorySlug && isset($feeTypeServiceCodes[$categorySlug])) {
                 $serviceCode = $feeTypeServiceCodes[$categorySlug];
+            }
+
+            // EOI and other flat fee types use a single default service code
+            if (empty($serviceCode) && isset($feeTypeServiceCodes['default'])) {
+                $serviceCode = $feeTypeServiceCodes['default'];
             }
         } else {
             $serviceCode = null;
@@ -417,72 +424,14 @@ class CredoCentralService
      */
     protected function handleSuccessfulPayment(Transaction $transaction, array $data)
     {
-        try {
-            $transaction->update([
-                'status' => 'paid',
-                'paid_at' => $data['paid_at'] ?? now(),
-                'payment_details' => array_merge(
-                    $transaction->payment_details ?? [],
-                    [
-                        'webhook_received_at' => now(),
-                        'webhook_data' => $data
-                    ]
-                )
-            ]);
-
-            // Handle any post-payment actions (e.g., update candidate status for screening fees)
-            if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
-                $meta = $transaction->metadata ? (is_array($transaction->metadata) ? $transaction->metadata : json_decode($transaction->metadata, true)) : [];
-                $candidateId = $meta['candidate_id'] ?? null;
-                $electionId = $meta['election_id'] ?? null;
-                $officeId = $meta['office_id'] ?? null;
-                $manifesto = $meta['manifesto'] ?? null;
-                $passport = $meta['passport'] ?? null;
-                $documents = $meta['documents'] ?? [];
-                $candidate = null;
-                if ($candidateId) {
-                    $candidate = \App\Models\Candidate::find($candidateId);
-                }
-                if (!$candidate && $electionId && $officeId) {
-                    // fallback for legacy/edge cases
-                    $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                        ->where('election_id', $electionId)
-                        ->where('election_office_id', $officeId)
-                        ->first();
-                }
-                if ($candidate) {
-                    $candidate->update([
-                        'has_paid_screening_fee' => true,
-                        'status' => 'paid',
-                    ]);
-                } else if ($electionId && $officeId) {
-                    // fallback: create if not found (should not happen)
-                    \App\Models\Candidate::create([
-                        'election_id' => $electionId,
-                        'election_office_id' => $officeId,
-                        'alumni_id' => $transaction->alumni_id,
-                        'has_paid_screening_fee' => true,
-                        'manifesto' => $manifesto,
-                        'passport' => $passport,
-                        'documents' => $documents,
-                        'status' => 'paid',
-                    ]);
-                }
-            }
-
-            Log::info('Payment completed successfully', [
-                'transaction_id' => $transaction->id,
-                'reference' => $transaction->payment_reference,
-                'paid_at' => $transaction->paid_at
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to handle successful payment', [
-                'transaction_id' => $transaction->id,
-                'error' => $e->getMessage()
-            ]);
-            throw $e;
-        }
+        $this->paymentCompletion->complete(
+            $transaction,
+            $data['paid_at'] ?? null,
+            [
+                'webhook_received_at' => now()->toIso8601String(),
+                'webhook_data' => $data,
+            ]
+        );
     }
 
     /**

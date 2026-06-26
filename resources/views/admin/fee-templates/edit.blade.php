@@ -35,24 +35,20 @@
 									@enderror
 								</div>
 
-								<!-- Graduation Year -->
+								<!-- Year -->
 								<div class="col-md-6">
-									<label for="graduation_year" class="form-label">Graduation Year *</label>
+									<label for="graduation_year" class="form-label" id="year_field_label">Graduation Year *</label>
 									<select name="graduation_year" id="graduation_year" class="form-select" required>
 										<option value="">Select Year</option>
-										@for($year = date('Y') + 1; $year >= 2020; $year--)
-											<option value="{{ $year }}" {{ old('graduation_year', $feeTemplate->graduation_year) == $year ? 'selected' : '' }}>
-												{{ $year }}
-											</option>
-										@endfor
 									</select>
+									<div class="form-text" id="year_field_help"></div>
 									@error('graduation_year')
 										<div class="form-text text-danger">{{ $message }}</div>
 									@enderror
 								</div>
 
-								<!-- Category (for 2025+) -->
-								<div id="category_section" class="col-md-6 {{ $feeTemplate->graduation_year >= 2025 ? '' : 'd-none' }}">
+								<!-- Category (onboarding 2025+ only) -->
+								<div id="category_section" class="col-md-6 d-none">
 									<label for="category_id" class="form-label">Alumni Category *</label>
 									<select name="category_id" id="category_id" class="form-select">
 										<option value="">Select Category</option>
@@ -125,23 +121,83 @@
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
+			const feeTypeSelect = document.getElementById('fee_type_id');
 			const graduationYearSelect = document.getElementById('graduation_year');
 			const categorySection = document.getElementById('category_section');
 			const categorySelect = document.getElementById('category_id');
-			
+			const yearFieldLabel = document.getElementById('year_field_label');
+			const yearFieldHelp = document.getElementById('year_field_help');
+
+			const annualDueTypeIds = @json($annualDueTypeIds);
+			const paymentYears = @json($paymentYears->values());
+			const onboardingYears = @json(range(date('Y') + 1, 2020));
+			const selectedYear = @json(old('graduation_year', $feeTemplate->graduation_year));
+
+			function isAnnualRenewalType() {
+				return annualDueTypeIds.includes(parseInt(feeTypeSelect.value, 10));
+			}
+
+			function rebuildYearOptions() {
+				const preserve = graduationYearSelect.value || String(selectedYear);
+				graduationYearSelect.innerHTML = '<option value="">Select Year</option>';
+
+				if (isAnnualRenewalType()) {
+					yearFieldLabel.textContent = 'Payment Year *';
+					yearFieldHelp.textContent = 'Use “All payment years” for one amount across every year, or pick a specific year from Dues Config.';
+
+					const allOpt = document.createElement('option');
+					allOpt.value = '0';
+					allOpt.textContent = 'All payment years';
+					if (preserve === '0') {
+						allOpt.selected = true;
+					}
+					graduationYearSelect.appendChild(allOpt);
+
+					paymentYears.forEach(function(year) {
+						const opt = document.createElement('option');
+						opt.value = year;
+						opt.textContent = year + ' (payment year)';
+						if (preserve === String(year)) {
+							opt.selected = true;
+						}
+						graduationYearSelect.appendChild(opt);
+					});
+				} else {
+					yearFieldLabel.textContent = 'Graduation Year *';
+					yearFieldHelp.textContent = 'Cohort year for onboarding fees (2025+ requires a category).';
+
+					onboardingYears.forEach(function(year) {
+						const opt = document.createElement('option');
+						opt.value = year;
+						opt.textContent = year;
+						if (preserve === String(year)) {
+							opt.selected = true;
+						}
+						graduationYearSelect.appendChild(opt);
+					});
+				}
+			}
+
 			function toggleCategorySection() {
-				const selectedYear = parseInt(graduationYearSelect.value);
-				if (selectedYear >= 2025) {
+				const year = parseInt(graduationYearSelect.value, 10);
+				if (!isAnnualRenewalType() && year >= 2025) {
 					categorySection.classList.remove('d-none');
 					categorySelect.required = true;
 				} else {
 					categorySection.classList.add('d-none');
 					categorySelect.required = false;
-					categorySelect.value = '';
+					if (isAnnualRenewalType()) {
+						categorySelect.value = '';
+					}
 				}
 			}
-			
+
+			feeTypeSelect.addEventListener('change', function() {
+				rebuildYearOptions();
+				toggleCategorySection();
+			});
 			graduationYearSelect.addEventListener('change', toggleCategorySection);
+			rebuildYearOptions();
 			toggleCategorySection();
 		});
 	</script>

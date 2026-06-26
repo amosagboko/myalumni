@@ -84,9 +84,15 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('alumni-years.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni-years.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.payment-years.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.payment-years*') ? 'active' : '' }}">
                                     <i data-feather="calendar" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
-                                    <span>Alumni Years</span>
+                                    <span>Dues Config</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('alumni-years.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni-years.*') ? 'active' : '' }}">
+                                    <i data-feather="clock" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Alumni Years (legacy)</span>
                                 </a>
                             </li>
                             <li class="nav-item">

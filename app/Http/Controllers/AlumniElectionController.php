@@ -16,11 +16,13 @@ use Illuminate\Support\Facades\Crypt;
 use Spatie\Activitylog\Facades\Activity;
 use App\Models\FeeTemplate;
 use App\Services\AlumniElectionParticipationService;
+use App\Services\PaymentCompletionService;
 
 class AlumniElectionController extends Controller
 {
     public function __construct(
-        private AlumniElectionParticipationService $participationService
+        private AlumniElectionParticipationService $participationService,
+        private PaymentCompletionService $paymentCompletion,
     ) {}
 
     private function redirectIfArchived(Election $election)
@@ -34,6 +36,69 @@ class AlumniElectionController extends Controller
         return null;
     }
 
+    private function redirectIfOfficeApplicantSlotsFull(ElectionOffice $office)
+    {
+        if (!$office->hasAvailableApplicantSlots()) {
+            return redirect()
+                ->route('alumni.elections')
+                ->with('error', "Expression of Interest for {$office->title} is closed. All applicant slots have been filled.");
+        }
+
+        return null;
+    }
+
+    private function redirectIfUnpaidDues($alumni)
+    {
+            if (!$alumni->hasPaidAllActiveFees()) {
+            return redirect()
+                ->route('alumni.payments.index')
+                ->with('error', 'You must complete all pending annual dues before voting.');
+        }
+
+        return null;
+    }
+
+    private function redirectIfPendingEoiPayment($alumni, Election $election, ElectionOffice $office)
+    {
+        $existingTransaction = $this->paymentCompletion->findPendingEoiTransaction(
+            $alumni->id,
+            $election->id,
+            $office->id,
+            $office->fee_type_id
+        );
+
+        if ($existingTransaction) {
+            return redirect()
+                ->route('alumni.payments.process', $existingTransaction)
+                ->with('info', 'You have a pending payment for this position. Please complete the payment to continue.');
+        }
+
+        return null;
+    }
+
+    private function redirectIfDuplicateEoiApplication($alumni, Election $election, ElectionOffice $office)
+    {
+        $existingCandidate = Candidate::where('alumni_id', $alumni->id)
+            ->where('election_id', $election->id)
+            ->where('election_office_id', $office->id)
+            ->activeApplicants()
+            ->first();
+
+        if (!$existingCandidate) {
+            return null;
+        }
+
+        if (!$existingCandidate->has_paid_screening_fee) {
+            if ($redirect = $this->redirectIfPendingEoiPayment($alumni, $election, $office)) {
+                return $redirect;
+            }
+        }
+
+        return redirect()
+            ->route('alumni.elections.expression-of-interest.status')
+            ->with('info', 'You already have an application for this position.');
+    }
+
     /**
      * Show a list of elections the alumni is eligible for.
      */
@@ -41,14 +106,28 @@ class AlumniElectionController extends Controller
     {
         $alumni = Auth::user()->alumni;
 
-        $currentElection = Election::query()
+        $byElection = Election::query()
+            ->where('election_type', 'by_election')
             ->where('is_active', true)
-            ->operational()
+            ->whereNotIn('status', ['completed', 'archived'])
+            ->with(['offices', 'parentElection'])
+            ->first();
+
+        $currentElection = $byElection ?? Election::query()
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->operational()
+                    ->orWhere('status', 'incomplete');
+            })
             ->with('offices')
             ->first();
 
+        $parentElection = $byElection?->parentElection;
+
         $pastElections = Election::query()
             ->historical()
+            ->when($currentElection, fn ($query) => $query->where('id', '!=', $currentElection->id))
+            ->when($parentElection, fn ($query) => $query->where('id', '!=', $parentElection->id))
             ->with('offices')
             ->orderByDesc('election_year')
             ->orderByDesc('id')
@@ -70,7 +149,8 @@ class AlumniElectionController extends Controller
             'pastElections',
             'participation',
             'phaseLabel',
-            'actions'
+            'actions',
+            'parentElection'
         ));
     }
 
@@ -92,6 +172,12 @@ class AlumniElectionController extends Controller
     public function vote(Election $election)
     {
         if ($redirect = $this->redirectIfArchived($election)) {
+            return $redirect;
+        }
+
+        $alumni = Auth::user()->alumni;
+
+        if ($redirect = $this->redirectIfUnpaidDues($alumni)) {
             return $redirect;
         }
 
@@ -118,11 +204,11 @@ class AlumniElectionController extends Controller
      */
     public function results(Election $election)
     {
-        // Only show results if election is completed
-        if (!in_array($election->status, ['completed', 'archived'])) {
+        // Show results once voting has ended (incomplete or fully completed)
+        if (!$election->resultsArePublished()) {
             return redirect()
                 ->route('alumni.elections')
-                ->with('error', 'Election results are not yet available. Results will be published after the election is completed.');
+                ->with('error', 'Election results are not yet available. Results will be published after voting ends.');
         }
 
         // Load election data with necessary relationships - ONLY approved candidates
@@ -158,7 +244,8 @@ class AlumniElectionController extends Controller
             ];
         });
 
-        return view('alumni.elections.results', compact('election', 'officeResults', 'totalAccredited', 'totalVotes', 'voterTurnout'));
+        return view('alumni.elections.results', compact('election', 'officeResults', 'totalAccredited', 'totalVotes', 'voterTurnout'))
+            ->with('resolution', app(\App\Services\ElectionResultService::class)->getResolutionSummary($election));
     }
 
     /**
@@ -185,6 +272,24 @@ class AlumniElectionController extends Controller
             }
         }
 
+        if ($office->isRunoffByElectionOffice()) {
+            return redirect()
+                ->route('alumni.elections')
+                ->with('error', 'This office is in a runoff. Candidates are already on the ballot — no new applications are accepted.');
+        }
+
+        if ($redirect = $this->redirectIfOfficeApplicantSlotsFull($office)) {
+            return $redirect;
+        }
+
+        if ($redirect = $this->redirectIfPendingEoiPayment($alumni, $election, $office)) {
+            return $redirect;
+        }
+
+        if ($redirect = $this->redirectIfDuplicateEoiApplication($alumni, $election, $office)) {
+            return $redirect;
+        }
+
         // Check if alumni is eligible to express interest
         if (!$alumni->isEligibleToExpressInterest()) {
             if ($alumni->hasExpressedInterest()) {
@@ -194,7 +299,7 @@ class AlumniElectionController extends Controller
                     ->with('error', 'You have already expressed interest for ' . $currentInterest->office->title . '. You can only express interest in one position at a time.');
             }
 
-            if (!$alumni->getActiveFees()->every(fn($fee) => $fee->isPaid())) {
+            if (!$alumni->hasPaidAllActiveFees()) {
                 return redirect()
                     ->route('alumni.payments.index')
                     ->with('error', 'You must complete all pending payments before expressing interest in a position.');
@@ -240,7 +345,19 @@ class AlumniElectionController extends Controller
                 ->with('error', 'The Expression of Interest period is not open for submissions.');
         }
 
+        if ($redirect = $this->redirectIfOfficeApplicantSlotsFull($office)) {
+            return $redirect;
+        }
+
         $alumni = Auth::user()->alumni;
+
+        if ($redirect = $this->redirectIfPendingEoiPayment($alumni, $election, $office)) {
+            return $redirect;
+        }
+
+        if ($redirect = $this->redirectIfDuplicateEoiApplication($alumni, $election, $office)) {
+            return $redirect;
+        }
 
         // Validate eligibility
         if (!$alumni->isEligibleToExpressInterest()) {
@@ -328,6 +445,11 @@ class AlumniElectionController extends Controller
 
         $alumni = Auth::user()->alumni;
 
+        if ($redirect = $this->redirectIfDuplicateEoiApplication($alumni, $election, $office)) {
+            session()->forget('eoi_preview');
+            return $redirect;
+        }
+
         // First check if they already have an expression of interest
         if ($alumni->hasExpressedInterest()) {
             $currentInterest = $alumni->getCurrentExpressionOfInterest();
@@ -338,32 +460,14 @@ class AlumniElectionController extends Controller
                 ->with('error', 'You have already expressed interest for ' . $currentInterest->office->title . '. You can only express interest in one position at a time.');
         }
 
-        // Check for any pending or successful EOI transactions
-        $existingTransaction = Transaction::where('alumni_id', $alumni->id)
-            ->whereHas('feeTemplate', function($query) use ($office) {
-                $query->where('fee_type_id', $office->fee_type_id);
-            })
-            ->whereIn('status', ['pending', 'success'])
-            ->first();
-
-        if ($existingTransaction) {
-            if ($existingTransaction->status === 'pending') {
-                // Clear any preview data
-                session()->forget('eoi_preview');
-                return redirect()
-                    ->route('alumni.payments.process', $existingTransaction)
-                    ->with('info', 'You have a pending payment for this position. Please complete the payment to continue.');
-            } else {
-                // Clear any preview data
-                session()->forget('eoi_preview');
-                return redirect()
-                    ->route('alumni.elections')
-                    ->with('error', 'You have already paid for this position. Please wait for the screening process.');
-            }
+        // Check for any pending EOI transactions for this election/office
+        if ($redirect = $this->redirectIfPendingEoiPayment($alumni, $election, $office)) {
+            session()->forget('eoi_preview');
+            return $redirect;
         }
 
         // Then check other eligibility criteria
-        if (!$alumni->getActiveFees()->every(fn($fee) => $fee->isPaid())) {
+        if (!$alumni->hasPaidAllActiveFees()) {
             session()->forget('eoi_preview');
             return redirect()
                 ->route('alumni.payments.index')
@@ -375,6 +479,11 @@ class AlumniElectionController extends Controller
             return redirect()
                 ->route('alumni.bio-data')
                 ->with('error', 'Please complete your bio data before expressing interest in a position.');
+        }
+
+        if ($redirect = $this->redirectIfOfficeApplicantSlotsFull($office)) {
+            session()->forget('eoi_preview');
+            return $redirect;
         }
 
         // Validate the preview token
@@ -418,6 +527,17 @@ class AlumniElectionController extends Controller
         try {
             DB::beginTransaction();
 
+            $office = ElectionOffice::whereKey($office->id)->lockForUpdate()->firstOrFail();
+
+            if (!$office->hasAvailableApplicantSlots()) {
+                DB::rollBack();
+                session()->forget('eoi_preview');
+
+                return redirect()
+                    ->route('alumni.elections')
+                    ->with('error', "Expression of Interest for {$office->title} is closed. All applicant slots have been filled.");
+            }
+
             // Store the files temporarily
             $passportPath = str_replace('temp/', '', $data['passport']);
             Storage::disk('public')->move($data['passport'], $passportPath);
@@ -459,9 +579,12 @@ class AlumniElectionController extends Controller
                 'amount' => $screeningFee->amount,
                 'status' => 'pending',
                 'payment_reference' => 'EOI-' . strtoupper(uniqid()),
-                'is_test_mode' => true, // Force test mode for screening fees
+                'is_test_mode' => (bool) config('services.credocentral.test_mode', false),
                 'payment_provider' => 'credo',
-                'metadata' => json_encode($metadata)
+                'metadata' => $metadata,
+                'payment_details' => [
+                    'eoi' => $metadata,
+                ],
             ]);
 
             // Store EOI candidate details in session, keyed by payment_reference (for redundancy)
@@ -621,6 +744,10 @@ class AlumniElectionController extends Controller
 
         $alumni = Auth::user()->alumni;
 
+        if ($redirect = $this->redirectIfUnpaidDues($alumni)) {
+            return $redirect;
+        }
+
         // Check if voting period is active
         if (!$election->canAcceptVoteSubmissions()) {
             return back()->with('error', 'Voting period is not active.');
@@ -689,6 +816,10 @@ class AlumniElectionController extends Controller
         }
 
         $alumni = Auth::user()->alumni;
+
+        if ($redirect = $this->redirectIfUnpaidDues($alumni)) {
+            return $redirect;
+        }
 
         // Check if voting period is active
         if (!$election->canAcceptVoteSubmissions()) {

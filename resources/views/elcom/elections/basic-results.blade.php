@@ -5,19 +5,27 @@
     <div class="row justify-content-center">
         <div class="col-md-10">
             <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h4 class="mb-0">
                         <i class="bi bi-bar-chart-fill me-2"></i>
                         Basic Election Results - {{ $election->title }}
                     </h4>
-                    <a href="{{ route('elcom.elections.real-time-results', $election) }}" class="btn btn-primary">
-                        <i class="bi bi-graph-up me-2"></i>
-                        View Detailed Results
-                    </a>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        @if($election->status === 'voting')
+                            <span class="badge bg-success">
+                                <i class="bi bi-circle-fill live-indicator me-1"></i>
+                                LIVE
+                            </span>
+                            <span class="refresh-indicator text-muted small">Auto-updating every 10s</span>
+                        @endif
+                        <a href="{{ route('elcom.elections.real-time-results', $election) }}" class="btn btn-primary">
+                            <i class="bi bi-graph-up me-2"></i>
+                            View Detailed Results
+                        </a>
+                    </div>
                 </div>
 
                 <div class="card-body">
-                    <!-- Election Status -->
                     <div class="alert {{ $election->status === 'voting' ? 'alert-info' : 'alert-success' }} mb-4">
                         <h5 class="alert-heading">
                             <i class="bi {{ $election->status === 'voting' ? 'bi-clock' : 'bi-check-circle' }} me-2"></i>
@@ -25,12 +33,15 @@
                         </h5>
                         @if($timeRemaining)
                             <p class="mb-0">
-                                Time Remaining: <strong>{{ $timeRemaining }}</strong>
+                                {{ $timeRemainingLabel ?? 'Time Remaining' }}: <strong>{{ $timeRemaining }}</strong>
+                            </p>
+                        @elseif(!empty($votingEndedAt))
+                            <p class="mb-0">
+                                Voting Ended: <strong>{{ $votingEndedAt }}</strong>
                             </p>
                         @endif
                     </div>
 
-                    <!-- Basic Statistics Table -->
                     <div class="table-responsive">
                         <table class="table table-bordered">
                             <thead class="table-light">
@@ -47,33 +58,26 @@
                                         <i class="bi bi-people-fill me-2"></i>
                                         Total Accredited Voters
                                     </td>
-                                    <td class="text-end">
-                                        {{ number_format($totalAccredited) }}
-                                    </td>
+                                    <td class="text-end">{{ number_format($totalAccredited) }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">
                                         <i class="bi bi-check-circle-fill me-2"></i>
                                         Total Votes Cast
                                     </td>
-                                    <td class="text-end">
-                                        {{ number_format($totalVotes) }}
-                                    </td>
+                                    <td class="text-end">{{ number_format($totalVotes) }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">
                                         <i class="bi bi-percent me-2"></i>
                                         Voter Turnout
                                     </td>
-                                    <td class="text-end">
-                                        {{ number_format($voterTurnout, 2) }}%
-                                    </td>
+                                    <td class="text-end">{{ number_format($voterTurnout, 2) }}%</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Progress Bar for Voter Turnout -->
                     <div class="mt-4">
                         <h6 class="mb-3">Voter Turnout Progress</h6>
                         <div class="progress" style="height: 25px;">
@@ -88,7 +92,6 @@
                         </div>
                     </div>
 
-                    <!-- Navigation Buttons -->
                     <div class="mt-4 d-flex justify-content-between">
                         <a href="{{ route('elcom.elections.index') }}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left me-2"></i>
@@ -118,5 +121,28 @@
 .table th {
     background-color: #f8f9fa;
 }
+.refresh-indicator {
+    font-size: 0.875rem;
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+.live-indicator {
+    font-size: 0.5rem;
+    vertical-align: middle;
+    animation: pulse 2s infinite;
+}
 </style>
-@endsection 
+
+@if($election->status === 'voting')
+    @push('scripts')
+    <script>
+        setInterval(function () {
+            window.location.reload();
+        }, 10000);
+    </script>
+    @endpush
+@endif
+@endsection

@@ -38,7 +38,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="max_candidates" class="form-label">Maximum Candidates</label>
+                            <label for="max_candidates" class="form-label">Maximum Applicants</label>
                             <input type="number" 
                                 class="form-control @error('max_candidates') is-invalid @enderror" 
                                 id="max_candidates" 
@@ -46,6 +46,7 @@
                                 value="{{ old('max_candidates', 1) }}" 
                                 min="1" 
                                 required>
+                            <div class="form-text">EOI closes for this office when this number of applicants is reached.</div>
                             @error('max_candidates')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

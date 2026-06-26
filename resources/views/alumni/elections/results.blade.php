@@ -17,7 +17,14 @@
                         <div class="alert alert-info">{{ session('info') }}</div>
                     @endif
 
-                    @if($election->isArchived())
+                    @if($election->isIncomplete())
+                        <div class="alert alert-warning mb-4">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Election incomplete.</strong>
+                            {{ $resolution['pending_count'] }} office(s) are tied or uncontested and will be resolved in a by-election.
+                            Winners shown below are only for offices with a clear result.
+                        </div>
+                    @endif
                         <div class="alert alert-secondary mb-4">
                             <i class="bi bi-archive me-2"></i>
                             <strong>Archived election</strong>
@@ -100,6 +107,35 @@
                             </div>
                         </div>
                     </div>
+
+                    @if(isset($resolution) && $resolution['has_pending'])
+                        <div class="card mb-4 border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="card-title mb-0 h6 h-md-5">
+                                    <i class="bi bi-hourglass-split me-2"></i>
+                                    Pending By-Election
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @foreach($resolution['tied'] as $item)
+                                    <div class="mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
+                                        <h6 class="text-danger mb-2">{{ $item['office']->title }} — <span class="badge bg-danger">Tie</span></h6>
+                                        <ul class="mb-0 small">
+                                            @foreach($item['tied_candidates'] as $candidate)
+                                                <li>{{ $candidate->alumni->user->name }} ({{ number_format($candidate->votes_count) }} votes)</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endforeach
+                                @foreach($resolution['uncontested'] as $item)
+                                    <div class="mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
+                                        <h6 class="text-secondary mb-1">{{ $item['office']->title }} — <span class="badge bg-secondary">Uncontested</span></h6>
+                                        <p class="small text-muted mb-0">No candidate contested this office.</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
 
                     <!-- Detailed Results by Office -->
                     <h5 class="mb-3 h6 h-md-5">

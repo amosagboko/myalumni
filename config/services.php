@@ -88,10 +88,9 @@ return [
                 'undergraduate-part-time' => '0034862114FZ',
                 'diploma' => '003486UA8M7C',
             ],
-            // Subscription - Add category-specific codes as needed (STRICT - NO FALLBACKS)
-            'subscription' => [
-                // Add category-specific codes here if needed
-            ],
+            // Annual subscription (≤2023 alumni legacy) and yearly renewal due
+            'subscription' => '003486U9Q446',
+            'annual_due' => '003486U9Q446',
             // EOI (Expression of Interest) fees (same for all)
             'eoi-nat-president' => [
                 'default' => '0034865MAOAN',

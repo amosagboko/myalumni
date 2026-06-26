@@ -11,7 +11,14 @@ class FeeType extends Model
 {
     use HasFactory;
 
-    protected $table = 'fee_types';
+    public const ANNUAL_DUE_CODE = 'annual_due';
+
+    public const ONBOARDING_FEE_CODES = [
+        'registration',
+        'development_levy',
+        'data_processing',
+        'tech_support',
+    ];
 
     protected $fillable = [
         'name',
@@ -149,6 +156,44 @@ class FeeType extends Model
             })
             ->where('valid_from', '<=', now())
             ->get();
+    }
+
+  /**
+     * Whether this fee type code is an EOI / office contest screening fee.
+     */
+    public static function isEoiFeeCode(?string $code): bool
+    {
+        if (!$code) {
+            return false;
+        }
+
+        return str_starts_with($code, 'eoi-') || $code === 'screening_fee';
+    }
+
+    public function isEoiFee(): bool
+    {
+        return self::isEoiFeeCode($this->code);
+    }
+
+    public function isAnnualDue(): bool
+    {
+        return $this->code === self::ANNUAL_DUE_CODE
+            || $this->code === 'subscription';
+    }
+
+    public function isOnboardingFee(): bool
+    {
+        return in_array($this->code, self::ONBOARDING_FEE_CODES, true);
+    }
+
+    public static function onboardingTypes()
+    {
+        return static::whereIn('code', self::ONBOARDING_FEE_CODES)->orderBy('name');
+    }
+
+    public static function annualDueType(): ?self
+    {
+        return static::where('code', self::ANNUAL_DUE_CODE)->first();
     }
 
     /**

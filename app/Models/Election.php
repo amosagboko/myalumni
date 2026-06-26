@@ -32,6 +32,8 @@ class Election extends Model
         'archived_at',
         'archived_by',
         'cloned_from_election_id',
+        'election_type',
+        'parent_election_id',
     ];
 
     protected $casts = [
@@ -88,6 +90,44 @@ class Election extends Model
         return $this->belongsTo(Election::class, 'cloned_from_election_id');
     }
 
+    public function parentElection(): BelongsTo
+    {
+        return $this->belongsTo(Election::class, 'parent_election_id');
+    }
+
+    public function byElections(): HasMany
+    {
+        return $this->hasMany(Election::class, 'parent_election_id');
+    }
+
+    public function activeByElection(): ?Election
+    {
+        return $this->byElections()
+            ->whereNotIn('status', ['completed', 'archived'])
+            ->latest('id')
+            ->first();
+    }
+
+    public function isByElection(): bool
+    {
+        return $this->election_type === 'by_election';
+    }
+
+    public function isGeneralElection(): bool
+    {
+        return $this->election_type === 'general' || $this->election_type === null;
+    }
+
+    public function hasEoiOffices(): bool
+    {
+        return $this->offices()->where('by_election_mode', 'eoi')->exists();
+    }
+
+    public function hasRunoffOffices(): bool
+    {
+        return $this->offices()->where('by_election_mode', 'runoff')->exists();
+    }
+
     public function expressionsOfInterest(): HasMany
     {
         return $this->hasMany(ExpressionOfInterest::class);
@@ -109,9 +149,19 @@ class Election extends Model
         return $query->where('status', 'completed');
     }
 
+    public function scopeIncomplete($query)
+    {
+        return $query->where('status', 'incomplete');
+    }
+
+    public function scopeUnresolvedCycle($query)
+    {
+        return $query->whereIn('status', ['completed', 'incomplete']);
+    }
+
     public function scopeOperational($query)
     {
-        return $query->whereNotIn('status', ['completed', 'archived']);
+        return $query->whereNotIn('status', ['completed', 'incomplete', 'archived']);
     }
 
     public function scopeHistorical($query)
@@ -126,7 +176,24 @@ class Election extends Model
 
     public function isHistorical(): bool
     {
-        return in_array($this->status, ['completed', 'archived'], true);
+        return in_array($this->status, ['completed', 'incomplete', 'archived'], true);
+    }
+
+    public function isIncomplete(): bool
+    {
+        return $this->status === 'incomplete';
+    }
+
+    public function hasPendingOfficeResolutions(): bool
+    {
+        return $this->offices()
+            ->whereIn('resolution_status', ['tied', 'uncontested'])
+            ->exists();
+    }
+
+    public function resultsArePublished(): bool
+    {
+        return in_array($this->status, ['incomplete', 'completed', 'archived'], true);
     }
 
     public function isMutable(): bool
@@ -141,7 +208,7 @@ class Election extends Model
 
     public static function canStartNewCycle(): bool
     {
-        return !static::completedUnarchived()->exists()
+        return !static::unresolvedCycle()->exists()
             && !static::operational()->where('is_active', true)->exists();
     }
 
@@ -164,6 +231,10 @@ class Election extends Model
     {
         $validStatus = in_array($this->status, ['draft', 'eoi_closed'], true)
             || ($this->status === 'eoi' && $this->hasEoiEnded());
+
+        if ($this->isByElection() && !$this->hasEoiOffices()) {
+            $validStatus = in_array($this->status, ['draft', 'eoi_closed'], true);
+        }
 
         return $validStatus
             && $this->hasAccreditationStarted()
@@ -255,32 +326,28 @@ class Election extends Model
 
     public function isAlumniEligibleToVote(Alumni $alumni): bool
     {
-        // Check if alumni has paid all required fees
-        $hasPaidFees = $alumni->getActiveFees()->every(function($fee) {
-            return $fee->isPaid();
-        });
+        if (!$alumni->hasPaidAllActiveFees()) {
+            return false;
+        }
 
-        // Check if alumni is already accredited
         $isAccredited = $this->accreditedVoters()
             ->where('alumni_id', $alumni->id)
             ->exists();
 
-        return $hasPaidFees && !$isAccredited;
+        return !$isAccredited;
     }
 
     public function isAlumniEligibleToRun(Alumni $alumni): bool
     {
-        // Check if alumni has paid all required fees
-        $hasPaidFees = $alumni->getActiveFees()->every(function($fee) {
-            return $fee->isPaid();
-        });
+        if (!$alumni->hasPaidAllActiveFees()) {
+            return false;
+        }
 
-        // Check if alumni is already a candidate
         $isCandidate = $this->candidates()
             ->where('alumni_id', $alumni->id)
             ->exists();
 
-        return $hasPaidFees && !$isCandidate;
+        return !$isCandidate;
     }
 
     public function getRealTimeResults()
@@ -336,6 +403,10 @@ class Election extends Model
      */
     public function canStartEoi(): bool
     {
+        if ($this->isByElection() && !$this->hasEoiOffices()) {
+            return false;
+        }
+
         return $this->status === 'draft'
             && $this->eoi_start
             && $this->eoi_end
@@ -560,6 +631,44 @@ class Election extends Model
     }
 
     /**
+     * Human-readable voting time for results dashboards.
+     *
+     * @return array{label: string, value: string, is_countdown: bool}
+     */
+    public function getVotingTimeDisplay(): array
+    {
+        if (!$this->voting_start || !$this->voting_end) {
+            return ['label' => 'Voting Status', 'value' => 'Not scheduled', 'is_countdown' => false];
+        }
+
+        if ($this->canAcceptVoteSubmissions()) {
+            return [
+                'label' => 'Time Remaining',
+                'value' => $this->voting_end->diffForHumans(['parts' => 2]),
+                'is_countdown' => true,
+            ];
+        }
+
+        if ($this->status === 'voting' && now()->lt($this->voting_start)) {
+            return [
+                'label' => 'Voting Starts In',
+                'value' => $this->voting_start->diffForHumans(['parts' => 2]),
+                'is_countdown' => true,
+            ];
+        }
+
+        if ($this->hasVotingEnded() || in_array($this->status, ['incomplete', 'completed', 'archived'], true)) {
+            return [
+                'label' => 'Voting Ended',
+                'value' => $this->voting_end->format('M d, Y h:i A'),
+                'is_countdown' => false,
+            ];
+        }
+
+        return ['label' => 'Voting Status', 'value' => '—', 'is_countdown' => false];
+    }
+
+    /**
      * Alumni may submit EOI only when ELCOM has opened EOI and the calendar window is active.
      */
     public function canAcceptEoiSubmissions(): bool
@@ -645,16 +754,11 @@ class Election extends Model
     }
 
     /**
-     * Get total exempted users (alumni who were exempted from paying the ₦2,000 subscription fee during onboarding).
+     * @deprecated 2024 graduates are no longer fee-exempt; retained for backward-compatible stats.
      */
     public function getTotalExemptedUsers(): int
     {
-        // 2024 graduates are exempted from all fees including subscription fee
-        return \App\Models\Alumni::where('year_of_graduation', 2024)
-            ->whereNotNull('contact_address')
-            ->whereNotNull('phone_number')
-            ->whereNotNull('qualification_type')
-            ->count();
+        return 0;
     }
 
     /**

@@ -9,8 +9,19 @@
                     <h3 class="card-title h5 h-md-4 mb-0">Complete Your Payments</h3>
                 </div>
                 <div class="card-body">
+                    @php
+                        $duesPhase = $duesPhase ?? 'onboarding';
+                        $paymentYearLabel = $activePaymentYear?->year;
+                    @endphp
+
                     <div class="mb-3 mb-md-4 text-muted">
-                        Please complete all required payments to finish your onboarding process.
+                        @if($duesPhase === 'onboarding')
+                            Please complete all required onboarding payments for your graduation cohort before you can access full alumni services.
+                        @elseif($duesPhase === 'annual')
+                            Pay your annual alumni due for payment year {{ $paymentYearLabel }} to keep your membership active.
+                        @else
+                            There are no payments due on your account right now.
+                        @endif
                     </div>
 
                     @if(session('success'))
@@ -105,10 +116,16 @@
                         @endforelse
                     </div>
 
-                    @if($fees->isNotEmpty() && $fees->every->isPaid())
+                    @if($duesPhase === 'onboarding' && $fees->isNotEmpty() && $fees->every->isPaid())
                         <div class="mt-4 text-center">
                             <a href="{{ route('alumni.home') }}" class="btn btn-success">
                                 Complete Onboarding
+                            </a>
+                        </div>
+                    @elseif($duesPhase === 'annual' && $fees->isNotEmpty() && $fees->every->isPaid())
+                        <div class="mt-4 text-center">
+                            <a href="{{ route('alumni.home') }}" class="btn btn-success">
+                                Return to Dashboard
                             </a>
                         </div>
                     @endif

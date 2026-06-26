@@ -51,7 +51,10 @@
                                             <td>
                                                 @switch($candidate->status)
                                                     @case('pending')
-                                                        <span class="badge bg-warning">Pending</span>
+                                                        <span class="badge bg-warning">Pending payment</span>
+                                                        @break
+                                                    @case('paid_awaiting_screening')
+                                                        <span class="badge bg-info">Paid, awaiting screening</span>
                                                         @break
                                                     @case('approved')
                                                         <span class="badge bg-success">Approved</span>

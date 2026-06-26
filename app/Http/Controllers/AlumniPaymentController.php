@@ -6,6 +6,8 @@ use App\Models\Alumni;
 use App\Models\Transaction;
 use App\Models\FeeTemplate;
 use App\Services\CredoCentralService;
+use App\Services\PaymentCompletionService;
+use App\Services\AlumniDuesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -16,11 +18,11 @@ use Illuminate\Contracts\Auth\Authenticatable;
 
 class AlumniPaymentController extends Controller
 {
-    protected $credocentral;
-
-    public function __construct(CredoCentralService $credocentral)
-    {
-        $this->credocentral = $credocentral;
+    public function __construct(
+        protected CredoCentralService $credocentral,
+        protected PaymentCompletionService $paymentCompletion,
+        protected AlumniDuesService $duesService,
+    ) {
     }
 
     public function index()
@@ -28,9 +30,14 @@ class AlumniPaymentController extends Controller
         /** @var User $user */
         $user = Auth::user();
         $alumni = $user->alumni;
+
+        $this->duesService->ensureAnnualDueAssigned($alumni);
+
         $fees = $alumni->getActiveFees();
-        
-        return view('alumni.payments.index', compact('fees'));
+        $duesPhase = $alumni->getDuesPhase();
+        $activePaymentYear = \App\Models\AlumniYear::where('is_active', true)->first();
+
+        return view('alumni.payments.index', compact('fees', 'duesPhase', 'activePaymentYear'));
     }
 
     /**
@@ -109,27 +116,15 @@ class AlumniPaymentController extends Controller
                 return redirect()->back()->with('error', 'This fee is currently inactive.');
             }
 
-            // For subscription fees, only check if alumni graduated in 2023 or earlier
-            if ($fee->feeType->code === 'subscription') {
-                if ($alumni->year_of_graduation > 2023) {
-                    Log::warning('Subscription fee not applicable to recent graduates', [
-                        'fee_id' => $fee->id,
-                        'fee_type' => $fee->feeType->code,
-                        'alumni_year' => $alumni->year_of_graduation
-                    ]);
-                    return redirect()->back()->with('error', 'Subscription fees are only applicable to alumni who graduated in 2023 or earlier.');
-                }
-            } else {
-                // For non-subscription fees, check if fee is applicable to alumni's graduation year
-                if ($fee->graduation_year !== $alumni->year_of_graduation) {
-                    Log::warning('Year mismatch for fee payment', [
-                        'fee_id' => $fee->id,
-                        'fee_type' => $fee->feeType->code,
-                        'fee_year' => $fee->graduation_year,
-                        'alumni_year' => $alumni->year_of_graduation
-                    ]);
-                    return redirect()->back()->with('error', 'This fee is not applicable to your graduation year.');
-                }
+            if ($fee->feeType->isEoiFee()) {
+                return redirect()->back()->with(
+                    'error',
+                    'EOI screening fees must be paid through the Expression of Interest application flow.'
+                );
+            }
+
+            if (!$this->duesService->feeIsPayableByAlumni($fee, $alumni)) {
+                return redirect()->back()->with('error', 'This fee is not applicable to your account at this time.');
             }
 
             // Check for existing pending transaction
@@ -340,24 +335,16 @@ class AlumniPaymentController extends Controller
                 // Always verify payment status through API regardless of redirect status
                 try {
                     $result = $this->credocentral->verifyPayment($transaction);
-                    
+
                     if ($result['paid']) {
-                        // Update transaction status immediately
-                        $transaction->update([
-                            'status' => 'paid',
-                            'paid_at' => $result['paid_at'] ?? now(),
-                            'payment_details' => array_merge(
-                                $transaction->payment_details ?? [],
-                                [
-                                    'verified_at' => now(),
-                                    'verification_data' => $result
-                                ]
-                            )
-                        ]);
-                        
-                        // Clear any cached data
-                        $transaction->refresh();
-                        $transaction->feeTemplate->refresh();
+                        $this->paymentCompletion->complete(
+                            $transaction,
+                            $result['paid_at'] ?? null,
+                            [
+                                'verified_at' => now()->toIso8601String(),
+                                'verification_data' => $result,
+                            ]
+                        );
 
                         return redirect()->route('alumni.payments.success', $transaction)
                             ->with('success', 'Payment completed successfully.');
@@ -450,30 +437,15 @@ class AlumniPaymentController extends Controller
 
                 // Handle based on verification result
                 if ($verification['paid']) {
-                    // Always update the transaction status for paid payments
-                    $transaction->update([
-                        'status' => 'paid',
-                        'paid_at' => $verification['paid_at'] ?? now(),
-                        'payment_details' => array_merge(
-                            $transaction->payment_details ?? [],
-                            [
-                                'verified_at' => now(),
-                                'verification_data' => $verification,
-                                'manual_verification_at' => now()
-                            ]
-                        )
-                    ]);
-
-                    // Refresh the transaction to ensure we have the latest data
-                    $transaction->refresh();
-
-                    // Log the successful update
-                    Log::info('Transaction marked as paid through manual verification', [
-                        'transaction_id' => $transaction->id,
-                        'status' => $transaction->status,
-                        'paid_at' => $transaction->paid_at,
-                        'reference' => $transaction->payment_reference
-                    ]);
+                    $this->paymentCompletion->complete(
+                        $transaction,
+                        $verification['paid_at'] ?? null,
+                        [
+                            'verified_at' => now()->toIso8601String(),
+                            'verification_data' => $verification,
+                            'manual_verification_at' => now()->toIso8601String(),
+                        ]
+                    );
 
                     DB::commit();
 
@@ -538,8 +510,26 @@ class AlumniPaymentController extends Controller
      */
     public function paymentSuccess(Transaction $transaction)
     {
-        // No need to update status here as it should be updated during verification
-        return view('payments.success', compact('transaction'));
+        $transaction->loadMissing('feeTemplate.feeType');
+
+        $eoiApplication = null;
+        if ($this->paymentCompletion->isEoiTransaction($transaction)) {
+            $meta = $this->paymentCompletion->resolveEoiMetadata($transaction);
+            $candidate = null;
+
+            if (!empty($meta['candidate_id'])) {
+                $candidate = \App\Models\Candidate::with(['office', 'election'])
+                    ->find($meta['candidate_id']);
+            }
+
+            $eoiApplication = [
+                'status_label' => $candidate?->status_label ?? 'Paid, awaiting ELCOM screening',
+                'office' => $candidate?->office?->title,
+                'election' => $candidate?->election?->title,
+            ];
+        }
+
+        return view('payments.success', compact('transaction', 'eoiApplication'));
     }
 
     /**
@@ -547,7 +537,7 @@ class AlumniPaymentController extends Controller
      */
     public function paymentPending(Transaction $transaction)
     {
-        if ($transaction->status === 'completed') {
+        if ($transaction->isPaid()) {
             return redirect()->route('alumni.payments.success', $transaction);
         }
 
@@ -563,7 +553,7 @@ class AlumniPaymentController extends Controller
      */
     public function paymentFailed(Transaction $transaction)
     {
-        if ($transaction->status === 'completed') {
+        if ($transaction->isPaid()) {
             return redirect()->route('alumni.payments.success', $transaction);
         }
 
@@ -591,87 +581,30 @@ class AlumniPaymentController extends Controller
     private function handleDemoPayment(Transaction $transaction, $redirectRoute = 'payments.index')
     {
         try {
-            DB::beginTransaction();
-
-            // Log the current state
-            Log::info('Starting demo payment processing', [
-                'transaction_id' => $transaction->id,
-                'current_status' => $transaction->status,
-                'is_test_mode' => $transaction->is_test_mode,
-                'fee_type' => $transaction->feeTemplate->feeType->code ?? 'unknown'
-            ]);
-
-            // Check if transaction is already paid
-            if ($transaction->status === 'paid') {
-                Log::info('Transaction already paid', [
-                    'transaction_id' => $transaction->id,
-                    'paid_at' => $transaction->paid_at
-                ]);
+            if ($transaction->isPaid()) {
                 return redirect()->route($redirectRoute)
                     ->with('info', 'This payment has already been completed.');
             }
 
-            // Update transaction status
-            $transaction->update([
-                'status' => 'paid',
-                'paid_at' => now()
+            $this->paymentCompletion->complete($transaction, now()->toIso8601String(), [
+                'demo_payment' => true,
+                'completed_at' => now()->toIso8601String(),
             ]);
 
-            Log::info('Transaction status updated', [
-                'transaction_id' => $transaction->id,
-                'new_status' => 'paid',
-                'paid_at' => now()
-            ]);
-
-            // If this is an EOI payment, update the candidate status
-            if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
-                $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                    ->where('has_paid_screening_fee', false)
-                    ->latest()
-                    ->first();
-
-                if ($candidate) {
-                    $candidate->update([
-                        'has_paid_screening_fee' => true
-                    ]);
-                    Log::info('Candidate payment status updated', [
-                        'transaction_id' => $transaction->id,
-                        'candidate_id' => $candidate->id,
-                        'has_paid_screening_fee' => true
-                    ]);
-                } else {
-                    Log::warning('No pending candidate found for EOI payment', [
-                        'transaction_id' => $transaction->id,
-                        'alumni_id' => $transaction->alumni_id
-                    ]);
-                }
-            }
-
-            DB::commit();
-
-            // Set appropriate success message based on the fee type
-            $successMessage = $transaction->feeTemplate->feeType->code === 'screening_fee'
+            $successMessage = $this->paymentCompletion->isEoiTransaction($transaction)
                 ? 'Payment completed successfully. Your expression of interest has been submitted.'
                 : 'Demo payment completed successfully.';
-
-            Log::info('Demo payment completed successfully', [
-                'transaction_id' => $transaction->id,
-                'redirect_route' => $redirectRoute,
-                'success_message' => $successMessage
-            ]);
 
             return redirect()->route($redirectRoute)
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Failed to process demo payment', [
                 'transaction_id' => $transaction->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'current_status' => $transaction->status,
-                'is_test_mode' => $transaction->is_test_mode
             ]);
+
             return redirect()
                 ->route('alumni.payments.show', $transaction)
                 ->with('error', 'Failed to process payment. Please try again.');
@@ -712,12 +645,21 @@ class AlumniPaymentController extends Controller
     public function history()
     {
         $alumni = Auth::user()->alumni;
-        $transactions = Transaction::with(['feeTemplate.feeType'])
-            ->where('alumni_id', $alumni->id)
+
+        $baseQuery = Transaction::query()->where('alumni_id', $alumni->id);
+
+        $transactions = (clone $baseQuery)
+            ->with(['feeTemplate.feeType'])
             ->latest()
             ->paginate(10);
 
-        return view('alumni.payments.history', compact('transactions'));
+        $summary = [
+            'paid_count' => (clone $baseQuery)->paid()->count(),
+            'pending_count' => (clone $baseQuery)->pending()->count(),
+            'total_paid' => (clone $baseQuery)->paid()->sum('amount'),
+        ];
+
+        return view('alumni.payments.history', compact('transactions', 'summary'));
     }
 
     public function processPayment(Transaction $transaction)
@@ -750,57 +692,7 @@ class AlumniPaymentController extends Controller
     }
 
     /**
-     * Handle successful payment
-     */
-    protected function handleSuccessfulPayment(Transaction $transaction, array $data)
-    {
-        try {
-            DB::beginTransaction();
-
-            $transaction->update([
-                'status' => 'paid',
-                'paid_at' => now(),
-                'payment_details' => json_encode($data)
-            ]);
-
-            // If this is an EOI payment, update the candidate status
-            if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
-                $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                    ->where('has_paid_screening_fee', false)
-                    ->latest()
-                    ->first();
-
-                if ($candidate) {
-                    $candidate->update([
-                        'has_paid_screening_fee' => true
-                    ]);
-                    Log::info('Candidate payment status updated', [
-                        'transaction_id' => $transaction->id,
-                        'candidate_id' => $candidate->id,
-                        'has_paid_screening_fee' => true
-                    ]);
-                }
-            }
-
-            DB::commit();
-
-            Log::info('Payment completed successfully', [
-                'transaction_id' => $transaction->id,
-                'reference' => $transaction->payment_reference
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Failed to handle successful payment', [
-                'transaction_id' => $transaction->id,
-                'error' => $e->getMessage()
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Handle payment redirect after successful payment
+     * Handle payment redirect after Credo Central checkout.
      */
     public function handleRedirect(Request $request)
     {
@@ -809,169 +701,66 @@ class AlumniPaymentController extends Controller
                 'reference' => $request->reference,
                 'transRef' => $request->transRef,
                 'status' => $request->status,
-                'params' => $request->all()
+                'params' => $request->all(),
             ]);
 
-            // Start a database transaction to ensure atomicity
             DB::beginTransaction();
             try {
-                // Locate the transaction using either reference
                 $transaction = Transaction::where('payment_reference', $request->reference)
                     ->orWhere('payment_provider_reference', $request->transRef)
-                    ->lockForUpdate() // Lock the row to prevent race conditions
+                    ->lockForUpdate()
                     ->first();
 
                 if (!$transaction) {
-                    Log::error('Transaction not found on redirect', [
-                        'reference' => $request->reference,
-                        'transRef' => $request->transRef
-                    ]);
                     DB::rollBack();
                     return redirect()->route('alumni.payments.index')
                         ->with('error', 'Transaction not found. Please contact support.');
                 }
 
-                // Set payment provider reference if missing
                 if (!$transaction->payment_provider_reference && $request->transRef) {
                     $transaction->update([
-                        'payment_provider_reference' => $request->transRef
+                        'payment_provider_reference' => $request->transRef,
                     ]);
                 }
 
-                // Check redirect status first
-                $redirectStatus = strtolower((string) $request->status);
-                Log::info('Payment redirect status', [
-                    'transaction_id' => $transaction->id,
-                    'redirect_status' => $redirectStatus,
-                    'current_status' => $transaction->status
-                ]);
-
-                // If redirect status is 0 (success), mark as paid even if verification fails
-                if ($redirectStatus === '0') {
-                    Log::info('Payment marked as successful from redirect status', [
-                        'transaction_id' => $transaction->id,
-                        'redirect_status' => $redirectStatus
-                    ]);
-
-                    $transaction->update([
-                        'status' => 'paid',
-                        'paid_at' => now(),
-                        'payment_details' => array_merge(
-                            $transaction->payment_details ?? [],
-                            [
-                                'verified_at' => now(),
-                                'redirect_status' => $redirectStatus,
-                                'redirect_handled_at' => now(),
-                                'verification_attempted' => false,
-                                'verification_error' => 'Verification skipped due to successful redirect status'
-                            ]
-                        )
-                    ]);
-
-                    // EOI candidate update logic (metadata-based)
-                    if ($transaction->feeTemplate->feeType->code === 'screening_fee') {
-                        $meta = $transaction->metadata ? (is_array($transaction->metadata) ? $transaction->metadata : json_decode($transaction->metadata, true)) : [];
-                        $candidateId = $meta['candidate_id'] ?? null;
-                        $electionId = $meta['election_id'] ?? null;
-                        $officeId = $meta['office_id'] ?? null;
-                        $manifesto = $meta['manifesto'] ?? null;
-                        $passport = $meta['passport'] ?? null;
-                        $documents = $meta['documents'] ?? [];
-                        $candidate = null;
-                        if ($candidateId) {
-                            $candidate = \App\Models\Candidate::find($candidateId);
-                        }
-                        if (!$candidate && $electionId && $officeId) {
-                            // fallback for legacy/edge cases
-                            $candidate = \App\Models\Candidate::where('alumni_id', $transaction->alumni_id)
-                                ->where('election_id', $electionId)
-                                ->where('election_office_id', $officeId)
-                                ->first();
-                        }
-                        if ($candidate) {
-                            $candidate->update([
-                                'has_paid_screening_fee' => true,
-                                'status' => 'paid',
-                            ]);
-                        } else if ($electionId && $officeId) {
-                            // fallback: create if not found (should not happen)
-                            \App\Models\Candidate::create([
-                                'election_id' => $electionId,
-                                'election_office_id' => $officeId,
-                                'alumni_id' => $transaction->alumni_id,
-                                'has_paid_screening_fee' => true,
-                                'manifesto' => $manifesto,
-                                'passport' => $passport,
-                                'documents' => $documents,
-                                'status' => 'paid',
-                            ]);
-                        }
-                    }
-
+                if ($transaction->isPaid()) {
                     DB::commit();
                     return redirect()->route('alumni.payments.success', $transaction)
                         ->with('success', 'Payment completed successfully.');
                 }
 
-                // If redirect status is not 0, try verification
                 try {
                     $verification = $this->credocentral->verifyPayment($transaction);
 
-                    Log::info('Verification result received', [
-                        'transaction_id' => $transaction->id,
-                        'is_paid' => $verification['paid'],
-                        'status' => $verification['status'],
-                        'reference' => $transaction->payment_reference,
-                        'current_status' => $transaction->status
-                    ]);
-
-                    // Handle based on verification result
                     if ($verification['paid']) {
-                        // Always update the transaction status for paid payments
-                        $transaction->update([
-                            'status' => 'paid',
-                            'paid_at' => $verification['paid_at'] ?? now(),
-                            'payment_details' => array_merge(
-                                $transaction->payment_details ?? [],
-                                [
-                                    'verified_at' => now(),
-                                    'verification_data' => $verification,
-                                    'redirect_handled_at' => now(),
-                                    'verification_attempted' => true
-                                ]
-                            )
-                        ]);
-
-                        // Refresh the transaction to ensure we have the latest data
-                        $transaction->refresh();
-
-                        // Log the successful update
-                        Log::info('Transaction marked as paid through verification', [
-                            'transaction_id' => $transaction->id,
-                            'status' => $transaction->status,
-                            'paid_at' => $transaction->paid_at,
-                            'reference' => $transaction->payment_reference
-                        ]);
+                        $this->paymentCompletion->complete(
+                            $transaction,
+                            $verification['paid_at'] ?? null,
+                            [
+                                'verified_at' => now()->toIso8601String(),
+                                'verification_data' => $verification,
+                                'redirect_status' => $request->status,
+                                'redirect_handled_at' => now()->toIso8601String(),
+                            ]
+                        );
 
                         DB::commit();
                         return redirect()->route('alumni.payments.success', $transaction)
                             ->with('success', 'Payment completed successfully.');
                     }
 
-                    // Handle failed payments
                     if (strtolower($verification['status']) === 'failed') {
                         $transaction->update([
                             'status' => 'failed',
                             'payment_details' => array_merge(
-                                $transaction->payment_details ?? [],
+                                is_array($transaction->payment_details) ? $transaction->payment_details : [],
                                 [
                                     'status' => $verification['status'],
-                                    'failed_at' => now(),
+                                    'failed_at' => now()->toIso8601String(),
                                     'verification_data' => $verification,
-                                    'redirect_handled_at' => now(),
-                                    'verification_attempted' => true
+                                    'redirect_handled_at' => now()->toIso8601String(),
                                 ]
-                            )
+                            ),
                         ]);
 
                         DB::commit();
@@ -979,56 +768,51 @@ class AlumniPaymentController extends Controller
                             ->with('error', 'Payment was not successful. Please try again.');
                     }
 
-                    // If neither paid nor failed, mark as pending
                     $transaction->update([
                         'payment_details' => array_merge(
-                            $transaction->payment_details ?? [],
+                            is_array($transaction->payment_details) ? $transaction->payment_details : [],
                             [
                                 'verification_data' => $verification,
-                                'redirect_handled_at' => now(),
-                                'verification_attempted' => true
+                                'redirect_status' => $request->status,
+                                'redirect_handled_at' => now()->toIso8601String(),
                             ]
-                        )
+                        ),
                     ]);
 
                     DB::commit();
                     return redirect()->route('alumni.payments.pending', $transaction)
-                        ->with('info', 'Your payment is still being processed. Please wait while we confirm it.');
+                        ->with('info', 'Your payment is still being processed. Please wait while we confirm your payment.');
 
                 } catch (\Exception $e) {
-                    Log::error('Payment verification failed', [
+                    Log::error('Payment verification failed on redirect', [
                         'transaction_id' => $transaction->id,
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
                     ]);
 
-                    // If verification fails but redirect status is not 0, mark as pending
                     $transaction->update([
                         'payment_details' => array_merge(
-                            $transaction->payment_details ?? [],
+                            is_array($transaction->payment_details) ? $transaction->payment_details : [],
                             [
                                 'verification_error' => $e->getMessage(),
-                                'redirect_handled_at' => now(),
-                                'verification_attempted' => true
+                                'redirect_status' => $request->status,
+                                'redirect_handled_at' => now()->toIso8601String(),
                             ]
-                        )
+                        ),
                     ]);
 
                     DB::commit();
                     return redirect()->route('alumni.payments.pending', $transaction)
                         ->with('info', 'Your payment is being processed. Please wait while we confirm it.');
                 }
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-
         } catch (\Exception $e) {
             Log::error('Error while handling payment redirect', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
 
             return redirect()->route('alumni.payments.index')

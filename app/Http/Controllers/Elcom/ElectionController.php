@@ -10,6 +10,7 @@ use App\Models\ElectionResult;
 use App\Models\User;
 use App\Services\ElectionArchiveService;
 use App\Services\ElectionCycleService;
+use App\Services\ElectionByElectionService;
 use App\Services\ElectionResultService;
 use App\Exceptions\ElectionImmutableException;
 use Illuminate\Http\Request;
@@ -26,7 +27,8 @@ class ElectionController extends Controller
     public function __construct(
         private ElectionCycleService $cycleService,
         private ElectionArchiveService $archiveService,
-        private ElectionResultService $resultService
+        private ElectionResultService $resultService,
+        private ElectionByElectionService $byElectionService
     ) {}
     /**
      * Display a listing of the elections.
@@ -405,32 +407,172 @@ class ElectionController extends Controller
         try {
             DB::beginTransaction();
 
-            $this->resultService->declareResults($election);
+            $summary = $this->resultService->declareResults($election);
 
-            // Remove ELCOM chairman role after election completion
-            $elcomChairman = User::role('elcom-chairman')->first();
-            if ($elcomChairman) {
-                $elcomChairman->removeRole('elcom-chairman');
+            if ($election->isByElection()) {
+                $parentOutcome = $this->byElectionService->syncResultsToParent($election);
+                $parent = $election->parentElection->fresh();
 
-                activity()
-                    ->causedBy(Auth::user())
-                    ->performedOn($elcomChairman)
-                    ->withProperties([
-                        'election_id' => $election->id,
-                        'election_title' => $election->title,
-                        'action' => 'removed_elcom_chairman_role'
-                    ])
-                    ->log('ELCOM chairman role removed after election completion');
+                DB::commit();
+
+                if ($parentOutcome['parent_completed']) {
+                    $this->removeElcomChairmanRole($parent);
+
+                    return redirect()
+                        ->route('elcom.elections.resolution', $parent)
+                        ->with('success', 'By-election complete. All offices now have winners. ELCOM chairman role has been removed.');
+                }
+
+                if (!$summary['all_decided']) {
+                    return redirect()
+                        ->route('elcom.elections.resolution', $parent)
+                        ->with('success', 'By-election ended with unresolved offices. Schedule another by-election if needed.');
+                }
+
+                return redirect()
+                    ->route('elcom.elections.resolution', $parent)
+                    ->with('success', 'By-election results have been merged. Some offices may still require resolution.');
+            }
+
+            if ($summary['all_decided']) {
+                $this->removeElcomChairmanRole($election);
             }
 
             DB::commit();
 
+            if ($summary['all_decided']) {
+                return redirect()
+                    ->route('elcom.elections.show', $election)
+                    ->with('success', 'Voting has ended and all offices have declared winners. ELCOM chairman role has been removed.');
+            }
+
             return redirect()
-                ->route('elcom.elections.show', $election)
-                ->with('success', 'Voting has ended, results have been declared, and ELCOM chairman role has been removed.');
+                ->route('elcom.elections.resolution', $election)
+                ->with('success', "Voting has ended. {$summary['tied']} tied and {$summary['uncontested']} uncontested office(s) require a by-election. ELCOM chairman role is retained until all seats are filled.");
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to end voting. Please try again.');
+        }
+    }
+
+    /**
+     * Show election resolution summary (ties, uncontested offices, declared winners).
+     */
+    public function resolution(Election $election)
+    {
+        if (!in_array($election->status, ['incomplete', 'completed', 'archived'])) {
+            return redirect()
+                ->route('elcom.elections.show', $election)
+                ->with('error', 'Resolution summary is only available after voting has ended.');
+        }
+
+        $resolution = $this->resultService->getResolutionSummary($election);
+
+        return view('elcom.elections.resolution', compact('election', 'resolution'));
+    }
+
+    public function scheduleByElection(Election $election)
+    {
+        if (!$election->isIncomplete()) {
+            return redirect()
+                ->route('elcom.elections.resolution', $election)
+                ->with('error', 'By-elections can only be scheduled for incomplete elections.');
+        }
+
+        if ($this->byElectionService->hasActiveByElection($election)) {
+            $active = $election->activeByElection();
+
+            return redirect()
+                ->route('elcom.elections.show', $active)
+                ->with('info', 'A by-election is already in progress for this election.');
+        }
+
+        $schedulableOffices = $this->byElectionService->schedulableOffices($election);
+
+        if ($schedulableOffices->isEmpty()) {
+            return redirect()
+                ->route('elcom.elections.resolution', $election)
+                ->with('error', 'No offices are available for a by-election.');
+        }
+
+        return view('elcom.elections.schedule-by-election', compact('election', 'schedulableOffices'));
+    }
+
+    public function storeByElection(Request $request, Election $election)
+    {
+        $this->cycleService->assertMutable($election);
+
+        $schedulableIds = $this->byElectionService->schedulableOffices($election)->pluck('id')->all();
+        $hasUncontested = $election->offices()
+            ->whereIn('id', $request->input('office_ids', []))
+            ->where('resolution_status', ElectionResultService::RESOLUTION_UNCONTESTED)
+            ->exists();
+
+        $rules = [
+            'office_ids' => 'required|array|min:1',
+            'office_ids.*' => 'integer|in:' . implode(',', $schedulableIds),
+            'title' => 'required|string|max:255',
+            'cycle_label' => 'nullable|string|max:100',
+            'description' => 'nullable|string',
+            'accreditation_start' => 'required|date',
+            'accreditation_end' => 'required|date|after:accreditation_start',
+            'voting_start' => 'required|date|after:accreditation_end',
+            'voting_end' => [
+                'required',
+                'date',
+                'after:voting_start',
+                function ($attribute, $value, $fail) use ($request) {
+                    $start = Carbon::parse($request->voting_start);
+                    $end = Carbon::parse($value);
+
+                    if (!$start->isSameDay($end)) {
+                        $fail('Voting must start and end on the same day.');
+                    }
+
+                    if ($start->isSameDay($end) && $end->lte($start)) {
+                        $fail('Voting end time must be after start time.');
+                    }
+                },
+            ],
+        ];
+
+        if ($hasUncontested) {
+            $rules['eoi_start'] = 'required|date';
+            $rules['eoi_end'] = 'required|date|after:eoi_start|before:accreditation_start';
+        }
+
+        $validated = $request->validate($rules);
+
+        try {
+            $byElection = $this->byElectionService->schedule($election, $validated['office_ids'], $validated);
+
+            return redirect()
+                ->route('elcom.elections.show', $byElection)
+                ->with('success', 'By-election scheduled. Runoff offices have candidates on the ballot; uncontested offices will accept EOI when you start the EOI period.');
+        } catch (ElectionImmutableException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to schedule by-election. Please try again.');
+        }
+    }
+
+    protected function removeElcomChairmanRole(Election $election): void
+    {
+        $elcomChairman = User::role('elcom-chairman')->first();
+        if ($elcomChairman) {
+            $elcomChairman->removeRole('elcom-chairman');
+
+            activity()
+                ->causedBy(Auth::user())
+                ->performedOn($elcomChairman)
+                ->withProperties([
+                    'election_id' => $election->id,
+                    'election_title' => $election->title,
+                    'action' => 'removed_elcom_chairman_role',
+                ])
+                ->log('ELCOM chairman role removed after election completion');
         }
     }
 
@@ -439,7 +581,7 @@ class ElectionController extends Controller
      */
     public function realTimeResults(Election $election)
     {
-        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
+        if (!in_array($election->status, ['voting', 'incomplete', 'completed', 'archived'])) {
             return back()->with('error', 'Results are only available during voting or after completion.');
         }
 
@@ -451,16 +593,20 @@ class ElectionController extends Controller
      */
     public function printFullResults(Election $election)
     {
-        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
+        if (!in_array($election->status, ['voting', 'incomplete', 'completed', 'archived'])) {
             return back()->with('error', 'Results are only available during voting or after completion.');
         }
 
         // Load ONLY approved candidates for printing
-        $election->load(['offices.candidates' => function($query) {
-            $query->where('status', 'approved'); // Only approved candidates in print results
-        }, 'offices.candidates.alumni.user', 'offices.candidates.votes']);
-        
-        return view('elcom.elections.print-full-results', compact('election'));
+        $election->load(['offices.candidates' => function ($query) {
+            $query->where('status', 'approved');
+        }, 'offices.candidates.alumni.user', 'offices.candidates.votes', 'offices.results', 'offices.winnerCandidate']);
+
+        $declaredWinnerIds = $this->resultService->getDeclaredWinners($election)
+            ->pluck('candidate.id')
+            ->flip();
+
+        return view('elcom.elections.print-full-results', compact('election', 'declaredWinnerIds'));
     }
 
     /**
@@ -468,16 +614,20 @@ class ElectionController extends Controller
      */
     public function printWinners(Election $election)
     {
-        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
-            return back()->with('error', 'Results are only available during voting or after completion.');
+        if (!in_array($election->status, ['incomplete', 'completed', 'archived'])) {
+            return back()->with('error', 'Winners can only be printed after results have been declared.');
         }
 
-        // Load ONLY approved candidates for printing winners
-        $election->load(['offices.candidates' => function($query) {
-            $query->where('status', 'approved'); // Only approved candidates in winners list
-        }, 'offices.candidates.alumni.user', 'offices.candidates.votes']);
-        
-        return view('elcom.elections.print-winners', compact('election'));
+        $declaredWinners = $this->resultService->getDeclaredWinners($election);
+        $pendingOffices = $election->offices()
+            ->whereIn('resolution_status', [
+                ElectionResultService::RESOLUTION_TIED,
+                ElectionResultService::RESOLUTION_UNCONTESTED,
+            ])
+            ->whereNull('by_election_id')
+            ->count();
+
+        return view('elcom.elections.print-winners', compact('election', 'declaredWinners', 'pendingOffices'));
     }
 
     /**
@@ -486,15 +636,16 @@ class ElectionController extends Controller
     public function printCertificates(Election $election)
     {
         if (!in_array($election->status, ['completed', 'archived'])) {
-            return back()->with('error', 'Certificates are only available after election completion.');
+            return back()->with('error', 'Certificates are only available after the election is fully completed.');
         }
 
-        // Load ONLY approved candidates for certificates
-        $election->load(['offices.candidates' => function($query) {
-            $query->where('status', 'approved'); // Only approved candidates get certificates
-        }, 'offices.candidates.alumni', 'offices.candidates.electionResults']);
-        
-        return view('elcom.elections.print-certificates', compact('election'));
+        $declaredWinners = $this->resultService->getDeclaredWinners($election);
+
+        if ($declaredWinners->isEmpty()) {
+            return back()->with('error', 'No declared winners are available for certificate printing.');
+        }
+
+        return view('elcom.elections.print-certificates', compact('election', 'declaredWinners'));
     }
 
     /**
@@ -503,63 +654,48 @@ class ElectionController extends Controller
     public function screenCandidate(Request $request, Election $election, ElectionOffice $office, Candidate $candidate)
     {
         $this->cycleService->assertMutable($election);
+        $this->assertOfficeBelongsToElection($election, $office);
+        $this->assertCandidateBelongsToOffice($election, $office, $candidate);
 
-        if (!in_array($election->status, ['draft', 'eoi', 'eoi_closed', 'accreditation'])) {
+        if (!$this->canScreenCandidates($election)) {
             return back()->with('error', 'Candidates can only be screened during draft, EOI, or accreditation.');
+        }
+
+        if (!$candidate->canBeScreened()) {
+            return back()->with('error', 'Only candidates awaiting screening can be reviewed.');
         }
 
         $validated = $request->validate([
             'status' => 'required|in:approved,rejected',
             'rejection_reason' => 'required_if:status,rejected|nullable|string|max:2000',
-            'remarks' => 'nullable|string|max:2000',
         ]);
 
-        $reason = $validated['rejection_reason'] ?? $validated['remarks'] ?? null;
-
         if ($validated['status'] === 'approved') {
-            $candidate->approve($reason);
+            if (!$candidate->has_paid_screening_fee) {
+                return back()->with('error', 'Cannot approve a candidate who has not paid the screening fee.');
+            }
+
+            $candidate->approve();
         } else {
-            if (empty($reason)) {
+            $reason = trim($validated['rejection_reason'] ?? '');
+            if ($reason === '') {
                 return back()->with('error', 'A rejection reason is required.');
             }
+
             $candidate->reject($reason);
         }
 
-        return back()->with('success', 'Candidate has been ' . $validated['status']);
+        return back()->with('success', 'Candidate has been ' . $validated['status'] . '.');
     }
 
-    /**
-     * Show all candidates for screening for a specific office in an election.
-     */
     public function screenCandidates(Election $election, ElectionOffice $office)
     {
-        $candidates = $office->candidates()->with('alumni.user')->get();
-        return view('elcom.elections.screen-candidates', compact('election', 'office', 'candidates'));
+        return $this->officeCandidates($election, $office);
     }
 
-    /**
-     * Approve a candidate's expression of interest.
-     */
-    public function approveCandidate(Election $election, ElectionOffice $office, Candidate $candidate)
+    public function officeCandidates(Election $election, ElectionOffice $office)
     {
-        $this->cycleService->assertMutable($election);
-        $candidate->approve();
-        return back()->with('success', 'Candidate approved successfully.');
-    }
-
-    /**
-     * Reject a candidate's expression of interest.
-     */
-    public function rejectCandidate(Request $request, Election $election, ElectionOffice $office, Candidate $candidate)
-    {
-        $this->cycleService->assertMutable($election);
-
-        $validated = $request->validate([
-            'rejection_reason' => 'required|string|max:2000',
-        ]);
-
-        $candidate->reject($validated['rejection_reason']);
-        return back()->with('success', 'Candidate rejected successfully.');
+        return view('elcom.elections.screen-candidates', $this->officeCandidatesViewData($election, $office));
     }
 
     /**
@@ -666,15 +802,6 @@ class ElectionController extends Controller
             ->with('success', 'Office deleted successfully.');
     }
 
-    /**
-     * Show candidates for a specific office.
-     */
-    public function officeCandidates(Election $election, ElectionOffice $office)
-    {
-        $candidates = $office->candidates()->with('alumni.user')->get();
-        return view('elcom.elections.screen-candidates', compact('election', 'office', 'candidates'));
-    }
-
     public function startEoi(Election $election)
     {
         try {
@@ -766,8 +893,11 @@ class ElectionController extends Controller
      */
     public function assignAgentForm(Election $election, ElectionOffice $office, Candidate $candidate)
     {
-        if (!in_array($election->status, ['draft', 'accreditation'])) {
-            return back()->with('error', 'Agents can only be assigned during the draft or accreditation phase.');
+        $this->assertOfficeBelongsToElection($election, $office);
+        $this->assertCandidateBelongsToOffice($election, $office, $candidate);
+
+        if ($election->status !== 'accreditation') {
+            return back()->with('error', 'Agents can only be assigned during the accreditation phase.');
         }
 
         // Get all users with the alumni-agent role who are not already assigned to other candidates in this election
@@ -796,8 +926,12 @@ class ElectionController extends Controller
      */
     public function assignAgent(Request $request, Election $election, ElectionOffice $office, Candidate $candidate)
     {
-        if (!in_array($election->status, ['draft', 'accreditation'])) {
-            return back()->with('error', 'Agents can only be assigned during the draft or accreditation phase.');
+        $this->cycleService->assertMutable($election);
+        $this->assertOfficeBelongsToElection($election, $office);
+        $this->assertCandidateBelongsToOffice($election, $office, $candidate);
+
+        if ($election->status !== 'accreditation') {
+            return back()->with('error', 'Agents can only be assigned during the accreditation phase.');
         }
 
         $validated = $request->validate([
@@ -858,8 +992,12 @@ class ElectionController extends Controller
      */
     public function removeAgent(Election $election, ElectionOffice $office, Candidate $candidate)
     {
-        if (!in_array($election->status, ['draft', 'accreditation'])) {
-            return back()->with('error', 'Agents can only be removed during the draft or accreditation phase.');
+        $this->cycleService->assertMutable($election);
+        $this->assertOfficeBelongsToElection($election, $office);
+        $this->assertCandidateBelongsToOffice($election, $office, $candidate);
+
+        if ($election->status !== 'accreditation') {
+            return back()->with('error', 'Agents can only be removed during the accreditation phase.');
         }
 
         $agentId = $candidate->approved_agent_id;
@@ -1019,7 +1157,7 @@ class ElectionController extends Controller
      */
     public function streamRealTimeResults(Election $election)
     {
-        if (!in_array($election->status, ['voting', 'completed'])) {
+        if (!in_array($election->status, ['voting', 'incomplete', 'completed'])) {
             return response('Results are only available during voting or after completion.', 403);
         }
 
@@ -1029,11 +1167,14 @@ class ElectionController extends Controller
                     $query->where('status', 'approved'); // Only approved candidates in results
                 }, 'offices.candidates.alumni.user', 'offices.candidates.votes']);
                 
+                $timeDisplay = $election->getVotingTimeDisplay();
+
                 $data = [
                     'totalAccredited' => $election->getTotalAccreditedVoters(),
                     'totalVotes' => $election->getTotalVotes(),
                     'voterTurnout' => number_format(($election->getTotalVotes() / max($election->getTotalAccreditedVoters(), 1)) * 100, 1),
-                    'timeRemaining' => $election->voting_end->diffForHumans(),
+                    'timeRemaining' => $timeDisplay['value'],
+                    'timeRemainingLabel' => $timeDisplay['label'],
                     'offices' => $election->offices->map(function ($office) {
                         $totalVotes = $office->candidates->sum(function ($candidate) {
                             return $candidate->votes->count();
@@ -1073,7 +1214,7 @@ class ElectionController extends Controller
     public function basicResults(Election $election)
     {
         // Only show results if election is in voting or completed state
-        if (!in_array($election->status, ['voting', 'completed', 'archived'])) {
+        if (!in_array($election->status, ['voting', 'incomplete', 'completed', 'archived'])) {
             return back()->with('error', 'Results are not available for this election yet.');
         }
 
@@ -1085,18 +1226,21 @@ class ElectionController extends Controller
         $totalVotes = $election->getTotalVotes();
         $voterTurnout = $totalAccredited > 0 ? round(($totalVotes / $totalAccredited) * 100, 2) : 0;
 
-        // Get time remaining if election is still in voting
-        $timeRemaining = null;
-        if ($election->status === 'voting' && now()->between($election->voting_start, $election->voting_end)) {
-            $timeRemaining = $election->voting_end->diffForHumans(['parts' => 2]);
-        }
+        $timeDisplay = $election->getVotingTimeDisplay();
+        $timeRemaining = $timeDisplay['is_countdown'] ? $timeDisplay['value'] : null;
+        $timeRemainingLabel = $timeDisplay['label'];
+        $votingEndedAt = !$timeDisplay['is_countdown'] && $timeDisplay['label'] === 'Voting Ended'
+            ? $timeDisplay['value']
+            : null;
 
         return view('elcom.elections.basic-results', compact(
             'election',
             'totalAccredited',
             'totalVotes',
             'voterTurnout',
-            'timeRemaining'
+            'timeRemaining',
+            'timeRemainingLabel',
+            'votingEndedAt'
         ));
     }
 
@@ -1105,28 +1249,63 @@ class ElectionController extends Controller
      */
     public function verifyCertificate(Election $election, ElectionOffice $office, Candidate $winner, string $code)
     {
-        // Generate the expected certificate number
-        $expectedCode = strtoupper(substr(md5($election->id . $office->id . $winner->id), 0, 8));
-        
-        // Verify if the winner is actually the winner for this office
-        $isWinner = $winner->votes->count() === $office->candidates->max(function ($candidate) {
-            return $candidate->votes->count();
-        });
-
-        if ($code !== $expectedCode || !$isWinner) {
-            return view('elcom.elections.certificate-verification', [
-                'isValid' => false,
-                'message' => 'This certificate appears to be invalid or has been tampered with.'
-            ]);
+        if ((int) $office->election_id !== (int) $election->id) {
+            return $this->invalidCertificate('This certificate does not match the election record.');
         }
+
+        if ((int) $winner->election_office_id !== (int) $office->id) {
+            return $this->invalidCertificate('This certificate does not match the office record.');
+        }
+
+        $expectedCode = strtoupper(substr(md5($election->id . $office->id . $winner->id), 0, 8));
+
+        if ($code !== $expectedCode) {
+            return $this->invalidCertificate('This certificate appears to be invalid or has been tampered with.');
+        }
+
+        if (!$this->resultService->officeHasDeclaredWinner($office)) {
+            return $this->invalidCertificate('No winner has been officially declared for this office.');
+        }
+
+        $isDeclaredWinner = ElectionResult::where('election_id', $election->id)
+            ->where('election_office_id', $office->id)
+            ->where('candidate_id', $winner->id)
+            ->where('is_winner', true)
+            ->exists();
+
+        if (!$isDeclaredWinner) {
+            return $this->invalidCertificate('This candidate is not the declared winner for this office.');
+        }
+
+        if ($office->winner_candidate_id && (int) $office->winner_candidate_id !== (int) $winner->id) {
+            return $this->invalidCertificate('This certificate does not match the declared winner for this office.');
+        }
+
+        if (!in_array($election->status, ['completed', 'archived'])) {
+            return $this->invalidCertificate('Certificates are only valid for fully completed elections.');
+        }
+
+        $declaredResult = ElectionResult::where('election_id', $election->id)
+            ->where('election_office_id', $office->id)
+            ->where('candidate_id', $winner->id)
+            ->where('is_winner', true)
+            ->first();
 
         return view('elcom.elections.certificate-verification', [
             'isValid' => true,
             'election' => $election,
             'office' => $office,
-            'winner' => $winner,
+            'winner' => $winner->loadMissing('alumni.user'),
             'certificateNumber' => $code,
-            'issueDate' => now()->format('F j, Y')
+            'issueDate' => ($declaredResult?->declared_at ?? now())->format('F j, Y'),
+        ]);
+    }
+
+    protected function invalidCertificate(string $message)
+    {
+        return view('elcom.elections.certificate-verification', [
+            'isValid' => false,
+            'message' => $message,
         ]);
     }
 
@@ -1263,5 +1442,47 @@ class ElectionController extends Controller
 
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    private function canScreenCandidates(Election $election): bool
+    {
+        return in_array($election->status, ['draft', 'eoi', 'eoi_closed', 'accreditation'], true);
+    }
+
+    private function assertOfficeBelongsToElection(Election $election, ElectionOffice $office): void
+    {
+        if ((int) $office->election_id !== (int) $election->id) {
+            abort(404);
+        }
+    }
+
+    private function assertCandidateBelongsToOffice(Election $election, ElectionOffice $office, Candidate $candidate): void
+    {
+        if ((int) $candidate->election_office_id !== (int) $office->id
+            || (int) $candidate->election_id !== (int) $election->id) {
+            abort(404);
+        }
+    }
+
+    private function officeCandidatesViewData(Election $election, ElectionOffice $office): array
+    {
+        $this->assertOfficeBelongsToElection($election, $office);
+
+        $candidates = $office->candidates()
+            ->with(['alumni.user', 'agent'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return [
+            'election' => $election,
+            'office' => $office,
+            'candidates' => $candidates,
+            'canScreen' => $this->canScreenCandidates($election),
+            'canAssignAgents' => $election->status === 'accreditation',
+            'pendingCount' => $candidates->where('status', Candidate::STATUS_PENDING)->count(),
+            'awaitingScreeningCount' => $candidates->where('status', Candidate::STATUS_PAID_AWAITING_SCREENING)->count(),
+            'approvedCount' => $candidates->where('status', 'approved')->count(),
+            'rejectedCount' => $candidates->where('status', 'rejected')->count(),
+        ];
     }
 }

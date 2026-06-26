@@ -13,13 +13,13 @@ class AlumniYear extends Model
         'year',
         'start_date',
         'end_date',
-        'is_active'
+        'is_active',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
     public function feeTemplates()
@@ -35,6 +35,75 @@ class AlumniYear extends Model
     public function hasFees()
     {
         return $this->feeTemplates()->exists();
+    }
+
+    public function annualDueTemplate(): ?FeeTemplate
+    {
+        $specific = FeeTemplate::query()
+            ->annualRenewal()
+            ->where('graduation_year', $this->year)
+            ->whereNull('category_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($specific) {
+            return $specific;
+        }
+
+        $allYears = FeeTemplate::query()
+            ->annualRenewal()
+            ->where('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL)
+            ->whereNull('category_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($allYears) {
+            return $allYears;
+        }
+
+        $subscriptionType = FeeType::where('code', 'subscription')->where('is_active', true)->first();
+        if (!$subscriptionType) {
+            return null;
+        }
+
+        return FeeTemplate::query()
+            ->where('fee_type_id', $subscriptionType->id)
+            ->whereNull('category_id')
+            ->where(function ($q) {
+                $q->where('fee_purpose', FeeTemplate::PURPOSE_ANNUAL_RENEWAL)
+                    ->orWhereNull('fee_purpose');
+            })
+            ->where(function ($q) {
+                $q->where('graduation_year', $this->year)
+                    ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
+            })
+            ->where('is_active', true)
+            ->orderByRaw('CASE WHEN graduation_year = ? THEN 0 ELSE 1 END', [$this->year])
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    public function onboardingTemplates()
+    {
+        return FeeTemplate::onboarding()->where('is_active', true);
+    }
+
+    /**
+     * Onboarding templates grouped by graduation cohort year.
+     */
+    public function onboardingTemplatesByCohort(): \Illuminate\Support\Collection
+    {
+        return FeeTemplate::onboarding()
+            ->with(['feeType', 'category'])
+            ->orderBy('graduation_year')
+            ->orderBy('fee_type_id')
+            ->get()
+            ->groupBy('graduation_year');
+    }
+
+    public function hasAnnualDueConfigured(): bool
+    {
+        return (bool) $this->annualDueTemplate();
     }
 
     public function transactions()

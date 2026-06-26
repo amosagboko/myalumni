@@ -28,12 +28,15 @@ class DashboardController extends Controller
         // Total Votes Cast: Count accredited voters who have voted
         $totalVotes = AccreditedVoter::where('has_voted', true)->count();
         
-        // Special Exemption: Count 2024 graduates who have completed bio data and are exempted from all fees
-        $specialExemption = \App\Models\Alumni::where('year_of_graduation', 2024)
-            ->whereNotNull('contact_address')
-            ->whereNotNull('phone_number')
-            ->whereNotNull('qualification_type')
-            ->count();
+        // Alumni who have paid annual or subscription dues (includes 2024 graduates)
+        $duesFeeTypeIds = \App\Models\FeeType::whereIn('code', ['subscription', \App\Models\FeeType::ANNUAL_DUE_CODE])->pluck('id');
+        $specialExemption = 0;
+        $paidDuesAlumni = $duesFeeTypeIds->isEmpty()
+            ? 0
+            : \App\Models\Transaction::where('status', 'paid')
+                ->whereHas('feeTemplate', fn ($query) => $query->whereIn('fee_type_id', $duesFeeTypeIds))
+                ->distinct('alumni_id')
+                ->count('alumni_id');
         
         // Recent Elections: Get latest elections for display
         $recentElections = Election::latest()->take(5)->get();

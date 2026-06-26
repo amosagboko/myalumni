@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Services\AlumniDuesService;
 
 class Alumni extends Model
 {
@@ -67,164 +68,17 @@ class Alumni extends Model
      */
     public function getActiveFees($year = null)
     {
-        // Get the active year if not specified
-        $activeYear = $year ?? AlumniYear::where('is_active', true)->first();
-        if (!$activeYear) {
-            Log::warning('No active year found');
-            return collect([]);
-        }
+        return app(AlumniDuesService::class)->getActiveFees($this, $year);
+    }
 
-        Log::info('Active year found', ['year' => $activeYear->year]);
+    public function hasCompletedOnboardingFees(): bool
+    {
+        return app(AlumniDuesService::class)->hasCompletedOnboardingFees($this);
+    }
 
-        // For 2024 graduates, no fees
-        if ($this->year_of_graduation === 2024) {
-            Log::info('Alumni graduated in 2024 - no fees applicable');
-            return collect([]);
-        }
-
-        // For 2023 and earlier graduates, only subscription fee
-        if ($this->year_of_graduation <= 2023) {
-            Log::info('Alumni graduated in 2023 or earlier', ['graduation_year' => $this->year_of_graduation]);
-
-            // Get the subscription fee type
-                $subscriptionFeeType = FeeType::where('code', 'subscription')
-                    ->where('is_active', true)
-                    ->first();
-
-                Log::info('Subscription fee type lookup result', [
-                    'found' => (bool)$subscriptionFeeType,
-                    'fee_type_id' => $subscriptionFeeType?->id,
-                    'fee_type_code' => $subscriptionFeeType?->code
-                ]);
-
-                if ($subscriptionFeeType) {
-                    // Get the fee template for the active year
-                    $fees = FeeTemplate::where('fee_type_id', $subscriptionFeeType->id)
-                        ->where('graduation_year', $activeYear->year)
-                        ->where('is_active', true)
-                        ->where('valid_from', '<=', now())
-                        ->where(function ($query) {
-                            $query->whereNull('valid_until')
-                                ->orWhere('valid_until', '>', now());
-                        })
-                        ->get();
-
-                    Log::info('Subscription fees lookup result', [
-                        'count' => $fees->count(),
-                        'fees' => $fees->map(function($fee) {
-                            return [
-                                'id' => $fee->id,
-                                'amount' => $fee->amount,
-                                'is_active' => $fee->is_active,
-                                'fee_type_id' => $fee->fee_type_id,
-                                'graduation_year' => $fee->graduation_year
-                            ];
-                        })->toArray()
-                    ]);
-
-                    // Return the fees (even if empty) - don't fall through to 2025+ logic
-                    return $fees;
-                }
-                
-                Log::warning('No subscription fee type found');
-            return collect([]);
-        }
-
-        // For 2025+ graduates only, get fees based on the alumni's category (with postgraduate specialization) and graduation year
-        if ($this->year_of_graduation >= 2025) {
-            $effectiveCategoryId = $this->category_id;
-            $effectiveCategorySlug = $this->category?->slug;
-            $effectiveCategoryName = $this->category?->name ?? 'Unknown';
-
-            if ($effectiveCategorySlug === 'postgraduate') {
-                $qualificationType = $this->qualification_type;
-
-                if ($qualificationType) {
-                    $normalizedQualification = strtolower(str_replace(['.', ' ', '_'], '', trim($qualificationType)));
-                    $qualificationMap = [
-                        'phd' => 'phd',
-                        'ph.d' => 'phd',
-                        'doctorofphilosophy' => 'phd',
-                        'msc' => 'msc',
-                        'm.sc' => 'msc',
-                        'masters' => 'msc',
-                        'masterofscience' => 'msc',
-                        'pgd' => 'pgd',
-                        'pg.d' => 'pgd',
-                        'postgraduatediploma' => 'pgd',
-                    ];
-
-                    $qualificationKey = $qualificationMap[$normalizedQualification] ?? null;
-
-                    if ($qualificationKey) {
-                        $specializedSlug = "postgraduate-{$qualificationKey}";
-                        $specializedCategory = AlumniCategory::where('slug', $specializedSlug)->first();
-
-                        if ($specializedCategory) {
-                            $effectiveCategoryId = $specializedCategory->id;
-                            $effectiveCategorySlug = $specializedCategory->slug;
-                            $effectiveCategoryName = $specializedCategory->name;
-                        } else {
-                            Log::warning('Specialized postgraduate category not found', [
-                                'alumni_id' => $this->id,
-                                'requested_slug' => $specializedSlug,
-                                'qualification_type' => $this->qualification_type,
-                            ]);
-                        }
-                    } else {
-                        Log::warning('Unsupported postgraduate qualification type for fee mapping', [
-                            'alumni_id' => $this->id,
-                            'qualification_type' => $this->qualification_type,
-                        ]);
-                    }
-                } else {
-                    Log::info('Postgraduate alumni missing qualification type, using base category fees', [
-                        'alumni_id' => $this->id,
-                    ]);
-                }
-            }
-
-            if (!$effectiveCategoryId) {
-                Log::warning('No effective category found for alumni when fetching fees', [
-                    'alumni_id' => $this->id,
-                    'graduation_year' => $this->year_of_graduation,
-                ]);
-                return collect([]);
-            }
-
-            // Get fees specific to this alumni's (possibly specialized) category and graduation year
-            $fees = FeeTemplate::where('graduation_year', $this->year_of_graduation)
-                ->where('category_id', $effectiveCategoryId)
-                ->where('is_active', true)
-                ->where('valid_from', '<=', now())
-                ->where(function ($query) {
-                    $query->whereNull('valid_until')
-                        ->orWhere('valid_until', '>', now());
-                })
-                ->get();
-
-            Log::info('Category-based fees for 2025+ alumni', [
-                'alumni_id' => $this->id,
-                'graduation_year' => $this->year_of_graduation,
-                'category_id' => $effectiveCategoryId,
-                'category_slug' => $effectiveCategorySlug,
-                'category_name' => $effectiveCategoryName,
-                'fee_count' => $fees->count(),
-                'total_amount' => $fees->sum('amount'),
-                'fees' => $fees->map(function($fee) {
-                    return [
-                        'fee_type' => $fee->feeType->code ?? 'unknown',
-                        'amount' => $fee->amount,
-                        'description' => $fee->description
-                    ];
-                })->toArray()
-            ]);
-
-            return $fees;
-        }
-
-        // For any other case (shouldn't happen), return empty collection
-        return collect([]);
+    public function getDuesPhase(): string
+    {
+        return app(AlumniDuesService::class)->getDuesPhase($this);
     }
 
     /**
@@ -326,7 +180,7 @@ class Alumni extends Model
     public function hasExpressedInterest(): bool
     {
         return Candidate::where('alumni_id', $this->id)
-            ->whereIn('status', ['pending', 'approved'])
+            ->activeApplicants()
             ->exists();
     }
 
@@ -336,9 +190,17 @@ class Alumni extends Model
     public function getCurrentExpressionOfInterest()
     {
         return Candidate::where('alumni_id', $this->id)
-            ->whereIn('status', ['pending', 'approved'])
+            ->activeApplicants()
             ->with(['election', 'office'])
             ->first();
+    }
+
+    /**
+     * Whether all fees required for this alumni right now are paid.
+     */
+    public function hasPaidAllActiveFees(): bool
+    {
+        return $this->getActiveFees()->every(fn ($fee) => $fee->isPaid());
     }
 
     /**
@@ -346,10 +208,7 @@ class Alumni extends Model
      */
     public function isEligibleToExpressInterest(): bool
     {
-        // Check if all fees are paid
-        $hasPaidFees = $this->getActiveFees()->every(function($fee) {
-            return $fee->isPaid();
-        });
+        $hasPaidFees = $this->hasPaidAllActiveFees();
 
         // Check if alumni has not already expressed interest
         $hasNotExpressedInterest = !$this->hasExpressedInterest();

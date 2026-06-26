@@ -77,12 +77,17 @@
                                                     'eoi_closed' => 'secondary',
                                                     'accreditation' => 'info',
                                                     'voting' => 'primary',
+                                                    'incomplete' => 'warning',
                                                     'completed' => 'success',
                                                     'archived' => 'dark',
                                                     default => 'secondary',
                                                 };
+                                                $statusLabel = $election->status === 'incomplete' ? 'Incomplete' : ucfirst(str_replace('_', ' ', $election->status));
                                             @endphp
-                                            <span class="badge bg-{{ $badge }}">{{ ucfirst($election->status) }}</span>
+                                            <span class="badge bg-{{ $badge }}">{{ $statusLabel }}</span>
+                                            @if($election->isByElection())
+                                                <span class="badge bg-warning text-dark ms-1">By-Election</span>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($election->is_active)

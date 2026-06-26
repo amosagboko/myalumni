@@ -17,8 +17,15 @@
                                 @case('pending')
                                     <div class="status-badge bg-warning-subtle text-warning px-2 py-1 rounded-pill small">
                                         <i class="bi bi-clock me-1"></i>
-                                        <span class="d-none d-sm-inline">Pending Screening</span>
-                                        <span class="d-inline d-sm-none">Pending</span>
+                                        <span class="d-none d-sm-inline">Pending payment</span>
+                                        <span class="d-inline d-sm-none">Unpaid</span>
+                                    </div>
+                                    @break
+                                @case('paid_awaiting_screening')
+                                    <div class="status-badge bg-info-subtle text-info px-2 py-1 rounded-pill small">
+                                        <i class="bi bi-credit-card me-1"></i>
+                                        <span class="d-none d-sm-inline">Paid, awaiting ELCOM screening</span>
+                                        <span class="d-inline d-sm-none">Awaiting screening</span>
                                     </div>
                                     @break
                                 @case('approved')

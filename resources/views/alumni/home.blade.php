@@ -86,21 +86,14 @@
     @php
         $alumni = Auth::user()->alumni;
         $needsBioData = !$alumni || !$alumni->contact_address || !$alumni->phone_number || !$alumni->qualification_type;
-        
         // Debug logging for payments
         $activeFees = $alumni ? $alumni->getActiveFees() : collect([]);
         $unpaidFees = $activeFees->filter(function($fee) {
             return !$fee->isPaid();
         });
         $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
-        
-        \Illuminate\Support\Facades\Log::info('Alumni payment check', [
-            'alumni_id' => $alumni?->id,
-            'has_active_fees' => $activeFees->isNotEmpty(),
-            'unpaid_fees_count' => $unpaidFees->count(),
-            'needs_payments' => $needsPayments,
-            'graduation_year' => $alumni?->year_of_graduation
-        ]);
+        $activePaymentYear = \App\Models\AlumniYear::where('is_active', true)->first();
+        $duesPhase = $alumni ? $alumni->getDuesPhase() : 'none';
     @endphp
 
     @if($needsBioData || $needsPayments)
@@ -122,25 +115,41 @@
                     @if($needsPayments)
                         <div class="mb-4">
                             <h6>Pending Payments</h6>
-                            <p>You have the following pending payments that need to be completed:</p>
+                            @if($duesPhase === 'annual' && $activePaymentYear)
+                                <p class="mb-2">
+                                    Your <strong>annual alumni due for payment year {{ $activePaymentYear->year }}</strong> is unpaid.
+                                </p>
+                            @else
+                                <p class="mb-2">You have the following pending payments that need to be completed:</p>
+                            @endif
                             <div class="table-responsive">
-                                <table class="table table-sm">
+                                <table class="table table-sm align-middle mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Fee Type</th>
+                                            <th>Fee</th>
+                                            @if($duesPhase === 'annual')
+                                                <th>Payment year</th>
+                                            @endif
                                             <th>Amount</th>
-                                            <th>Due Date</th>
+                                            <th>Due by</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($alumni->getActiveFees() as $fee)
-                                            @if(!$fee->isPaid())
-                                                <tr>
-                                                    <td>{{ $fee->feeType->name }}</td>
-                                                    <td>₦{{ number_format($fee->amount, 2) }}</td>
-                                                    <td>{{ $fee->alumniYear?->end_date?->format('M d, Y') ?? 'N/A' }}</td>
-                                                </tr>
-                                            @endif
+                                        @foreach($unpaidFees as $fee)
+                                            <tr>
+                                                <td>
+                                                    @if($duesPhase === 'annual')
+                                                        {{ $fee->description ?: $fee->feeType->name }}
+                                                    @else
+                                                        {{ $fee->displayLabel($activePaymentYear) }}
+                                                    @endif
+                                                </td>
+                                                @if($duesPhase === 'annual')
+                                                    <td><strong>{{ $fee->paymentYearLabel($activePaymentYear) ?? '—' }}</strong></td>
+                                                @endif
+                                                <td>₦{{ number_format($fee->amount, 2) }}</td>
+                                                <td>{{ $fee->dueDateForDisplay($activePaymentYear)?->format('M d, Y') ?? '—' }}</td>
+                                            </tr>
                                         @endforeach
                                     </tbody>
                                 </table>

@@ -36,7 +36,7 @@
                                     <p class="text-muted mb-2">{{ $candidate->alumni->matriculation_number }}</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <span class="badge bg-{{ $candidate->status === 'approved' ? 'success' : ($candidate->status === 'rejected' ? 'danger' : 'warning') }}">
-                                            {{ ucfirst($candidate->status) }}
+                                            {{ $candidate->status_label }}
                                         </span>
                                         @if($candidate->has_paid_screening_fee)
                                             <span class="badge bg-success">Paid</span>

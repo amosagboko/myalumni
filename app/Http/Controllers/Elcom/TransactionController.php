@@ -66,15 +66,15 @@ class TransactionController extends Controller
         // 8. Total Amount Paid
         $totalAmountPaid = Transaction::where('status', 'paid')->sum('amount');
         
-        // 9. Special Exemption (2024 graduates who have completed bio data and are exempted from all fees)
-        $specialExemption = Alumni::where('year_of_graduation', 2024)
-            ->whereNotNull('contact_address')
-            ->whereNotNull('phone_number')
-            ->whereNotNull('qualification_type')
-            ->count();
-        
-        // 10. Voters Register (Total Subscribed Users + Special Exemption)
-        $votersRegister = $totalSubscribedUsers + $specialExemption;
+        // Alumni with paid annual/subscription dues (2024+ grads included)
+        $duesFeeTypeIds = FeeType::whereIn('code', ['subscription', FeeType::ANNUAL_DUE_CODE])->pluck('id');
+        $specialExemption = 0;
+        $votersRegister = $duesFeeTypeIds->isEmpty()
+            ? $totalSubscribedUsers
+            : Transaction::where('status', 'paid')
+                ->whereHas('feeTemplate', fn ($query) => $query->whereIn('fee_type_id', $duesFeeTypeIds))
+                ->distinct('alumni_id')
+                ->count('alumni_id');
         
         // Get recent transactions
         $recentTransactions = Transaction::with(['alumni.user', 'feeTemplate.feeType'])

@@ -52,12 +52,28 @@
                                             'eoi_closed' => 'secondary',
                                             'accreditation' => 'info',
                                             'voting' => 'primary',
+                                            'incomplete' => 'warning',
                                             'completed' => 'success',
                                             'archived' => 'dark',
                                             default => 'danger',
                                         };
+                                        $statusLabel = match($election->status) {
+                                            'eoi_closed' => 'EOI Closed',
+                                            'incomplete' => 'Incomplete',
+                                            default => ucfirst(str_replace('_', ' ', $election->status)),
+                                        };
                                     @endphp
-                                    <span class="badge bg-{{ $statusBadge }}">{{ ucfirst($election->status) }}</span>
+                                    <span class="badge bg-{{ $statusBadge }}">{{ $statusLabel }}</span>
+                                    @if($election->isByElection())
+                                        <span class="badge bg-warning text-dark ms-1">By-Election</span>
+                                        @if($election->parentElection)
+                                            <div class="mt-2 small">
+                                                <a href="{{ route('elcom.elections.resolution', $election->parentElection) }}">
+                                                    Parent: {{ $election->parentElection->title }}
+                                                </a>
+                                            </div>
+                                        @endif
+                                    @endif
                                     @if($election->is_active)
                                         <span class="badge bg-success ms-1">Active Cycle</span>
                                     @endif
@@ -84,9 +100,14 @@
                                         <a href="{{ route('elcom.elections.accredited-voters', $election) }}" class="btn btn-info btn-sm w-100 mt-2">
                                             <i class="bi bi-people me-2"></i>View Accredited Voters
                                         </a>
-                                        @if(in_array($election->status, ['voting', 'completed', 'archived']))
+                                        @if(in_array($election->status, ['voting', 'incomplete', 'completed', 'archived']))
                                             <a href="{{ route('elcom.elections.basic-results', $election) }}" class="btn btn-primary btn-sm w-100 mt-2">
                                                 <i class="bi bi-bar-chart me-2"></i>View Basic Results
+                                            </a>
+                                        @endif
+                                        @if(in_array($election->status, ['incomplete', 'completed', 'archived']))
+                                            <a href="{{ route('elcom.elections.resolution', $election) }}" class="btn btn-outline-warning btn-sm w-100 mt-2">
+                                                <i class="bi bi-clipboard-check me-2"></i>Resolution Summary
                                             </a>
                                         @endif
                                     @endif
@@ -129,6 +150,17 @@
                                                 End Voting
                                             </button>
                                         </form>
+                                    @elseif($election->isIncomplete())
+                                        <div class="alert alert-warning mt-3 mb-0 small">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Election incomplete — {{ $election->offices()->whereIn('resolution_status', ['tied', 'uncontested'])->whereNull('by_election_id')->count() }} office(s) pending by-election.
+                                            <a href="{{ route('elcom.elections.resolution', $election) }}" class="alert-link">View resolution</a>
+                                        </div>
+                                        @if($activeByElection = $election->activeByElection())
+                                            <a href="{{ route('elcom.elections.show', $activeByElection) }}" class="btn btn-warning btn-sm w-100 mt-2">
+                                                <i class="bi bi-calendar-event me-2"></i>Manage Active By-Election
+                                            </a>
+                                        @endif
                                     @endif
                                 </div>
                             </div>
@@ -250,9 +282,10 @@
                                             <h6 class="card-subtitle mb-2">EOI Statistics</h6>
                                             <ul class="list-unstyled">
                                                 <li>Total Expressions: {{ $election->getPaidEoiApplicationsCount() }}</li>
-                                                <li>Pending Review: {{ $election->candidates()->where('has_paid_screening_fee', true)->where('status', 'pending')->count() }}</li>
-                                                <li>Approved: {{ $election->candidates()->where('has_paid_screening_fee', true)->where('status', 'approved')->count() }}</li>
-                                                <li>Rejected: {{ $election->candidates()->where('has_paid_screening_fee', true)->where('status', 'rejected')->count() }}</li>
+                                                <li>Pending payment: {{ $election->candidates()->where('status', 'pending')->count() }}</li>
+                                                <li>Awaiting ELCOM screening: {{ $election->candidates()->where('status', 'paid_awaiting_screening')->count() }}</li>
+                                                <li>Approved: {{ $election->candidates()->where('status', 'approved')->count() }}</li>
+                                                <li>Rejected: {{ $election->candidates()->where('status', 'rejected')->count() }}</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -387,9 +420,13 @@
                                     <div class="card-body">
                                         <p class="card-text">{{ $office->description }}</p>
                                         <ul class="list-unstyled">
-                                            <li><strong>Max Candidates:</strong> {{ $office->max_candidates }}</li>
+                                            <li><strong>Max Applicants:</strong> {{ $office->max_candidates }}</li>
+                                            <li><strong>Applicants:</strong> {{ $office->getActiveApplicantsCount() }} / {{ $office->max_candidates }}
+                                                @if($election->canAcceptEoiSubmissions() && !$office->hasAvailableApplicantSlots())
+                                                    <span class="badge bg-secondary ms-1">EOI full</span>
+                                                @endif
+                                            </li>
                                             <li><strong>Term Duration:</strong> {{ $office->term_duration }} years</li>
-                                            <li><strong>Total Candidates:</strong> {{ $office->candidates->count() }}</li>
                                         </ul>
                                         <a href="{{ route('elcom.election-offices.candidates.index', [$election, $office]) }}" 
                                             class="btn btn-info btn-sm">

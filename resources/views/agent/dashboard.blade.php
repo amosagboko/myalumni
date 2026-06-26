@@ -97,7 +97,7 @@
                                                                 <td class="small">{{ $candidate->office->title }}</td>
                                                                 <td>
                                                                     <span class="badge bg-{{ $candidate->status === 'approved' ? 'success' : ($candidate->status === 'rejected' ? 'danger' : 'warning') }} small">
-                                                                        {{ ucfirst($candidate->status) }}
+                                                                        {{ $candidate->status_label }}
                                                                     </span>
                                                                 </td>
                                                                 <td>

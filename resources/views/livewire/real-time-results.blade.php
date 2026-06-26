@@ -1,4 +1,4 @@
-<div wire:poll.30s="updateResults">
+<div @if($isLive) wire:poll.30s="updateResults" @endif>
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
             <a href="{{ route('elcom.elections.basic-results', $election) }}" class="btn btn-outline-secondary btn-sm">
@@ -15,6 +15,7 @@
                 <i class="fas fa-print me-1"></i>
                 Print Full Results
             </a>
+            @if(in_array($election->status, ['incomplete', 'completed', 'archived']))
             <a href="{{ route('elcom.elections.print-winners', $election) }}" 
                 class="btn btn-outline-success btn-sm" 
                 target="_blank"
@@ -22,10 +23,13 @@
                 <i class="fas fa-trophy me-1"></i>
                 Print Winners
             </a>
-            <span class="badge bg-success me-2">
-                <i class="fas fa-circle live-indicator"></i> LIVE
+            @endif
+            <span class="badge {{ $isLive ? 'bg-success' : 'bg-secondary' }} me-2">
+                <i class="fas fa-circle {{ $isLive ? 'live-indicator' : '' }}"></i> {{ $isLive ? 'LIVE' : 'FINAL' }}
             </span>
+            @if($isLive)
             <span class="refresh-indicator">Auto-updating</span>
+            @endif
         </div>
     </div>
 
@@ -50,8 +54,8 @@
         </div>
         <div class="col-md-3">
             <div class="stats-card p-3">
-                <h6 class="text-muted mb-2">Time Remaining</h6>
-                <h3 class="mb-0">{{ $timeRemaining }}</h3>
+                <h6 class="text-muted mb-2">{{ $timeRemainingLabel }}</h6>
+                <h3 class="mb-0 fs-5">{{ $timeRemaining }}</h3>
             </div>
         </div>
     </div>
@@ -60,13 +64,23 @@
         @foreach($offices as $office)
             <div class="col-md-6 mb-4">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">{{ $office['title'] }}</h5>
+                        @if($office['is_uncontested'])
+                            <span class="badge bg-secondary">Uncontested</span>
+                        @elseif($office['is_tied'])
+                            <span class="badge bg-danger">TIE</span>
+                        @endif
                     </div>
                     <div class="card-body">
+                        @if($office['is_uncontested'])
+                            <p class="text-muted mb-0 small">No approved candidate on the ballot.</p>
+                        @else
                         @foreach($office['candidates'] as $index => $candidate)
-                            <div class="candidate-card p-3 mb-3 position-relative {{ $index === 0 ? 'border-success' : '' }}">
-                                @if($index === 0)
+                            <div class="candidate-card p-3 mb-3 position-relative {{ $candidate['is_leading'] ? 'border-success' : ($candidate['is_tied'] ? 'border-danger' : '') }}">
+                                @if($candidate['is_tied'])
+                                    <div class="winner-badge bg-danger">Tied</div>
+                                @elseif($candidate['is_leading'])
                                     <div class="winner-badge">Leading</div>
                                 @endif
                                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -86,6 +100,7 @@
                                 </div>
                             </div>
                         @endforeach
+                        @endif
                     </div>
                 </div>
             </div>
@@ -119,6 +134,9 @@
     }
     .candidate-card.border-success {
         border-left-color: #28a745;
+    }
+    .candidate-card.border-danger {
+        border-left-color: #dc3545;
     }
     .winner-badge {
         position: absolute;

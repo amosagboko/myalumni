@@ -79,7 +79,7 @@ class LandingPageController extends Controller
         // Add messages based on graduation year
         $message = null;
         if ($alumni->year_of_graduation == 2024) {
-            $message = 'As a 2024 graduate, you are exempted from all fees but must complete your bio data.';
+            $message = 'As a 2024 graduate, you were not charged dues in your graduation year. Complete your bio data and pay the annual alumni due for the current payment year.';
         } elseif ($alumni->year_of_graduation >= 2025) {
             $message = 'As a 2025+ graduate, you must complete your bio data and pay category-based fees.';
         }

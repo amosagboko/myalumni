@@ -25,7 +25,12 @@
 
                     <div class="bg-light rounded-3 p-3 p-md-4 mb-3 mb-md-4">
                         <h2 class="h5 h-md-4 fw-semibold text-primary mb-2 mb-md-3">Position Details</h2>
-                        <p class="text-muted mb-0 small">{{ $office->description }}</p>
+                        <p class="text-muted mb-2 small">{{ $office->description }}</p>
+                        <p class="mb-0 small">
+                            <span class="badge bg-info text-dark">
+                                {{ $office->getRemainingApplicantSlots() }} of {{ $office->max_candidates }} applicant slot{{ $office->max_candidates === 1 ? '' : 's' }} remaining
+                            </span>
+                        </p>
                     </div>
 
                     <div class="bg-light rounded-3 p-3 p-md-4 mb-3 mb-md-4">
