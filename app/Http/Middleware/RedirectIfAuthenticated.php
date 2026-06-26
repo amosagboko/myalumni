@@ -25,8 +25,8 @@ class RedirectIfAuthenticated
 
                 // If user is an alumni (including those who are also agents), redirect to alumni home
                 if ($user->hasRole('alumni')) {
-                    if ($user->is_first_login) {
-                        return redirect()->route('alumni.onboarding');
+                    if ($redirect = RouteServiceProvider::alumniOnboardingRedirect($user)) {
+                        return $redirect;
                     }
 
                     return redirect()->route('alumni.home');

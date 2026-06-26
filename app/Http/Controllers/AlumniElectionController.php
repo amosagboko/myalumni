@@ -212,8 +212,8 @@ class AlumniElectionController extends Controller
         }
 
         // Load election data with necessary relationships - ONLY approved candidates
-        $election->load(['offices.candidates' => function($query) {
-            $query->where('status', 'approved');
+        $election->load(['offices.candidates' => function ($query) {
+            $query->where('status', 'approved')->with('electionResults');
         }, 'offices.candidates.alumni.user', 'offices.candidates.votes', 'results.candidate.alumni.user', 'results.office']);
 
         // Calculate basic statistics

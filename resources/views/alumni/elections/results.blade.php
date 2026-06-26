@@ -25,6 +25,8 @@
                             Winners shown below are only for offices with a clear result.
                         </div>
                     @endif
+
+                    @if($election->isArchived())
                         <div class="alert alert-secondary mb-4">
                             <i class="bi bi-archive me-2"></i>
                             <strong>Archived election</strong>
