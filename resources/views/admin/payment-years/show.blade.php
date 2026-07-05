@@ -39,7 +39,7 @@
                                     <h6 class="mb-0">Annual renewal due</h6>
                                     <small class="text-muted">Single yearly fee for onboarded alumni (not category bundle)</small>
                                 </div>
-                                @if(!$annualDueTemplate && $previousAnnualDue)
+                                @if(!$yearSpecificAnnualDue && $previousAnnualDue)
                                     <form action="{{ route('admin.payment-years.copy-annual-due', $paymentYear) }}" method="POST" class="d-inline">
                                         @csrf
                                         <button type="submit" class="btn btn-outline-secondary btn-sm">
@@ -49,35 +49,39 @@
                                 @endif
                             </div>
                             <div class="card-body">
-                                @if($annualDueTemplate)
-                                    <form action="{{ route('admin.payment-years.annual-due.update', [$paymentYear, $annualDueTemplate]) }}" method="POST">
+                                @if($yearSpecificAnnualDue)
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <span class="badge bg-success">Configured for {{ $paymentYear->year }}</span>
+                                        <span class="small text-muted">Template #{{ $yearSpecificAnnualDue->id }}</span>
+                                    </div>
+                                    <form action="{{ route('admin.payment-years.annual-due.update', [$paymentYear, $yearSpecificAnnualDue]) }}" method="POST">
                                         @csrf
                                         @method('PUT')
                                         <div class="row g-3">
                                             <div class="col-md-4">
                                                 <label class="form-label">Amount (₦)</label>
                                                 <input type="number" name="amount" step="0.01" min="0" class="form-control"
-                                                    value="{{ old('amount', $annualDueTemplate->amount) }}" required>
+                                                    value="{{ old('amount', $yearSpecificAnnualDue->amount) }}" required>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Valid from</label>
                                                 <input type="date" name="valid_from" class="form-control"
-                                                    value="{{ old('valid_from', $annualDueTemplate->valid_from?->format('Y-m-d')) }}" required>
+                                                    value="{{ old('valid_from', $yearSpecificAnnualDue->valid_from?->format('Y-m-d')) }}" required>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Valid until</label>
                                                 <input type="date" name="valid_until" class="form-control"
-                                                    value="{{ old('valid_until', $annualDueTemplate->valid_until?->format('Y-m-d')) }}">
+                                                    value="{{ old('valid_until', $yearSpecificAnnualDue->valid_until?->format('Y-m-d')) }}">
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label">Description</label>
                                                 <input type="text" name="description" class="form-control"
-                                                    value="{{ old('description', $annualDueTemplate->description) }}">
+                                                    value="{{ old('description', $yearSpecificAnnualDue->description) }}">
                                             </div>
                                             <div class="col-12">
                                                 <div class="form-check">
                                                     <input type="checkbox" name="is_active" value="1" class="form-check-input" id="annual_active"
-                                                        {{ old('is_active', $annualDueTemplate->is_active) ? 'checked' : '' }}>
+                                                        {{ old('is_active', $yearSpecificAnnualDue->is_active) ? 'checked' : '' }}>
                                                     <label class="form-check-label" for="annual_active">Active</label>
                                                 </div>
                                             </div>
@@ -87,44 +91,35 @@
                                                 <span class="me-3"><strong>{{ $annualStats['paid'] }}</strong> paid</span>
                                                 <span><strong>{{ $annualStats['pending'] }}</strong> pending</span>
                                             </div>
-                                            <button type="submit" class="btn btn-primary btn-sm">Save annual due</button>
+                                            <button type="submit" class="btn btn-primary btn-sm">Update annual due</button>
                                         </div>
                                     </form>
+                                @elseif($sharedAnnualDue)
+                                    <div class="alert alert-info mb-3">
+                                        <strong>Using shared annual due.</strong>
+                                        This payment year has no dedicated template yet. Alumni currently pay
+                                        <strong>₦{{ number_format($sharedAnnualDue->amount, 2) }}</strong>
+                                        from
+                                        @if((int) $sharedAnnualDue->graduation_year === \App\Models\FeeTemplate::PAYMENT_YEAR_ALL)
+                                            the <em>All payment years</em> template
+                                        @else
+                                            a legacy subscription template
+                                        @endif
+                                        ({{ $sharedAnnualDue->description ?? 'Annual due' }}).
+                                        <a href="{{ route('admin.fee-templates.edit', $sharedAnnualDue) }}" class="alert-link">Edit shared template</a>
+                                        or create a year-specific amount below.
+                                    </div>
+                                    <p class="text-muted small mb-2">Create a dedicated annual due for {{ $paymentYear->year }}:</p>
+                                    @include('admin.payment-years.partials.annual-due-create-form', [
+                                        'paymentYear' => $paymentYear,
+                                        'previousAnnualDue' => $sharedAnnualDue,
+                                    ])
                                 @else
                                     <p class="text-muted small">No annual due configured for {{ $paymentYear->year }} yet. Alumni cannot pay this year’s renewal until you set it.</p>
-                                    <form action="{{ route('admin.payment-years.annual-due.store', $paymentYear) }}" method="POST">
-                                        @csrf
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <label class="form-label">Amount (₦)</label>
-                                                <input type="number" name="amount" step="0.01" min="0" class="form-control"
-                                                    value="{{ old('amount', $previousAnnualDue?->amount ?? '') }}" required
-                                                    placeholder="{{ $previousAnnualDue ? number_format($previousAnnualDue->amount, 2) : 'e.g. 2000' }}">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Valid from</label>
-                                                <input type="date" name="valid_from" class="form-control"
-                                                    value="{{ old('valid_from', $paymentYear->start_date->format('Y-m-d')) }}" required>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Valid until</label>
-                                                <input type="date" name="valid_until" class="form-control"
-                                                    value="{{ old('valid_until', $paymentYear->end_date->format('Y-m-d')) }}">
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Description</label>
-                                                <input type="text" name="description" class="form-control"
-                                                    value="{{ old('description', "Annual alumni due for {$paymentYear->year}") }}">
-                                            </div>
-                                            <div class="col-12">
-                                                <div class="form-check">
-                                                    <input type="checkbox" name="is_active" value="1" class="form-check-input" id="new_annual_active" checked>
-                                                    <label class="form-check-label" for="new_annual_active">Active</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary btn-sm mt-3">Create annual due</button>
-                                    </form>
+                                    @include('admin.payment-years.partials.annual-due-create-form', [
+                                        'paymentYear' => $paymentYear,
+                                        'previousAnnualDue' => $previousAnnualDue,
+                                    ])
                                 @endif
                             </div>
                         </div>

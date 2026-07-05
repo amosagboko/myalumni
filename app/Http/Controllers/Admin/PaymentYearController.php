@@ -94,27 +94,34 @@ class PaymentYearController extends Controller
 
     public function show(AlumniYear $paymentYear)
     {
-        $annualDueTemplate = $paymentYear->annualDueTemplate();
+        $yearSpecificAnnualDue = $paymentYear->yearSpecificAnnualDueTemplate();
+        $resolvedAnnualDue = $paymentYear->annualDueTemplate();
+        $sharedAnnualDue = $yearSpecificAnnualDue ? null : $paymentYear->sharedAnnualDueTemplate();
+
         $onboardingByCohort = $paymentYear->onboardingTemplatesByCohort();
         $onboardingFeeTypes = FeeType::onboardingTypes()->get();
         $previousYear = AlumniYear::where('year', '<', $paymentYear->year)->orderByDesc('year')->first();
-        $previousAnnualDue = $previousYear?->annualDueTemplate();
+        $previousAnnualDue = $previousYear?->yearSpecificAnnualDueTemplate()
+            ?? $previousYear?->sharedAnnualDueTemplate();
 
         $annualStats = [
             'paid' => 0,
             'pending' => 0,
         ];
 
-        if ($annualDueTemplate) {
-            $annualStats['paid'] = Transaction::where('fee_template_id', $annualDueTemplate->id)
+        $statsTemplate = $resolvedAnnualDue;
+        if ($statsTemplate) {
+            $annualStats['paid'] = Transaction::where('fee_template_id', $statsTemplate->id)
                 ->where('status', 'paid')->count();
-            $annualStats['pending'] = Transaction::where('fee_template_id', $annualDueTemplate->id)
+            $annualStats['pending'] = Transaction::where('fee_template_id', $statsTemplate->id)
                 ->where('status', 'pending')->count();
         }
 
         return view('admin.payment-years.show', compact(
             'paymentYear',
-            'annualDueTemplate',
+            'yearSpecificAnnualDue',
+            'resolvedAnnualDue',
+            'sharedAnnualDue',
             'onboardingByCohort',
             'onboardingFeeTypes',
             'previousYear',
@@ -125,8 +132,8 @@ class PaymentYearController extends Controller
 
     public function storeAnnualDue(Request $request, AlumniYear $paymentYear)
     {
-        if ($paymentYear->annualDueTemplate()) {
-            return back()->with('error', 'An annual due already exists for this payment year. Edit the existing template instead.');
+        if ($paymentYear->yearSpecificAnnualDueTemplate()) {
+            return back()->with('error', 'An annual due already exists for this payment year. Use Update annual due below.');
         }
 
         $validated = $request->validate([
@@ -217,7 +224,7 @@ class PaymentYearController extends Controller
 
     protected function copyAnnualDueFromPrevious(AlumniYear $paymentYear): void
     {
-        if ($paymentYear->annualDueTemplate()) {
+        if ($paymentYear->yearSpecificAnnualDueTemplate()) {
             throw new \RuntimeException('This payment year already has an annual due configured.');
         }
 
@@ -226,7 +233,8 @@ class PaymentYearController extends Controller
             throw new \RuntimeException('No previous payment year found to copy from.');
         }
 
-        $source = $previousYear->annualDueTemplate();
+        $source = $previousYear->yearSpecificAnnualDueTemplate()
+            ?? $previousYear->sharedAnnualDueTemplate();
         if (!$source) {
             throw new \RuntimeException("Previous year ({$previousYear->year}) has no annual due configured.");
         }

@@ -39,17 +39,28 @@ class AlumniYear extends Model
 
     public function annualDueTemplate(): ?FeeTemplate
     {
-        $specific = FeeTemplate::query()
+        return $this->yearSpecificAnnualDueTemplate()
+            ?? $this->sharedAnnualDueTemplate();
+    }
+
+    /**
+     * Annual due template scoped to this payment year only (editable in Dues Config).
+     */
+    public function yearSpecificAnnualDueTemplate(): ?FeeTemplate
+    {
+        return FeeTemplate::query()
             ->annualRenewal()
             ->where('graduation_year', $this->year)
             ->whereNull('category_id')
             ->orderByDesc('id')
             ->first();
+    }
 
-        if ($specific) {
-            return $specific;
-        }
-
+    /**
+     * Shared fallback used when this year has no dedicated template.
+     */
+    public function sharedAnnualDueTemplate(): ?FeeTemplate
+    {
         $allYears = FeeTemplate::query()
             ->annualRenewal()
             ->where('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL)
