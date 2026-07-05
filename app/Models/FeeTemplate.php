@@ -155,17 +155,21 @@ class FeeTemplate extends Model
     }
 
     /**
-     * Due date for display (annual dues use the active payment year end date).
+     * Admin-configured payable window for annual dues (valid_from – valid_until).
      */
-    public function dueDateForDisplay(?AlumniYear $activePaymentYear = null): ?\Illuminate\Support\Carbon
+    public function validPeriodLabel(): ?string
     {
-        if ($this->isAnnualDueType()) {
-            $year = $activePaymentYear ?? AlumniYear::where('is_active', true)->first();
-
-            return $year?->end_date;
+        if (!$this->isAnnualDueType() || !$this->valid_from) {
+            return null;
         }
 
-        return null;
+        $from = $this->valid_from->format('M j, Y');
+
+        if ($this->valid_until) {
+            return "{$from} – {$this->valid_until->format('M j, Y')}";
+        }
+
+        return $from;
     }
 
     /**

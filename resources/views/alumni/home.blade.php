@@ -131,7 +131,9 @@
                                                 <th>Payment year</th>
                                             @endif
                                             <th>Amount</th>
-                                            <th>Due by</th>
+                                            @if($duesPhase === 'annual')
+                                                <th>Valid period</th>
+                                            @endif
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -148,7 +150,9 @@
                                                     <td><strong>{{ $fee->paymentYearLabel($activePaymentYear) ?? '—' }}</strong></td>
                                                 @endif
                                                 <td>₦{{ number_format($fee->amount, 2) }}</td>
-                                                <td>{{ $fee->dueDateForDisplay($activePaymentYear)?->format('M d, Y') ?? '—' }}</td>
+                                                @if($duesPhase === 'annual')
+                                                    <td>{{ $fee->validPeriodLabel() ?? '—' }}</td>
+                                                @endif
                                             </tr>
                                         @endforeach
                                     </tbody>
