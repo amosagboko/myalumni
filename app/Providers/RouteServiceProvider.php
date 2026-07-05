@@ -75,48 +75,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     public static function redirectToHome(): \Illuminate\Http\RedirectResponse
     {
-        $user = auth()->user();
-
-        if ($redirect = self::alumniOnboardingRedirect($user)) {
-            return $redirect;
-        }
-
         return redirect()->intended(route(self::getHomeRoute(), absolute: false));
-    }
-
-    /**
-     * Send alumni to onboarding only when they still need first-time setup.
-     */
-    public static function alumniOnboardingRedirect($user): ?\Illuminate\Http\RedirectResponse
-    {
-        if (!$user || !$user->hasRole('alumni')) {
-            return null;
-        }
-
-        $alumni = $user->alumni;
-        $profileReady = $alumni
-            && $alumni->contact_address
-            && $alumni->phone_number
-            && $alumni->qualification_type
-            && $user->email_verified_at;
-
-        if ($user->is_first_login && $profileReady) {
-            $user->forceFill(['is_first_login' => false])->save();
-        }
-
-        if ($user->is_first_login && !$profileReady) {
-            return redirect()->route('alumni.onboarding');
-        }
-
-        if (!$user->email_verified_at) {
-            return redirect()->route('alumni.onboarding');
-        }
-
-        if (!$profileReady) {
-            return redirect()->route('alumni.onboarding');
-        }
-
-        return null;
     }
 
     /**
