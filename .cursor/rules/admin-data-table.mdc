@@ -1,0 +1,48 @@
+---
+description: Standard admin data-table layout and CSS classes for list/table pages
+globs: resources/views/**/*.blade.php
+alwaysApply: false
+---
+
+# Admin data table pattern
+
+Use the shared table system from Manage Users for any admin list/table page.
+
+## Setup
+
+1. Include styles once on the page:
+   ```blade
+   <x-admin.data-table-styles />
+   ```
+
+2. Wrap content in:
+   ```blade
+   <div class="main-content right-chat-active admin-data-table">
+   ```
+
+## Class reference (`adt-*`)
+
+| Area | Classes |
+|------|---------|
+| Page header | `adt-page-header`, `adt-page-title`, `adt-page-subtitle`, `adt-btn-primary` |
+| Stats row | `adt-stats`, `adt-stat`, `adt-stat-label`, `adt-stat-value` |
+| Panel | `adt-panel`, `adt-toolbar`, `adt-filters`, `adt-search`, `adt-select` |
+| Alerts | `adt-alert`, `adt-alert-success`, `adt-alert-error` |
+| Table | `adt-table-wrap`, `adt-table`, `adt-th-sortable`, `adt-th-actions` |
+| Cells | `adt-user-cell`, `adt-avatar`, `adt-user-name`, `adt-email`, `adt-tag`, `adt-muted` |
+| Status | `adt-status`, `adt-status-dot`, `adt-status-active`, `adt-status-suspended` |
+| Actions | `adt-actions`, `adt-action-btn`, `adt-action-danger` |
+| Footer | `adt-footer`, `adt-footer-count`, `adt-pagination` |
+| Empty | `adt-empty`, `adt-empty-icon`, `adt-empty-title`, `adt-empty-text` |
+
+## Reference implementation
+
+`resources/views/livewire/admin/manage-users.blade.php`
+
+## Rules
+
+- Neutral palette only; one primary accent (`#132977`).
+- No `bg-current`, colored table headers, or badge-pill action buttons.
+- Primary actions use `adt-btn-primary` (white text).
+- Row actions use icon buttons in `adt-action-btn`.
+- Pagination: `{{ $paginator->links('pagination::bootstrap-5') }}` inside `adt-pagination`.

@@ -126,6 +126,23 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasRole('alumni-relations-officer');
     }
 
+    public function displayStatus(): string
+    {
+        return ucfirst($this->status ?: 'active');
+    }
+
+    public function isActive(): bool
+    {
+        return ($this->status ?? 'active') === 'active';
+    }
+
+    public function formattedRoles(): string
+    {
+        return $this->roles
+            ->map(fn (Role $role) => str($role->name)->headline()->toString())
+            ->implode(', ') ?: '—';
+    }
+
     public function alumni(): HasOne
     {
         return $this->hasOne(Alumni::class);

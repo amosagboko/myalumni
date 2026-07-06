@@ -64,7 +64,7 @@
                             <li class="nav-item">
                                 <a href="{{ route('admin.users') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                                     <i data-feather="users" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
-                                    <span>App Users</span>
+                                    <span>Manage Users</span>
                                 </a>
                             </li>
                             <li class="nav-item">

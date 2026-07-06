@@ -204,7 +204,7 @@
                         <div class="nav-caption fw-600 font-xssss text-grey-500"><span>My </span>Dashboard</div>
                         <ul class="mb-1 top-content">
                             <li class="logo d-none d-xl-block d-lg-block"></li>
-                            <li><a href="{{ route('admin.users') }}" class="nav-content-bttn open-font" ><i class="feather-tv btn-round-md bg-blue-gradiant me-3"></i><span>App Users</span></a></li>
+                            <li><a href="{{ route('admin.users') }}" class="nav-content-bttn open-font" ><i class="feather-users btn-round-md bg-blue-gradiant me-3"></i><span>Manage Users</span></a></li>
                             <li><a href="{{ route('upload.alumni') }}" class="nav-content-bttn open-font" ><i class="feather-award btn-round-md bg-red-gradiant me-3"></i><span>Upload Alumni</span></a></li>
                             <li><a href="{{ route('fee-templates.index') }}" class="nav-content-bttn open-font" ><i class="feather-credit-card btn-round-md bg-gold-gradiant me-3"></i><span>Fee Templates</span></a></li>
                             <li><a href="{{ route('create.event.index') }}" class="nav-content-bttn open-font" ><i class="feather-zap btn-round-md bg-mini-gradiant me-3"></i><span>Create Event</span></a></li>

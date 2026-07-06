@@ -1,0 +1,57 @@
+---
+description: Standard admin data-table layout and CSS classes for list/table pages (admin-data-table-kit)
+globs: resources/views/**/*.blade.php
+alwaysApply: false
+---
+
+# Admin data table pattern
+
+Use the **admin-data-table-kit** for any admin list/table page.
+
+## Setup
+
+1. Include styles once on the page:
+   ```blade
+   <x-admin.data-table-styles />
+   ```
+
+2. Wrap content in:
+   ```blade
+   <div class="admin-data-table">
+   ```
+   (Add your layout wrapper classes outside this, e.g. `main-content`.)
+
+3. Layout must expose `@stack('styles')` in `<head>`.
+
+## Starter template
+
+`resources/views/templates/admin-data-table-page-skeleton.blade.php`
+
+## Class reference (`adt-*`)
+
+| Area | Classes |
+|------|---------|
+| Page header | `adt-page-header`, `adt-page-title`, `adt-page-subtitle`, `adt-btn-primary` |
+| Stats row | `adt-stats`, `adt-stat`, `adt-stat-label`, `adt-stat-value` |
+| Panel | `adt-panel`, `adt-toolbar`, `adt-filters`, `adt-search`, `adt-select` |
+| Alerts | `adt-alert`, `adt-alert-success`, `adt-alert-error` |
+| Table | `adt-table-wrap`, `adt-table`, `adt-th-sortable`, `adt-th-actions` |
+| Cells | `adt-user-cell`, `adt-avatar`, `adt-user-name`, `adt-email`, `adt-tag`, `adt-muted` |
+| Status | `adt-status`, `adt-status-dot`, `adt-status-active`, `adt-status-suspended`, `adt-status-inactive` |
+| Actions | `adt-actions`, `adt-action-btn`, `adt-action-danger` |
+| Footer | `adt-footer`, `adt-footer-count`, `adt-pagination` |
+| Empty | `adt-empty`, `adt-empty-icon`, `adt-empty-title`, `adt-empty-text` |
+| Modal | `adt-modal` (on `.modal-content`, outside `.admin-data-table` is OK) |
+
+## Rules
+
+- Neutral palette only; one primary accent (`--adt-primary`, default `#132977`).
+- No colored table headers or badge-pill row actions.
+- Primary CTA: `btn btn-primary btn-sm adt-btn-primary text-white`.
+- Row actions: small icon buttons in `adt-action-btn`.
+- Pagination: `{{ $items->links('pagination::bootstrap-5') }}` inside `adt-pagination`.
+- Status: dot + label (`adt-status-active`, `adt-status-suspended`, or `adt-status-inactive`).
+
+## Kit location
+
+If present in repo: `admin-data-table-kit/` (portable copy for other projects).

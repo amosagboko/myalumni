@@ -38,14 +38,19 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// User management (administrator + alumni-relations-officer)
+Route::middleware(['auth', 'role:administrator|alumni-relations-officer'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/users', ManageUsers::class)->name('users');
+        Route::get('/users/create', CreateUser::class)->name('users.create');
+    });
+
 // Admin routes - moved outside auth group
 Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('home');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/users', ManageUsers::class)->name('users');
-    Route::get('/users/create', function () {
-        return view('admin.users.create');
-    })->name('users.create');
     
     // Statistics Routes
     Route::get('/statistics/transactions', [AdminStatisticsController::class, 'transactions'])->name('statistics.transactions');
