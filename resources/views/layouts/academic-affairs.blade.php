@@ -23,7 +23,9 @@
         <div class="nav-top d-flex justify-content-between align-items-center w-100">
             <a href="{{ route('academic-affairs.home') }}"><span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">Academic Affairs</span></a>
             <div class="d-flex align-items-center gap-3 ms-auto">
-                <span class="text-muted font-sm">Welcome, {{ auth()->user()->name ?? 'User' }}</span>
+                <div class="user-avatar-header-slot">
+                    <x-user-avatar-dropdown dropdown-id="academicAffairsAvatarDropdown" link-class="p-0 menu-icon" />
+                </div>
                 <button class="nav-menu me-0 ms-2"></button>
             </div>
         </div>
@@ -52,14 +54,11 @@
                                 <span>Clearance Audit</span>
                             </a>
                         </li>
-                        <li class="nav-item mt-4">
-                            <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="nav-content-bttn open-font w-100 text-start border-0 bg-transparent text-danger">
-                                    <i data-feather="log-out" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
-                                    <span>Logout</span>
-                                </button>
-                            </form>
+                        <li class="nav-item">
+                            <a href="{{ route('profile.edit') }}" class="nav-content-bttn open-font {{ request()->routeIs('profile.*') ? 'active' : '' }}">
+                                <i data-feather="user" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                <span>My Profile</span>
+                            </a>
                         </li>
                     </ul>
                 </div>

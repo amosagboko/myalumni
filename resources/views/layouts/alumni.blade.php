@@ -60,9 +60,9 @@
             </a>
 
             @auth
-                <a href="{{ route('profile.edit') }}" class="p-0 ms-3 menu-icon">
-                    <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" alt="avatar" class="w40 mt--1">
-                </a>
+                <div class="user-avatar-header-slot ms-3">
+                    <x-user-avatar-dropdown dropdown-id="alumniAvatarDropdown" link-class="p-0 menu-icon" />
+                </div>
             @endauth
         </div>
         <!-- navigation top -->
@@ -169,7 +169,7 @@
                             <div class="nav-caption fw-600 font-xssss text-grey-500"><span></span> Account</div>
                             <ul class="mb-1">
                                 <li class="logo d-none d-xl-block d-lg-block"></li>
-                                <li><a href="{{ route('profile.edit') }}" class="nav-content-bttn open-font h-auto pt-2 pb-2"><i data-feather="settings" class="font-sm me-3 text-grey-500"></i><span>My Profile</span></a></li>
+                                <li><a href="{{ route('profile.edit') }}" class="nav-content-bttn open-font h-auto pt-2 pb-2 {{ request()->routeIs('profile.*') ? 'active' : '' }}"><i data-feather="user" class="font-sm me-3 text-grey-500"></i><span>My Profile</span></a></li>
                                 <li><a href="#" class="nav-content-bttn open-font h-auto pt-2 pb-2"><i data-feather="message-square" class="font-sm me-3 text-grey-500"></i><span>Messages</span><span class="circle-count bg-warning mt-0">23</span></a></li>
                             </ul>
                         </div>
@@ -306,6 +306,7 @@
         @endpush
     </div>
     @livewireScripts
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
     .disabled-link {
         pointer-events: none !important;

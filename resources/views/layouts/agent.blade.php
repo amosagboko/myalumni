@@ -32,10 +32,9 @@
             </div>
 
             @auth
-                <a href="{{ route('profile.edit') }}" class="p-0 ms-3 menu-icon">
-                    <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" 
-                         alt="avatar" class="w40 mt--1">
-                </a>
+                <div class="user-avatar-header-slot ms-3">
+                    <x-user-avatar-dropdown dropdown-id="agentAvatarDropdown" link-class="p-0 menu-icon" />
+                </div>
             @endauth
         </div>
 
@@ -70,20 +69,11 @@
                             <ul class="mb-1">
                                 <li class="logo d-none d-xl-block d-lg-block"></li>
                                 <li>
-                                    <a href="{{ route('profile.edit') }}" 
-                                       class="nav-content-bttn open-font h-auto pt-2 pb-2">
-                                        <i class="feather-settings font-sm me-3 text-grey-500"></i>
+                                    <a href="{{ route('profile.edit') }}"
+                                       class="nav-content-bttn open-font h-auto pt-2 pb-2 {{ request()->routeIs('profile.*') ? 'active' : '' }}">
+                                        <i class="feather-user font-sm me-3 text-grey-500"></i>
                                         <span>My Profile</span>
                                     </a>
-                                </li>
-                                <li>
-                                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="nav-content-bttn open-font h-auto pt-2 pb-2 w-100 text-start border-0 bg-transparent">
-                                            <i class="feather-log-out font-sm me-3 text-grey-500"></i>
-                                            <span>Logout</span>
-                                        </button>
-                                    </form>
                                 </li>
                             </ul>
                         </div>
@@ -117,5 +107,6 @@
     <script src="/js/plugin.js"></script>
     <script src="/js/lightbox.js"></script>
     <script src="/js/scripts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

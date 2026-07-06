@@ -189,7 +189,9 @@
             </div>
             
 
-            <a href="{{ route('profile.update') }}" class="p-0 ms-3 menu-icon"><img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" alt="avatar" class="w40 mt--1"></a>
+            <div class="user-avatar-header-slot ms-3">
+                <x-user-avatar-dropdown dropdown-id="legacyAlumniAdministratorAvatarDropdown" link-class="p-0 menu-icon" />
+            </div>
             
         </div>
         <!-- navigation top -->
@@ -221,6 +223,12 @@
                             <li><a href="{{ route('admin.fee.templates.index') }}" class="nav-content-bttn open-font"><i class="feather-credit-card btn-round-md bg-primary-gradiant me-3"></i><span>Fee Templates</span></a></li>
                         </ul>
                     </div>
+
+                    <x-sidebar-my-profile
+                        wrap-class="nav-wrap bg-white bg-transparent-card rounded-xxl shadow-xss pt-3 pb-1 mb-2"
+                        icon="feather-class"
+                        class="mb-2"
+                    />
                 </div>
             </div>
         </nav>
@@ -248,6 +256,7 @@
     
     </div>
     @livewireScripts
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

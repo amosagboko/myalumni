@@ -31,30 +31,14 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
                         @auth
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                    <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" 
-                                         alt="avatar" 
-                                         class="rounded-circle me-2"
-                                         style="width: 32px; height: 32px; object-fit: cover;">
-                                    <span>{{ auth()->user()->name }}</span>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
-                                            <i class="fas fa-user me-2"></i> My Profile
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="dropdown-item text-danger">
-                                                <i class="fas fa-sign-out-alt me-2"></i> Logout
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
+                            <li class="nav-item d-flex align-items-center">
+                                <div class="user-avatar-header-slot">
+                                    <x-user-avatar-dropdown
+                                        dropdown-id="elcomAvatarDropdown"
+                                        link-class="p-0 border-0 bg-transparent"
+                                        img-class="rounded-circle"
+                                    />
+                                </div>
                             </li>
                         @endauth
                     </ul>
@@ -107,6 +91,18 @@
                                     </li>
                                 @endif
                             @endauth
+                        </ul>
+
+                        <div class="px-3 mt-4 mb-3">
+                            <h6 class="text-muted text-uppercase small fw-bold">Account</h6>
+                        </div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
+                                   href="{{ route('profile.edit') }}">
+                                    <i class="fas fa-user me-2"></i> My Profile
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </nav>

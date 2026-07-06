@@ -26,9 +26,9 @@
                 <button class="nav-menu me-0 ms-2"></button>
             </div>
             
-            <a href="{{ route('profile.update') }}" class="p-0 ms-3 menu-icon">
-                <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" alt="avatar" class="w40 mt--1">
-            </a>
+            <div class="user-avatar-header-slot ms-3">
+                <x-user-avatar-dropdown dropdown-id="elcomChairmanAvatarDropdown" link-class="p-0 menu-icon" />
+            </div>
         </div>
         <!-- navigation top -->
 
@@ -52,6 +52,8 @@
                             </li>
                         </ul>
                     </div>
+
+                    <x-sidebar-my-profile class="mb-2" />
                 </div>
             </div>
         </nav>
@@ -87,5 +89,6 @@
         });
     </script>
     @livewireScripts
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

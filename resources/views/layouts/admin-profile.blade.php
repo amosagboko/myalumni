@@ -42,7 +42,9 @@
             </form>
 
             <div style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%);">
-                <a href="{{ route('profile.update') }}" class="p-0 menu-icon"><img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" alt="avatar" class="w40 mt--1"></a>
+                <div class="user-avatar-header-slot">
+                    <x-user-avatar-dropdown link-class="p-0 menu-icon" dropdown-id="adminProfileAvatarDropdown" />
+                </div>
             </div>
         </div>
         <!-- navigation top -->
@@ -109,6 +111,8 @@
                             </li>
                         </ul>
                     </div>
+
+                    <x-sidebar-my-profile class="mb-2" />
                 </div>
             </div>
         </nav>
