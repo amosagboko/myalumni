@@ -52,6 +52,26 @@ class CredoCentralService
     }
 
     /**
+     * HTTP client for server-side verification (requires secret key).
+     */
+    protected function getSecretHttpClient()
+    {
+        return Http::withHeaders([
+            'Authorization' => $this->secretKey,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ])
+            ->timeout(30)
+            ->retry(3, 100, function ($exception) {
+                Log::warning('Retrying Credo Central verify request', [
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return $exception instanceof \Illuminate\Http\Client\ConnectionException;
+            });
+    }
+
+    /**
      * Initialize a payment transaction
      */
     public function initializePayment(Transaction $transaction)
@@ -236,10 +256,15 @@ class CredoCentralService
                 throw new \Exception('Payment authorization URL not found in response');
             }
 
+            $credoReference = $responseData['data']['credoReference']
+                ?? $responseData['data']['transRef']
+                ?? $responseData['data']['reference']
+                ?? null;
+
             $transaction->update([
                 'payment_link' => $authUrl,
                 'payment_provider' => 'credocentral',
-                'payment_provider_reference' => $responseData['data']['reference'] ?? null
+                'payment_provider_reference' => $credoReference,
             ]);
 
             Log::info('Credo Central payment initialized successfully', [
@@ -269,88 +294,102 @@ class CredoCentralService
     }
 
     /**
-     * Verify a payment transaction
+     * Verify a payment transaction with Credo's /transaction/{transRef}/verify endpoint.
      */
-    public function verifyPayment(Transaction $transaction)
+    public function verifyPayment(Transaction $transaction, ?string $credoReference = null)
     {
         try {
+            $transRef = $credoReference ?: $transaction->payment_provider_reference;
+
+            if (!$transRef) {
+                throw new \Exception('No Credo transaction reference available for verification.');
+            }
+
             Log::info('Starting payment verification', [
                 'transaction_id' => $transaction->id,
                 'reference' => $transaction->payment_reference,
-                'provider_reference' => $transaction->payment_provider_reference,
-                'current_status' => $transaction->status
+                'provider_reference' => $transRef,
+                'current_status' => $transaction->status,
             ]);
-    
-            $response = $this->getHttpClient()->get($this->baseUrl . '/transaction/' . $transaction->payment_provider_reference);
-    
+
+            $verifyUrl = $this->baseUrl . '/transaction/' . rawurlencode($transRef) . '/verify';
+            $response = $this->getSecretHttpClient()->get($verifyUrl);
+
             if ($response->successful()) {
                 $data = $response->json();
-    
+                $payload = $data['data'] ?? [];
+
                 Log::info('Credo Central payment verification response', [
                     'transaction_id' => $transaction->id,
                     'reference' => $transaction->payment_reference,
                     'raw_response' => $data,
-                    'status_from_provider' => $data['data']['status'] ?? 'unknown'
+                    'status_from_provider' => $payload['status'] ?? 'unknown',
                 ]);
-    
-                // Normalize status
-                $rawStatus = $data['data']['status'] ?? '';
+
+                $rawStatus = $payload['status'] ?? '';
                 $status = strtolower((string) $rawStatus);
-    
-                // Debug status type
-                Log::debug('Payment status normalization', [
-                    'transaction_id' => $transaction->id,
-                    'raw_status' => $rawStatus,
-                    'normalized_status' => $status,
-                    'status_type' => gettype($rawStatus)
-                ]);
-    
-                // Define valid success values
-                $successStatuses = ['success', 'paid', 'completed', '0'];
-    
-                // Use strict comparison to avoid false positives
-                $isPaid = in_array($status, $successStatuses, true);
-    
-                // Optional: Confirm amount matches expected
-                $returnedAmount = ($data['data']['amount'] ?? 0) / 100;
-                $amountMatches = $returnedAmount == $transaction->amount;
-    
+                $isPaid = $this->isSuccessfulStatus($rawStatus);
+
+                $transAmountKobo = (int) ($payload['transAmount'] ?? $payload['amount'] ?? 0);
+                $expectedKobo = (int) round(((float) $transaction->amount) * 100);
+                $amountMatches = $transAmountKobo > 0
+                    ? $transAmountKobo === $expectedKobo
+                    : true;
+
+                $businessRef = $payload['businessRef'] ?? null;
+                $referenceMatches = !$businessRef || $businessRef === $transaction->payment_reference;
+
                 Log::info('Payment status verification result', [
                     'transaction_id' => $transaction->id,
                     'original_status' => $status,
                     'is_paid' => $isPaid,
                     'amount_matches' => $amountMatches,
-                    'returned_amount' => $returnedAmount,
-                    'expected_amount' => $transaction->amount,
-                    'provider_reference' => $transaction->payment_provider_reference,
-                    'payment_reference' => $transaction->payment_reference
+                    'reference_matches' => $referenceMatches,
+                    'returned_amount_kobo' => $transAmountKobo,
+                    'expected_amount_kobo' => $expectedKobo,
+                    'provider_reference' => $transRef,
+                    'payment_reference' => $transaction->payment_reference,
                 ]);
-    
+
                 return [
                     'status' => $status,
-                    'paid' => $isPaid && $amountMatches, // mark as paid only if status and amount match
-                    'amount' => $returnedAmount,
-                    'paid_at' => $data['data']['paid_at'] ?? $data['data']['created_at'] ?? null,
-                    'raw_data' => $data['data']
+                    'paid' => $isPaid && $amountMatches && $referenceMatches,
+                    'amount' => $transAmountKobo / 100,
+                    'paid_at' => $payload['transactionDate'] ?? $payload['paid_at'] ?? null,
+                    'raw_data' => $payload,
                 ];
             }
-    
+
             Log::error('Credo Central payment verification failed', [
                 'transaction_id' => $transaction->id,
                 'status_code' => $response->status(),
-                'response' => $response->json()
+                'response' => $response->json(),
             ]);
-    
+
             throw new \Exception('Failed to verify payment: ' . ($response->json()['message'] ?? 'Unknown error'));
-    
         } catch (\Exception $e) {
             Log::error('Credo Central payment verification error', [
                 'transaction_id' => $transaction->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
+    }
+
+    protected function isSuccessfulStatus(mixed $rawStatus): bool
+    {
+        if (is_numeric($rawStatus)) {
+            return (int) $rawStatus === 0;
+        }
+
+        return in_array(strtolower((string) $rawStatus), [
+            'success',
+            'successful',
+            'paid',
+            'completed',
+            '0',
+        ], true);
     }
 
     /**
@@ -377,17 +416,17 @@ class CredoCentralService
                 'data' => $data
             ]);
 
-            // Find the transaction
-            $transaction = Transaction::where('payment_provider_reference', $data['reference'])->first();
+            $transaction = $this->findTransactionFromProviderPayload($data);
             if (!$transaction) {
                 throw new \Exception('Transaction not found');
             }
 
-            // Handle different event types
             switch ($event) {
+                case 'transaction.successful':
                 case 'charge.success':
                     $this->handleSuccessfulPayment($transaction, $data);
                     break;
+                case 'transaction.failed':
                 case 'charge.failed':
                     $this->handleFailedPayment($transaction, $data);
                     break;
@@ -404,6 +443,28 @@ class CredoCentralService
             ]);
             throw $e;
         }
+    }
+
+    protected function findTransactionFromProviderPayload(array $data): ?Transaction
+    {
+        $providerRef = $data['transRef']
+            ?? $data['credoReference']
+            ?? $data['reference']
+            ?? null;
+        $businessRef = $data['businessRef'] ?? null;
+
+        if ($providerRef) {
+            $transaction = Transaction::where('payment_provider_reference', $providerRef)->first();
+            if ($transaction) {
+                return $transaction;
+            }
+        }
+
+        if ($businessRef) {
+            return Transaction::where('payment_reference', $businessRef)->first();
+        }
+
+        return null;
     }
 
     /**

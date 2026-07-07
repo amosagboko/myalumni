@@ -1,33 +1,44 @@
+@php
+    $adminSurface = $adminSurface ?? false;
+    $hideHeader = $hideHeader ?? false;
+    $labelClass = $adminSurface ? 'form-label small text-muted mb-1' : 'mont-font fw-600 font-xsss';
+    $inputClass = $adminSurface ? 'form-control form-control-sm' : 'form-control';
+    $buttonClass = $adminSurface ? 'btn btn-sm ads-btn-primary' : 'btn btn-primary btn-sm';
+@endphp
+
 <section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            Upload your Avatar
-        </h2>
+    @unless ($hideHeader)
+        <header>
+            <h2 class="text-lg font-medium text-gray-900">
+                Upload your Avatar
+            </h2>
+        </header>
+        <br>
+    @endunless
 
-        
-    </header><br>
-
-    <div class="flex items-center space-x-4">
-        <form method="POST" action="{{ route('profile.avatar') }}" enctype="multipart/form-data" class="mt-4">
-            @csrf
-            <div class="form-group mb-3">
-                <label class="mont-font fw-600 font-xsss">Profile Photo</label>
-                <div class="d-flex align-items-center gap-4">
-                    <div>
-                        <input type="file" name="avatar" class="form-control" required>
-                        <button type="submit" class="btn btn-primary btn-sm mt-3">
-                            {{ __('Save') }}
-                        </button>
-                    </div>
-                    
-                    @if(auth()->user()->avatar)
-                    <div>
-                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" alt="" 
-                            class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
-                    </div>
-                    @endif
+    <form method="POST" action="{{ route('profile.avatar') }}" enctype="multipart/form-data">
+        @csrf
+        <div class="mb-3">
+            <label class="{{ $labelClass }}">Profile photo</label>
+            <div class="d-flex align-items-center gap-4 flex-wrap">
+                <div>
+                    <input type="file" name="avatar" class="{{ $inputClass }}" accept="image/*" required>
+                    <button type="submit" class="{{ $buttonClass }} mt-3">
+                        {{ __('Save') }}
+                    </button>
                 </div>
+
+                @if (auth()->user()->avatar)
+                    <div>
+                        <img
+                            src="{{ asset('storage/' . auth()->user()->avatar) }}"
+                            alt=""
+                            class="rounded-circle border"
+                            style="width: 100px; height: 100px; object-fit: cover;"
+                        >
+                    </div>
+                @endif
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </section>

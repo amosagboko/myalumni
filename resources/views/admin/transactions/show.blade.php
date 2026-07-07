@@ -11,7 +11,7 @@
                         <div class="ads-page-header">
                             <div>
                                 <h1 class="ads-page-title">Transaction details</h1>
-                                <p class="ads-page-subtitle">Reference {{ $transaction->reference }}</p>
+                                <p class="ads-page-subtitle">Reference {{ $transaction->payment_reference }}</p>
                             </div>
                             <div class="ads-page-actions">
                                 <a href="{{ route('admin.transactions.index') }}" class="btn btn-sm btn-outline-secondary">
@@ -21,7 +21,7 @@
                             </div>
                         </div>
 
-                        @foreach (['success' => 'success', 'error' => 'error'] as $key => $class)
+                        @foreach (['success' => 'success', 'error' => 'error', 'info' => 'warning'] as $key => $class)
                             @if (session($key))
                                 <div class="ads-alert ads-alert-{{ $class }}">{{ session($key) }}</div>
                             @endif
@@ -52,8 +52,18 @@
                                     <h2 class="ads-section-title">Transaction information</h2>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <div class="small text-muted mb-1">Reference</div>
-                                            <div class="fw-medium">{{ $transaction->reference }}</div>
+                                            <div class="small text-muted mb-1">Payment reference</div>
+                                            <div class="fw-medium"><code class="small">{{ $transaction->payment_reference }}</code></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="small text-muted mb-1">Credo reference</div>
+                                            <div>
+                                                @if ($transaction->payment_provider_reference)
+                                                    <code class="small">{{ $transaction->payment_provider_reference }}</code>
+                                                @else
+                                                    <span class="adt-muted">Not recorded</span>
+                                                @endif
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="small text-muted mb-1">Status</div>
@@ -166,6 +176,54 @@
                             <div class="ads-section">
                                 <div class="ads-alert ads-alert-error mb-0">
                                     <strong>Failure reason:</strong> {{ $transaction->failure_reason }}
+                                </div>
+                            </div>
+                        @endif
+
+                        @if (in_array($transaction->status, ['pending', 'failed'], true) && $transaction->payment_provider === 'credocentral')
+                            <div class="ads-section" id="reconcile">
+                                <div class="ads-section-card">
+                                    <h2 class="ads-section-title">Reconcile with Credo</h2>
+                                    <p class="text-muted small mb-3">
+                                        Use this when an alumni paid successfully but the transaction is still stuck as pending.
+                                        The system will verify with Credo Central and mark it paid if confirmed.
+                                    </p>
+                                    <form
+                                        action="{{ route('admin.transactions.reconcile', $transaction) }}"
+                                        method="POST"
+                                        class="row g-3 align-items-end"
+                                        onsubmit="return confirm('Verify this payment with Credo Central and update the transaction status?')"
+                                    >
+                                        @csrf
+                                        <div class="col-md-8">
+                                            <label for="credo_reference" class="form-label small text-muted mb-1">
+                                                Credo transRef
+                                                @if ($transaction->payment_provider_reference)
+                                                    <span class="text-muted">(optional — stored reference will be used)</span>
+                                                @else
+                                                    <span class="text-danger">(required)</span>
+                                                @endif
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="credo_reference"
+                                                id="credo_reference"
+                                                value="{{ old('credo_reference', $transaction->payment_provider_reference) }}"
+                                                class="form-control form-control-sm @error('credo_reference') is-invalid @enderror"
+                                                placeholder="e.g. vs_xxxxxxxxxxxx"
+                                                @if (!$transaction->payment_provider_reference) required @endif
+                                            >
+                                            @error('credo_reference')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="submit" class="btn btn-sm ads-btn-primary w-100">
+                                                <i data-feather="refresh-cw" style="width: 14px; height: 14px;"></i>
+                                                Reconcile payment
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         @endif

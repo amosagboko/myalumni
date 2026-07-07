@@ -332,9 +332,19 @@ class AlumniPaymentController extends Controller
                         ->with('error', 'Transaction not found. Please contact support.');
                 }
 
+                if ($request->transRef) {
+                    $transaction->update([
+                        'payment_provider_reference' => $request->transRef,
+                    ]);
+                    $transaction->refresh();
+                }
+
                 // Always verify payment status through API regardless of redirect status
                 try {
-                    $result = $this->credocentral->verifyPayment($transaction);
+                    $result = $this->credocentral->verifyPayment(
+                        $transaction,
+                        $request->transRef ?: null
+                    );
 
                     if ($result['paid']) {
                         $this->paymentCompletion->complete(
@@ -370,15 +380,29 @@ class AlumniPaymentController extends Controller
 
                     // If neither paid nor failed, show pending page
                     return redirect()->route('alumni.payments.pending', $transaction)
-                        ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
+                        ->with(
+                            'info',
+                            'Your payment is still being confirmed by the payment provider. Please wait a minute, then click Verify Payment Status again.'
+                        );
 
                 } catch (\Exception $e) {
                     Log::warning('Payment verification failed during webhook redirect', [
                         'transaction_id' => $transaction->id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
+
+                    $transaction->update([
+                        'payment_details' => array_merge(
+                            is_array($transaction->payment_details) ? $transaction->payment_details : [],
+                            [
+                                'verification_error' => $e->getMessage(),
+                                'redirect_handled_at' => now()->toIso8601String(),
+                            ]
+                        ),
+                    ]);
+
                     return redirect()->route('alumni.payments.pending', $transaction)
-                        ->with('info', 'Your payment is being processed. Please wait while we confirm your payment.');
+                        ->with('warning', $this->technicalVerificationMessage($e));
                 }
             }
 
@@ -408,100 +432,109 @@ class AlumniPaymentController extends Controller
      */
     public function verifyPayment(Request $request, Transaction $transaction)
     {
+        $this->ensureAlumniOwnsTransaction($transaction);
+
+        if ($transaction->isPaid()) {
+            return redirect()->route('alumni.payments.success', $transaction);
+        }
+
         try {
             Log::info('Starting manual payment verification', [
                 'transaction_id' => $transaction->id,
                 'reference' => $transaction->payment_reference,
                 'provider_reference' => $transaction->payment_provider_reference,
-                'current_status' => $transaction->status
+                'current_status' => $transaction->status,
             ]);
 
-            // Start a database transaction to ensure atomicity
             DB::beginTransaction();
-            try {
-                // Lock the transaction row to prevent race conditions
-                $transaction = Transaction::where('id', $transaction->id)
-                    ->lockForUpdate()
-                    ->first();
 
-                // Verify payment with Credo Central
-                $verification = $this->credocentral->verifyPayment($transaction);
+            $transaction = Transaction::where('id', $transaction->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-                Log::info('Verification result received', [
-                    'transaction_id' => $transaction->id,
-                    'is_paid' => $verification['paid'],
-                    'status' => $verification['status'],
-                    'reference' => $transaction->payment_reference,
-                    'current_status' => $transaction->status
-                ]);
+            $verification = $this->credocentral->verifyPayment($transaction);
 
-                // Handle based on verification result
-                if ($verification['paid']) {
-                    $this->paymentCompletion->complete(
-                        $transaction,
-                        $verification['paid_at'] ?? null,
+            Log::info('Verification result received', [
+                'transaction_id' => $transaction->id,
+                'is_paid' => $verification['paid'],
+                'status' => $verification['status'],
+                'reference' => $transaction->payment_reference,
+                'current_status' => $transaction->status,
+            ]);
+
+            if ($verification['paid']) {
+                $this->paymentCompletion->complete(
+                    $transaction,
+                    $verification['paid_at'] ?? null,
+                    [
+                        'verified_at' => now()->toIso8601String(),
+                        'verification_data' => $verification,
+                        'manual_verification_at' => now()->toIso8601String(),
+                    ]
+                );
+
+                DB::commit();
+
+                return redirect()->route('alumni.payments.success', $transaction)
+                    ->with('success', 'Payment verified successfully.');
+            }
+
+            if (strtolower($verification['status']) === 'failed') {
+                $transaction->update([
+                    'status' => 'failed',
+                    'payment_details' => array_merge(
+                        is_array($transaction->payment_details) ? $transaction->payment_details : [],
                         [
-                            'verified_at' => now()->toIso8601String(),
+                            'status' => $verification['status'],
+                            'failed_at' => now()->toIso8601String(),
                             'verification_data' => $verification,
                             'manual_verification_at' => now()->toIso8601String(),
                         ]
-                    );
-
-                    DB::commit();
-
-                    return redirect()->route('alumni.payments.success', $transaction)
-                        ->with('success', 'Payment verified successfully.');
-                }
-
-                // Handle failed payments
-                if (strtolower($verification['status']) === 'failed') {
-                    $transaction->update([
-                        'status' => 'failed',
-                        'payment_details' => array_merge(
-                            $transaction->payment_details ?? [],
-                            [
-                                'status' => $verification['status'],
-                                'failed_at' => now(),
-                                'verification_data' => $verification,
-                                'manual_verification_at' => now()
-                            ]
-                        )
-                    ]);
-
-                    DB::commit();
-                    return redirect()->route('alumni.payments.failed', $transaction)
-                        ->with('error', 'Payment verification failed. Please contact support.');
-                }
-
-                // If neither paid nor failed, update payment details but keep status as pending
-                $transaction->update([
-                    'payment_details' => array_merge(
-                        $transaction->payment_details ?? [],
-                        [
-                            'verification_data' => $verification,
-                            'manual_verification_at' => now()
-                        ]
-                    )
+                    ),
                 ]);
 
                 DB::commit();
-                return redirect()->route('alumni.payments.pending', $transaction)
-                    ->with('info', 'Payment is still pending. Please wait while we confirm your payment.');
 
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
+                return redirect()->route('alumni.payments.failed', $transaction)
+                    ->with('error', 'Your payment was not successful. You can try again from the payments page.');
             }
 
+            $transaction->update([
+                'payment_details' => array_merge(
+                    is_array($transaction->payment_details) ? $transaction->payment_details : [],
+                    [
+                        'verification_data' => $verification,
+                        'manual_verification_at' => now()->toIso8601String(),
+                    ]
+                ),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('alumni.payments.pending', $transaction)
+                ->with(
+                    'info',
+                    'Your payment is still being confirmed by the payment provider. Please wait a minute, then click Verify Payment Status again.'
+                );
         } catch (\Exception $e) {
+            DB::rollBack();
+
             Log::error('Payment verification failed', [
                 'transaction_id' => $transaction->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->route('alumni.payments.failed', $transaction)
-                ->with('error', 'Failed to verify payment. Please contact support.');
+            $existingDetails = is_array($transaction->payment_details) ? $transaction->payment_details : [];
+            $transaction->update([
+                'payment_details' => array_merge($existingDetails, [
+                    'verification_error' => $e->getMessage(),
+                    'manual_verification_at' => now()->toIso8601String(),
+                ]),
+            ]);
+
+            return redirect()->route('alumni.payments.pending', $transaction)
+                ->with('warning', $this->technicalVerificationMessage($e));
         }
     }
 
@@ -537,6 +570,8 @@ class AlumniPaymentController extends Controller
      */
     public function paymentPending(Transaction $transaction)
     {
+        $this->ensureAlumniOwnsTransaction($transaction);
+
         if ($transaction->isPaid()) {
             return redirect()->route('alumni.payments.success', $transaction);
         }
@@ -544,6 +579,8 @@ class AlumniPaymentController extends Controller
         if ($transaction->status === 'failed') {
             return redirect()->route('alumni.payments.failed', $transaction);
         }
+
+        $transaction->loadMissing('feeTemplate.feeType');
 
         return view('payments.pending', compact('transaction'));
     }
@@ -717,10 +754,11 @@ class AlumniPaymentController extends Controller
                         ->with('error', 'Transaction not found. Please contact support.');
                 }
 
-                if (!$transaction->payment_provider_reference && $request->transRef) {
+                if ($request->transRef) {
                     $transaction->update([
                         'payment_provider_reference' => $request->transRef,
                     ]);
+                    $transaction->refresh();
                 }
 
                 if ($transaction->isPaid()) {
@@ -730,7 +768,10 @@ class AlumniPaymentController extends Controller
                 }
 
                 try {
-                    $verification = $this->credocentral->verifyPayment($transaction);
+                    $verification = $this->credocentral->verifyPayment(
+                        $transaction,
+                        $request->transRef ?: null
+                    );
 
                     if ($verification['paid']) {
                         $this->paymentCompletion->complete(
@@ -781,7 +822,10 @@ class AlumniPaymentController extends Controller
 
                     DB::commit();
                     return redirect()->route('alumni.payments.pending', $transaction)
-                        ->with('info', 'Your payment is still being processed. Please wait while we confirm your payment.');
+                        ->with(
+                            'info',
+                            'Your payment is still being confirmed by the payment provider. Please wait a minute, then click Verify Payment Status again.'
+                        );
 
                 } catch (\Exception $e) {
                     Log::error('Payment verification failed on redirect', [
@@ -802,7 +846,7 @@ class AlumniPaymentController extends Controller
 
                     DB::commit();
                     return redirect()->route('alumni.payments.pending', $transaction)
-                        ->with('info', 'Your payment is being processed. Please wait while we confirm it.');
+                        ->with('warning', $this->technicalVerificationMessage($e));
                 }
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -818,5 +862,33 @@ class AlumniPaymentController extends Controller
             return redirect()->route('alumni.payments.index')
                 ->with('error', 'Failed to handle payment response. Please contact support.');
         }
+    }
+
+    protected function ensureAlumniOwnsTransaction(Transaction $transaction): void
+    {
+        $alumniId = Auth::user()?->alumni?->id;
+
+        if (!$alumniId || $transaction->alumni_id !== $alumniId) {
+            Log::warning('Unauthorized access attempt to transaction', [
+                'transaction_id' => $transaction->id,
+                'alumni_id' => $transaction->alumni_id,
+                'user_id' => Auth::id(),
+            ]);
+            abort(403, 'You are not authorized to view this transaction.');
+        }
+    }
+
+    protected function technicalVerificationMessage(\Throwable $e): string
+    {
+        if (str_contains($e->getMessage(), 'No Credo transaction reference')) {
+            return 'We are still linking your payment to our system. If money was deducted from your account, please wait a minute and click Verify Payment Status again. If this continues, contact support with your payment reference below.';
+        }
+
+        if ($e instanceof \Illuminate\Http\Client\ConnectionException
+            || str_contains(strtolower($e->getMessage()), 'connect')) {
+            return 'We could not reach the payment provider right now. Please check your connection, wait a minute, and click Verify Payment Status again.';
+        }
+
+        return 'We could not confirm your payment right now. If money was deducted, wait a minute and click Verify Payment Status again, or contact support with your payment reference below.';
     }
 }

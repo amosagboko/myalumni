@@ -44,7 +44,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">Profile</h5>
                                         <p class="card-text">Update your profile information and preferences.</p>
-                                        <a href="{{ route('profile.update') }}" class="btn btn-primary">View Profile</a>
+                                        <a href="{{ route('profile.edit') }}" class="btn btn-primary">View Profile</a>
                                     </div>
                                 </div>
                             </div>

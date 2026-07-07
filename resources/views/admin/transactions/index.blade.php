@@ -109,7 +109,7 @@
                                         <tbody>
                                             @foreach ($transactions as $transaction)
                                                 <tr>
-                                                    <td class="fw-medium">{{ $transaction->reference }}</td>
+                                                    <td class="fw-medium">{{ $transaction->payment_reference }}</td>
                                                     <td>
                                                         <div class="fw-medium">{{ $transaction->alumni->user->name ?? 'N/A' }}</div>
                                                         <div class="adt-muted small">{{ $transaction->alumni->user->email ?? 'N/A' }}</div>
@@ -151,6 +151,15 @@
                                                                 <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                                                             </a>
                                                             @if ($transaction->status === 'pending')
+                                                                @if ($transaction->payment_provider === 'credocentral')
+                                                                    <a
+                                                                        href="{{ route('admin.transactions.show', $transaction) }}#reconcile"
+                                                                        class="adt-action-btn"
+                                                                        title="Reconcile with Credo"
+                                                                    >
+                                                                        <i data-feather="refresh-cw" style="width: 14px; height: 14px;"></i>
+                                                                    </a>
+                                                                @endif
                                                                 <form
                                                                     action="{{ route('admin.transactions.mark-paid', $transaction) }}"
                                                                     method="POST"

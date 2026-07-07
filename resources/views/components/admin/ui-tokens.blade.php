@@ -1,6 +1,5 @@
 {{-- Shared design tokens for admin UI (tables + surfaces). --}}
-@once
-@push('styles')
+@once('admin-ui-tokens')
 <style>
     .admin-ui,
     .admin-surface,
@@ -19,5 +18,4 @@
         --ads-hero-gradient: linear-gradient(135deg, #fafbfd 0%, #f3f6fb 100%);
     }
 </style>
-@endpush
 @endonce

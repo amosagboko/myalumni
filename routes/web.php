@@ -83,6 +83,7 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::get('transactions/{transaction}', [\App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('transactions.show');
     Route::post('transactions/{transaction}/mark-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markPaid'])->name('transactions.mark-paid');
     Route::post('transactions/{transaction}/mark-failed', [\App\Http\Controllers\Admin\TransactionController::class, 'markFailed'])->name('transactions.mark-failed');
+    Route::post('transactions/{transaction}/reconcile', [\App\Http\Controllers\Admin\TransactionController::class, 'reconcile'])->name('transactions.reconcile');
     
     // Onboarding Settings Management
     Route::get('/onboarding-settings', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'index'])->name('onboarding-settings.index');
@@ -106,6 +107,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::get('/backups/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->name('backups.download');
     Route::delete('/backups', [\App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('backups.destroy');
     Route::post('/backups/restore', [\App\Http\Controllers\Admin\BackupController::class, 'restore'])->name('backups.restore')->middleware('throttle:3,60');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
 });
 
 // Add specific route for users management

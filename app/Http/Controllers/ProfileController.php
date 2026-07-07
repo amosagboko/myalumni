@@ -20,8 +20,22 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+
+        if ($user->usesAdminProfileLayout()) {
+            return view('profile.admin-edit', [
+                'user' => $user,
+            ]);
+        }
+
+        if ($user->usesAlumniProfileLayout()) {
+            return view('profile.alumni-edit', [
+                'user' => $user,
+            ]);
+        }
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
         ]);
     }
 

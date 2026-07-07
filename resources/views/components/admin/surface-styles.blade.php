@@ -4,8 +4,7 @@
     Include once per page: <x-admin.surface-styles />
 --}}
 @include('components.admin.ui-tokens')
-@once
-@push('styles')
+@once('admin-surface-styles')
 <style>
     /* Page header */
     .admin-ui .ads-page-header,
@@ -490,6 +489,72 @@
         padding-bottom: 1.5rem;
     }
 
+    .admin-surface .middle-sidebar-bottom,
+    .admin-surface .middle-sidebar-left.pe-0 {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .admin-surface .ads-section-card form .mb-3 {
+        max-width: 520px;
+    }
+
+    /* Compact centered profile (admin) */
+    .admin-profile-page .ads-profile-shell {
+        width: 100%;
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 0 0.5rem 1.5rem;
+    }
+
+    .admin-profile-page .ads-page-header {
+        margin-bottom: 1rem;
+        padding: 1rem 1.1rem;
+    }
+
+    .admin-profile-page .ads-page-title {
+        font-size: 1.25rem;
+    }
+
+    .admin-profile-page .ads-page-subtitle {
+        font-size: 0.8125rem;
+    }
+
+    .admin-profile-page .ads-section {
+        margin-bottom: 0.85rem;
+    }
+
+    .admin-profile-page .ads-section-card {
+        padding: 0.95rem 1rem 1rem;
+    }
+
+    .admin-profile-page .ads-section-title {
+        font-size: 0.68rem;
+        margin-bottom: 0.55rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .admin-profile-page .ads-section-card > .text-muted.small {
+        margin-bottom: 0.65rem !important;
+        font-size: 0.78rem;
+    }
+
+    .admin-profile-page .ads-section-card form .mb-3 {
+        max-width: none;
+        margin-bottom: 0.65rem !important;
+    }
+
+    .admin-profile-page .ads-section-card .form-label {
+        font-size: 0.8125rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .admin-profile-page .ads-alert {
+        margin-bottom: 0.85rem;
+        padding: 0.55rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
     .admin-surface .ads-page-header {
         margin-bottom: 1.5rem;
         padding: 1.25rem 1.35rem;
@@ -705,5 +770,4 @@
         margin-bottom: 0.25rem;
     }
 </style>
-@endpush
 @endonce

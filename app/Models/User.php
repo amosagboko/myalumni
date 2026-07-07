@@ -121,6 +121,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasRole('administrator');
     }
 
+    public function usesAdminProfileLayout(): bool
+    {
+        return $this->hasAnyRole(['administrator', 'super-admin', 'support-admin']);
+    }
+
+    public function usesAlumniProfileLayout(): bool
+    {
+        return $this->hasRole('alumni');
+    }
+
     public function isAlumniRelationsOfficer(): bool
     {
         return $this->hasRole('alumni-relations-officer');

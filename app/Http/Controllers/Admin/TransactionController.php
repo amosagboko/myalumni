@@ -5,12 +5,19 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\FeeType;
+use App\Services\CredoCentralService;
+use App\Services\PaymentCompletionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller
 {
+    public function __construct(
+        protected CredoCentralService $credocentral,
+        protected PaymentCompletionService $paymentCompletion
+    ) {
+    }
     public function index(Request $request)
     {
         $query = Transaction::with(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category']);
@@ -26,7 +33,7 @@ class TransactionController extends Controller
                 ->orWhereHas('alumni', function ($alumniQuery) use ($search) {
                     $alumniQuery->where('matric_number', 'like', "%{$search}%");
                 })
-                ->orWhere('reference', 'like', "%{$search}%");
+                ->orWhere('payment_reference', 'like', "%{$search}%");
             });
         }
 
@@ -146,6 +153,110 @@ class TransactionController extends Controller
         }
     }
 
+    /**
+     * Verify a stuck payment with Credo Central and complete it when paid.
+     */
+    public function reconcile(Request $request, Transaction $transaction)
+    {
+        $this->authorize('verify', $transaction);
+
+        $validated = $request->validate([
+            'credo_reference' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        if ($transaction->isPaid()) {
+            return back()->with('info', 'This transaction is already marked as paid.');
+        }
+
+        if ($transaction->payment_provider !== 'credocentral') {
+            return back()->with('error', 'Reconciliation is only available for Credo Central payments.');
+        }
+
+        $credoReference = trim($validated['credo_reference'] ?? '') ?: $transaction->payment_provider_reference;
+
+        if (!$credoReference) {
+            return back()->with(
+                'error',
+                'Credo reference is required. Enter the transRef from the Credo dashboard (e.g. vs_xxxxxxxxxxxx).'
+            );
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaction::whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+
+            if (!empty($validated['credo_reference'])) {
+                $transaction->update([
+                    'payment_provider_reference' => $credoReference,
+                ]);
+                $transaction->refresh();
+            }
+
+            $verification = $this->credocentral->verifyPayment($transaction, $credoReference);
+
+            if ($verification['paid']) {
+                $this->paymentCompletion->complete(
+                    $transaction,
+                    $verification['paid_at'] ?? null,
+                    [
+                        'admin_reconciled_at' => now()->toIso8601String(),
+                        'admin_reconciled_by' => $request->user()->id,
+                        'verification_data' => $verification,
+                    ]
+                );
+
+                DB::commit();
+
+                return back()->with('success', 'Payment reconciled successfully with Credo Central.');
+            }
+
+            if (strtolower($verification['status']) === 'failed') {
+                $transaction->update([
+                    'status' => 'failed',
+                    'payment_details' => array_merge(
+                        is_array($transaction->payment_details) ? $transaction->payment_details : [],
+                        [
+                            'admin_reconciliation_failed_at' => now()->toIso8601String(),
+                            'verification_data' => $verification,
+                        ]
+                    ),
+                ]);
+
+                DB::commit();
+
+                return back()->with('error', 'Credo reports this payment as failed.');
+            }
+
+            $transaction->update([
+                'payment_details' => array_merge(
+                    is_array($transaction->payment_details) ? $transaction->payment_details : [],
+                    [
+                        'last_admin_reconciliation_at' => now()->toIso8601String(),
+                        'verification_data' => $verification,
+                    ]
+                ),
+            ]);
+
+            DB::commit();
+
+            return back()->with(
+                'error',
+                'Credo still shows this payment as pending. Confirm the reference is correct and try again shortly.'
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Admin payment reconciliation failed', [
+                'transaction_id' => $transaction->id,
+                'credo_reference' => $credoReference,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Reconciliation failed: ' . $e->getMessage());
+        }
+    }
+
     public function export(Request $request)
     {
         $query = Transaction::with(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category']);
@@ -161,7 +272,7 @@ class TransactionController extends Controller
                 ->orWhereHas('alumni', function ($alumniQuery) use ($search) {
                     $alumniQuery->where('matric_number', 'like', "%{$search}%");
                 })
-                ->orWhere('reference', 'like', "%{$search}%");
+                ->orWhere('payment_reference', 'like', "%{$search}%");
             });
         }
 
@@ -227,7 +338,7 @@ class TransactionController extends Controller
             // Add data
             foreach ($transactions as $transaction) {
                 fputcsv($file, [
-                    $transaction->reference,
+                    $transaction->payment_reference,
                     $transaction->alumni->user->name,
                     $transaction->alumni->user->email,
                     $transaction->alumni->matric_number,

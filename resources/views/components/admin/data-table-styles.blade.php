@@ -4,8 +4,7 @@
     Wrap content in <div class="admin-data-table"> and use adt-* classes.
 --}}
 @include('components.admin.ui-tokens')
-@once
-@push('styles')
+@once('admin-data-table-styles')
 <style>
     .admin-data-table .adt-panel {
         background: var(--adt-bg);
@@ -358,5 +357,4 @@
         margin: 0;
     }
 </style>
-@endpush
 @endonce
