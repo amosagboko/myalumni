@@ -1,175 +1,146 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container-fluid mt-5 pt-7">
-    <div class="row justify-content-end">
-        <div class="col-lg-10" style="max-width: 1000px;">
-            <div class="row justify-content-center">
-                <!-- Statistics Cards -->
-                <div class="col-lg-10 col-md-12 mb-4 mt-2">
-                    <div class="row g-2">
-                        <div class="col-md-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body py-2">
-                                    <h6 class="card-title small mb-1">Total Candidates</h6>
-                                    <h4 class="mb-0">{{ $candidateStats['total'] }}</h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body py-2">
-                                    <h6 class="card-title small mb-1">Pending Screening</h6>
-                                    <h4 class="mb-0">{{ $candidateStats['pending'] }}</h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body py-2">
-                                    <h6 class="card-title small mb-1">Approved</h6>
-                                    <h4 class="mb-0">{{ $candidateStats['approved'] }}</h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-danger text-white">
-                                <div class="card-body py-2">
-                                    <h6 class="card-title small mb-1">Unpaid Fees</h6>
-                                    <h4 class="mb-0">{{ $candidateStats['unpaid'] }}</h4>
-                                </div>
-                            </div>
+<x-admin.surface-styles />
+
+<div class="main-content right-chat-active admin-surface">
+    <div class="middle-sidebar-bottom">
+        <div class="middle-sidebar-left pe-0">
+            <div class="row">
+                <div class="col-12">
+
+                    <div class="ads-page-header">
+                        <div>
+                            <h1 class="ads-page-title">Agent Dashboard</h1>
+                            <p class="ads-page-subtitle">Candidate screening and election activity.</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Active Elections -->
-                <div class="col-lg-7 col-md-12">
-                    <div class="card shadow-sm mb-3">
-                        <div class="card-header bg-white py-2">
-                            <h6 class="card-title mb-0">Active Elections</h6>
-                        </div>
-                        <div class="card-body p-2">
-                            @if($activeElections->isEmpty())
-                                <div class="alert alert-info py-2 mb-0 small">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    No active elections found.
-                                </div>
-                            @else
-                                @foreach($activeElections as $election)
-                                    <div class="card mb-2">
-                                        <div class="card-body p-2">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h6 class="card-title mb-0 small">{{ $election->title }}</h6>
-                                                <span class="badge bg-{{ $election->status === 'voting' ? 'success' : ($election->status === 'accreditation' ? 'warning' : 'info') }} small">
-                                                    {{ ucfirst($election->status) }}
-                                                </span>
-                                            </div>
-                                            
-                                            <div class="table-responsive">
-                                                <table class="table table-sm small">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Candidate</th>
-                                                            <th>Office</th>
-                                                            <th>Status</th>
-                                                            <th>Payment</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach($election->candidates as $candidate)
-                                                            <tr>
-                                                                <td>
-                                                                    <div class="d-flex align-items-center">
-                                                                        @if($candidate->passport)
-                                                                            <img src="{{ asset('storage/' . $candidate->passport) }}" 
-                                                                                 alt="Passport" 
-                                                                                 class="rounded-circle me-2"
-                                                                                 style="width: 24px; height: 24px; object-fit: cover;">
-                                                                        @endif
-                                                                        <div>
-                                                                            <div class="fw-medium small">{{ $candidate->alumni->user->name }}</div>
-                                                                            <small class="text-muted">{{ $candidate->alumni->matriculation_number }}</small>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="small">{{ $candidate->office->title }}</td>
-                                                                <td>
-                                                                    <span class="badge bg-{{ $candidate->status === 'approved' ? 'success' : ($candidate->status === 'rejected' ? 'danger' : 'warning') }} small">
-                                                                        {{ $candidate->status_label }}
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    @if($candidate->has_paid_screening_fee)
-                                                                        <span class="badge bg-success small">Paid</span>
-                                                                    @else
-                                                                        <span class="badge bg-danger small">Unpaid</span>
-                                                                    @endif
-                                                                </td>
-                                                                <td>
-                                                                    <a href="{{ route('agent.candidates.show', [$election, $candidate]) }}" 
-                                                                       class="btn btn-sm btn-primary py-0 px-1">
-                                                                        <i class="bi bi-eye small"></i>
-                                                                    </a>
-                                                                    @if(in_array($election->status, ['draft', 'accreditation']))
-                                                                        <a href="{{ route('agent.candidates.edit-documents', [$election, $candidate]) }}" 
-                                                                           class="btn btn-sm btn-outline-primary py-0 px-1">
-                                                                            <i class="bi bi-pencil small"></i>
-                                                                        </a>
-                                                                    @endif
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                    <div class="ads-section">
+                        <div class="ads-section-card">
+                            <h2 class="ads-section-title">Candidates</h2>
+                            <div class="ads-stats">
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Total</span>
+                                            <span class="ads-stat-value">{{ number_format($candidateStats['total']) }}</span>
                                         </div>
+                                        <span class="ads-stat-icon"><i data-feather="users"></i></span>
                                     </div>
-                                @endforeach
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Activities -->
-                <div class="col-lg-3 col-md-12">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white py-2">
-                            <h6 class="card-title mb-0">Recent Activities</h6>
-                        </div>
-                        <div class="card-body p-2">
-                            @if($recentActivities->isEmpty())
-                                <div class="alert alert-info py-2 mb-0 small">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    No recent activities found.
                                 </div>
-                            @else
-                                <div class="list-group list-group-flush">
-                                    @foreach($recentActivities as $activity)
-                                        <div class="list-group-item px-2 py-2">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0 small">{{ $activity->alumni->user->name }}</h6>
-                                                <small class="text-muted">{{ $activity->screened_at->diffForHumans() }}</small>
-                                            </div>
-                                            <p class="mb-1 small">
-                                                <span class="badge bg-{{ $activity->status === 'approved' ? 'success' : 'danger' }} small">
-                                                    {{ ucfirst($activity->status) }}
-                                                </span>
-                                                for {{ $activity->office->title }} in {{ $activity->election->title }}
-                                            </p>
-                                            @if($activity->remarks)
-                                                <p class="mb-0 small text-muted">{{ Str::limit($activity->remarks, 100) }}</p>
-                                            @endif
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Pending</span>
+                                            <span class="ads-stat-value">{{ number_format($candidateStats['pending']) }}</span>
                                         </div>
-                                    @endforeach
+                                        <span class="ads-stat-icon"><i data-feather="clock"></i></span>
+                                    </div>
                                 </div>
-                            @endif
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Approved</span>
+                                            <span class="ads-stat-value">{{ number_format($candidateStats['approved']) }}</span>
+                                        </div>
+                                        <span class="ads-stat-icon"><i data-feather="check-circle"></i></span>
+                                    </div>
+                                </div>
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Unpaid fees</span>
+                                            <span class="ads-stat-value">{{ number_format($candidateStats['unpaid']) }}</span>
+                                        </div>
+                                        <span class="ads-stat-icon"><i data-feather="credit-card"></i></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-8">
+                            <div class="ads-section mb-0">
+                                <div class="ads-section-card h-100">
+                                    <h2 class="ads-section-title">Active elections</h2>
+                                    @if($activeElections->isEmpty())
+                                        <p class="ads-empty-inline mb-0">No active elections found.</p>
+                                    @else
+                                        @foreach($activeElections as $election)
+                                            <div class="mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}" style="border-color: var(--adt-border) !important;">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <strong class="small">{{ $election->title }}</strong>
+                                                    <span class="badge rounded-pill bg-light text-dark border">{{ ucfirst($election->status) }}</span>
+                                                </div>
+                                                <div class="ads-compact-table-wrap">
+                                                    <table class="ads-compact-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Candidate</th>
+                                                                <th>Office</th>
+                                                                <th>Status</th>
+                                                                <th>Payment</th>
+                                                                <th></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach($election->candidates as $candidate)
+                                                                <tr>
+                                                                    <td>{{ $candidate->alumni->user->name ?? '—' }}</td>
+                                                                    <td>{{ $candidate->office->title ?? '—' }}</td>
+                                                                    <td>{{ $candidate->status_label ?? ucfirst($candidate->status) }}</td>
+                                                                    <td>{{ $candidate->has_paid_screening_fee ? 'Paid' : 'Unpaid' }}</td>
+                                                                    <td class="text-end">
+                                                                        <a href="{{ route('agent.candidates.show', [$election, $candidate]) }}" class="btn btn-sm btn-outline-primary py-0">View</a>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="ads-section mb-0">
+                                <div class="ads-section-card h-100">
+                                    <h2 class="ads-section-title">Recent activity</h2>
+                                    @if($recentActivities->isEmpty())
+                                        <p class="ads-empty-inline mb-0">No recent activity.</p>
+                                    @else
+                                        <ul class="list-unstyled mb-0">
+                                            @foreach($recentActivities as $activity)
+                                                <li class="py-2 {{ !$loop->last ? 'border-bottom' : '' }}" style="border-color: var(--adt-border) !important;">
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <strong>{{ $activity->alumni->user->name ?? '—' }}</strong>
+                                                        <span class="text-muted">{{ $activity->screened_at?->diffForHumans() }}</span>
+                                                    </div>
+                                                    <p class="small text-muted mb-0">
+                                                        {{ ucfirst($activity->status) }} — {{ $activity->office->title ?? '' }}
+                                                    </p>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection 
+
+@push('scripts')
+<script>
+    if (typeof feather !== 'undefined') feather.replace();
+</script>
+@endpush
+@endsection

@@ -35,7 +35,16 @@ class PaymentYearController extends Controller
 
         $activeYear = AlumniYear::where('is_active', true)->first();
 
-        return view('admin.payment-years.index', compact('years', 'activeYear', 'annualDueTypeId'));
+        $stats = [
+            'total' => AlumniYear::count(),
+            'active' => AlumniYear::where('is_active', true)->count(),
+            'configured' => AlumniYear::all()->filter(fn (AlumniYear $year) => (bool) $year->annualDueTemplate())->count(),
+            'paid' => Transaction::where('status', 'paid')
+                ->whereHas('feeTemplate', fn ($query) => $query->where('fee_purpose', FeeTemplate::PURPOSE_ANNUAL_RENEWAL))
+                ->count(),
+        ];
+
+        return view('admin.payment-years.index', compact('years', 'activeYear', 'annualDueTypeId', 'stats'));
     }
 
     public function create()

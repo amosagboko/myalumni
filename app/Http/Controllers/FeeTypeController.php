@@ -12,10 +12,18 @@ class FeeTypeController extends Controller
 {
     public function index()
     {
-        $feeTypes = FeeType::orderBy('name')
+        $feeTypes = FeeType::withCount('feeTemplates')
+            ->orderBy('name')
             ->paginate(10);
 
-        return view('admin.fee-types.index', compact('feeTypes'));
+        $stats = [
+            'total' => FeeType::count(),
+            'active' => FeeType::where('is_active', true)->count(),
+            'inactive' => FeeType::where('is_active', false)->count(),
+            'system' => FeeType::where('is_system', true)->count(),
+        ];
+
+        return view('admin.fee-types.index', compact('feeTypes', 'stats'));
     }
 
     public function create()
@@ -31,6 +39,7 @@ class FeeTypeController extends Controller
             'description' => 'nullable|string',
             'is_active' => 'boolean'
         ]);
+        $validated['is_active'] = $request->boolean('is_active');
 
         try {
             DB::beginTransaction();
@@ -73,6 +82,7 @@ class FeeTypeController extends Controller
             'description' => 'nullable|string',
             'is_active' => 'boolean'
         ]);
+        $validated['is_active'] = $request->boolean('is_active');
 
         try {
             DB::beginTransaction();

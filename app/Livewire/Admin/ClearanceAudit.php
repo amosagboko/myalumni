@@ -21,6 +21,13 @@ class ClearanceAudit extends Component
 
     protected $paginationTheme = 'bootstrap';
 
+    public function updated($property): void
+    {
+        if (in_array($property, ['division', 'alumniName', 'actorName', 'dateFrom', 'dateTo'], true)) {
+            $this->resetPage();
+        }
+    }
+
     public function export()
     {
         if (!Auth::user()->can('export clearance audit')) {
@@ -56,8 +63,17 @@ class ClearanceAudit extends Component
     public function render()
     {
         $logs = $this->query()->paginate(20);
+
+        $stats = [
+            'total' => DB::table('clearance_logs')->count(),
+            'student_affairs' => DB::table('clearance_logs')->where('division', 'student_affairs')->count(),
+            'academic_affairs' => DB::table('clearance_logs')->where('division', 'academic_affairs')->count(),
+            'filtered' => $logs->total(),
+        ];
+
         return view('livewire.admin.clearance-audit', [
             'logs' => $logs,
+            'stats' => $stats,
         ])->layout('components.alumniadmin-dashboard', ['title' => 'Clearance Audit | FuLafia Alumni']);
     }
 }

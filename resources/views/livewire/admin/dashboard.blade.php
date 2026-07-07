@@ -1,88 +1,142 @@
-<div class="container mt-5 pt-5" style="margin-left: 150px;">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
-                    <h6 class="mb-0">Admin Dashboard</h6>
-                </div>
-                <div class="card-body p-3">
-                    <div class="row">
-                        <!-- Quick Stats -->
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title">Total Users</h6>
-                                    <h3 class="mb-0">{{ $stats['total'] }}</h3>
-                                </div>
-                            </div>
+<x-admin.surface-styles />
+
+<div class="main-content right-chat-active admin-surface">
+    <div class="middle-sidebar-bottom">
+        <div class="middle-sidebar-left pe-0">
+            <div class="row">
+                <div class="col-12">
+
+                    <div class="ads-page-header">
+                        <div>
+                            <h1 class="ads-page-title">Admin Dashboard</h1>
+                            <p class="ads-page-subtitle">
+                                User overview
+                                @if($paymentYearRecord)
+                                    for payment year <strong>{{ $paymentYearRecord->year }}</strong>
+                                    ({{ $paymentYearRecord->start_date->format('M j, Y') }} – {{ $paymentYearRecord->end_date->format('M j, Y') }})
+                                @elseif($paymentYear !== '')
+                                    for {{ $paymentYear }}
+                                @endif
+                            </p>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title">Active Users</h6>
-                                    <h3 class="mb-0">{{ $stats['active'] }}</h3>
-                                </div>
-                            </div>
+                        <div class="ads-filters">
+                            <select wire:model.live="paymentYear" class="form-select form-select-sm ads-select" aria-label="Payment year">
+                                @forelse($paymentYears as $year)
+                                    <option value="{{ $year->year }}">
+                                        Payment year {{ $year->year }}{{ $year->is_active ? ' (active)' : '' }}
+                                    </option>
+                                @empty
+                                    <option value="{{ now()->year }}">{{ now()->year }}</option>
+                                @endforelse
+                            </select>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-info text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title">Suspended Users</h6>
-                                    <h3 class="mb-0">{{ $stats['suspended'] }}</h3>
+                    </div>
+
+                    <div class="ads-section">
+                        <div class="ads-section-card">
+                            <h2 class="ads-section-title">Users</h2>
+                            <div class="ads-stats ads-stats-5">
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Total users</span>
+                                            <span class="ads-stat-value">{{ number_format($stats['users']['total']) }}</span>
+                                        </div>
+                                        <span class="ads-stat-icon"><i data-feather="users"></i></span>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title">New Users Today</h6>
-                                    <h3 class="mb-0">{{ $stats['new_today'] }}</h3>
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Active</span>
+                                            <span class="ads-stat-value">{{ number_format($stats['users']['active']) }}</span>
+                                        </div>
+                                        <span class="ads-stat-icon"><i data-feather="user-check"></i></span>
+                                    </div>
+                                </div>
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Suspended</span>
+                                            <span class="ads-stat-value">{{ number_format($stats['users']['suspended']) }}</span>
+                                        </div>
+                                        <span class="ads-stat-icon"><i data-feather="user-x"></i></span>
+                                    </div>
+                                </div>
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">New in period</span>
+                                            <span class="ads-stat-value">{{ number_format($stats['users']['new_in_period']) }}</span>
+                                        </div>
+                                        <span class="ads-stat-icon"><i data-feather="user-plus"></i></span>
+                                    </div>
+                                </div>
+                                <div class="ads-stat ads-stat-highlight">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">Onboarding</span>
+                                            <span class="ads-stat-value ads-stat-value-sm">
+                                                {{ $stats['onboarding_open'] ? 'Open' : 'Closed' }}
+                                            </span>
+                                            <a href="{{ route('admin.onboarding-settings.index') }}" class="ads-stat-link">Manage</a>
+                                        </div>
+                                        <span class="ads-stat-icon"><i data-feather="log-in"></i></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Quick Actions -->
-                    <div class="row mt-4">
-                        <div class="col-md-3 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Manage Users</h5>
-                                    <p class="card-text">View and manage all system users</p>
-                                    <a href="{{ route('admin.users') }}" class="btn btn-primary">Manage Users</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Create User</h5>
-                                    <p class="card-text">Add new users to the system</p>
-                                    <a href="{{ route('admin.users.create') }}" class="btn btn-success">Create User</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Upload Alumni</h5>
-                                    <p class="card-text">Upload alumni records</p>
-                                    <a href="{{ route('upload.alumni') }}" class="btn btn-info">Upload Alumni</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Retrieve Credentials</h5>
-                                    <p class="card-text">Get alumni login credentials</p>
-                                    <a href="{{ route('retrieve.credentials') }}" class="btn btn-warning">Get Credentials</a>
-                                </div>
+                    <div class="ads-section">
+                        <div class="ads-section-card">
+                            <h2 class="ads-section-title">Quick actions</h2>
+                            <div class="ads-quick-actions">
+                                <a href="{{ route('admin.users') }}" class="ads-quick-action">
+                                    <span class="ads-quick-action-icon"><i data-feather="users"></i></span>
+                                    <span>Manage users</span>
+                                </a>
+                                <a href="{{ route('admin.users.create') }}" class="ads-quick-action">
+                                    <span class="ads-quick-action-icon"><i data-feather="user-plus"></i></span>
+                                    <span>Create user</span>
+                                </a>
+                                <a href="{{ route('upload.alumni') }}" class="ads-quick-action">
+                                    <span class="ads-quick-action-icon"><i data-feather="upload"></i></span>
+                                    <span>Upload alumni</span>
+                                </a>
+                                <a href="{{ route('retrieve.credentials') }}" class="ads-quick-action">
+                                    <span class="ads-quick-action-icon"><i data-feather="key"></i></span>
+                                    <span>Retrieve credentials</span>
+                                </a>
+                                <a href="{{ route('admin.fee-templates.index') }}" class="ads-quick-action">
+                                    <span class="ads-quick-action-icon"><i data-feather="settings"></i></span>
+                                    <span>Fee templates</span>
+                                </a>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+@push('scripts')
+<script>
+    function initAdminDashboardFeather() {
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initAdminDashboardFeather);
+    document.addEventListener('livewire:navigated', initAdminDashboardFeather);
+
+    if (typeof Livewire !== 'undefined') {
+        Livewire.hook('morph.updated', () => {
+            initAdminDashboardFeather();
+        });
+    }
+</script>
+@endpush

@@ -63,7 +63,11 @@ Format this table with our admin-data-table kit (adt-* classes).
 
 ## Customize brand color
 
-Edit `--adt-primary` in `data-table-styles.blade.php` (default `#132977`).
+Edit `--adt-primary` in `ui-tokens.blade.php` (default `#132977`).
+
+## Full admin UI kit
+
+For dashboards, stats, and modals too, use **`admin-ui-kit/`** (includes this table kit + `ads-*` surfaces).
 
 ## Origin
 

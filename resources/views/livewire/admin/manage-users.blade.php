@@ -1,19 +1,21 @@
-<x-admin.data-table-styles />
+<div>
+    <x-admin.surface-styles />
+    <x-admin.data-table-styles />
 
-<div class="main-content right-chat-active admin-data-table">
+    <div class="main-content right-chat-active admin-data-table">
     <div class="middle-sidebar-bottom">
         <div class="middle-sidebar-left pe-0">
             <div class="row">
                 <div class="col-12">
 
                     {{-- Page header --}}
-                    <div class="adt-page-header">
+                    <div class="ads-page-header">
                         <div>
-                            <h1 class="adt-page-title">Manage Users</h1>
-                            <p class="adt-page-subtitle">View accounts, assign roles, and manage access.</p>
+                            <h1 class="ads-page-title">Manage Users</h1>
+                            <p class="ads-page-subtitle">View accounts, assign roles, and manage access.</p>
                         </div>
                         @if($canCreateUsers)
-                            <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm adt-btn-primary text-white">
+                            <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm ads-btn-primary text-white">
                                 <i data-feather="user-plus" style="width: 15px; height: 15px;"></i>
                                 Add user
                             </a>
@@ -21,22 +23,22 @@
                     </div>
 
                     {{-- Stats --}}
-                    <div class="adt-stats">
-                        <div class="adt-stat">
-                            <span class="adt-stat-label">Total</span>
-                            <span class="adt-stat-value">{{ number_format($userStats['total']) }}</span>
+                    <div class="ads-stats">
+                        <div class="ads-stat">
+                            <span class="ads-stat-label">Total</span>
+                            <span class="ads-stat-value">{{ number_format($userStats['total']) }}</span>
                         </div>
-                        <div class="adt-stat">
-                            <span class="adt-stat-label">Active</span>
-                            <span class="adt-stat-value">{{ number_format($userStats['active']) }}</span>
+                        <div class="ads-stat">
+                            <span class="ads-stat-label">Active</span>
+                            <span class="ads-stat-value">{{ number_format($userStats['active']) }}</span>
                         </div>
-                        <div class="adt-stat">
-                            <span class="adt-stat-label">Suspended</span>
-                            <span class="adt-stat-value">{{ number_format($userStats['suspended']) }}</span>
+                        <div class="ads-stat">
+                            <span class="ads-stat-label">Suspended</span>
+                            <span class="ads-stat-value">{{ number_format($userStats['suspended']) }}</span>
                         </div>
-                        <div class="adt-stat">
-                            <span class="adt-stat-label">New today</span>
-                            <span class="adt-stat-value">{{ number_format($userStats['new_today']) }}</span>
+                        <div class="ads-stat">
+                            <span class="ads-stat-label">New today</span>
+                            <span class="ads-stat-value">{{ number_format($userStats['new_today']) }}</span>
                         </div>
                     </div>
 
@@ -232,14 +234,14 @@
 </div>
 
 @if($canAssignRoles && $selectedUser)
-    <div class="modal fade" id="assignRoleModal" tabindex="-1" wire:ignore.self>
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content adt-modal">
-                <div class="modal-header border-0 pb-0">
-                    <h6 class="modal-title fw-semibold">Assign role</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="ads-modal-overlay" wire:click.self="closeAssignRoleModal" role="dialog" aria-modal="true" aria-labelledby="assignRoleModalTitle">
+        <div class="ads-modal-dialog">
+            <div class="ads-modal-card">
+                <div class="ads-modal-header">
+                    <h6 class="ads-modal-title" id="assignRoleModalTitle">Assign role</h6>
+                    <button type="button" class="btn-close" wire:click="closeAssignRoleModal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body pt-2">
+                <div class="ads-modal-body">
                     <div class="mb-3">
                         <label class="form-label small text-muted mb-1">User</label>
                         <input type="text" class="form-control form-control-sm" value="{{ $selectedUser->name }}" readonly>
@@ -254,50 +256,39 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary btn-sm" wire:click="assignRole">Save</button>
+                <div class="ads-modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" wire:click="closeAssignRoleModal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm ads-btn-primary text-white" wire:click="assignRole">Save</button>
                 </div>
             </div>
         </div>
     </div>
-
-    @script
-    <script>
-        let assignRoleModal;
-
-        $wire.on('showAssignRoleModal', () => {
-            const modalEl = document.getElementById('assignRoleModal');
-            if (!modalEl) return;
-
-            if (!assignRoleModal && window.bootstrap?.Modal) {
-                assignRoleModal = new bootstrap.Modal(modalEl);
-            }
-
-            assignRoleModal?.show();
-        });
-
-        $wire.on('hideAssignRoleModal', () => {
-            assignRoleModal?.hide();
-        });
-
-        document.getElementById('assignRoleModal')?.addEventListener('hidden.bs.modal', () => {
-            $wire.set('selectedUser', null);
-        });
-    </script>
-    @endscript
 @endif
+</div>
 
 @push('scripts')
 <script>
+    function cleanupBootstrapModalArtifacts() {
+        document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    }
+
     function initManageUsersFeather() {
         if (typeof feather !== 'undefined') {
             feather.replace();
         }
     }
 
-    document.addEventListener('DOMContentLoaded', initManageUsersFeather);
-    document.addEventListener('livewire:navigated', initManageUsersFeather);
+    document.addEventListener('DOMContentLoaded', () => {
+        cleanupBootstrapModalArtifacts();
+        initManageUsersFeather();
+    });
+    document.addEventListener('livewire:navigated', () => {
+        cleanupBootstrapModalArtifacts();
+        initManageUsersFeather();
+    });
 
     if (typeof Livewire !== 'undefined') {
         Livewire.hook('morph.updated', () => {

@@ -14,7 +14,14 @@ class ManageAlumni extends Component
     use WithPagination;
 
     public $search = '';
+
     protected $listeners = ['userCreated' => '$refresh'];
+
+    protected $paginationTheme = 'bootstrap';
+
+    protected $queryString = [
+        'search' => ['except' => ''],
+    ];
 
     public function updatedSearch()
     {
@@ -56,8 +63,15 @@ class ManageAlumni extends Component
         
         $users = $query->paginate(10);
 
+        $stats = [
+            'total' => User::whereHas('roles', fn ($q) => $q->where('name', 'alumni'))->count(),
+            'active' => User::whereHas('roles', fn ($q) => $q->where('name', 'alumni'))->where('status', 'active')->count(),
+            'suspended' => User::whereHas('roles', fn ($q) => $q->where('name', 'alumni'))->where('status', 'suspended')->count(),
+        ];
+
         return view('livewire.admin.manage-alumni', [
-            'users' => $users
+            'users' => $users,
+            'stats' => $stats,
         ]);
     }
 } 

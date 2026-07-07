@@ -80,12 +80,6 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('fee-templates.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('fee-templates*') ? 'active' : '' }}">
-                                    <i data-feather="file-text" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
-                                    <span>Fee Management</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a href="{{ route('admin.payment-years.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.payment-years*') ? 'active' : '' }}">
                                     <i data-feather="calendar" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Dues Config</span>

@@ -153,7 +153,12 @@ class UploadAlumniController extends Controller
         $years = Alumni::distinct()->pluck('year_of_graduation')->sort()->reverse();
         $categories = AlumniCategory::active()->get();
 
-        return view('admin.upload-alumni.search', compact('alumni', 'programmes', 'departments', 'faculties', 'years', 'categories'));
+        $user = auth()->user();
+        $view = $user->hasRole('alumni-relations-officer')
+            ? 'aro.upload-alumni.search'
+            : 'admin.upload-alumni.search';
+
+        return view($view, compact('alumni', 'programmes', 'departments', 'faculties', 'years', 'categories'));
     }
 
     public function getFilterOptions()

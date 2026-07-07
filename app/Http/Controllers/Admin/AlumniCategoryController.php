@@ -19,8 +19,15 @@ class AlumniCategoryController extends Controller
         $categories = AlumniCategory::withCount('alumni')
             ->orderBy('name')
             ->paginate(10);
-            
-        return view('admin.categories.index', compact('categories'));
+
+        $stats = [
+            'total' => AlumniCategory::count(),
+            'active' => AlumniCategory::where('is_active', true)->count(),
+            'inactive' => AlumniCategory::where('is_active', false)->count(),
+            'assigned' => AlumniCategory::has('alumni')->count(),
+        ];
+
+        return view('admin.categories.index', compact('categories', 'stats'));
     }
 
     /**

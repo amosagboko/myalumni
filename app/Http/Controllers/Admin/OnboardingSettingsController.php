@@ -13,7 +13,8 @@ class OnboardingSettingsController extends Controller
     public function index()
     {
         $setting = OnboardingSetting::getCurrent();
-        
+        $setting->load(['closedBy', 'reopenedBy']);
+
         return view('admin.onboarding-settings.index', compact('setting'));
     }
 

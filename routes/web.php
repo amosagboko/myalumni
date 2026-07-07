@@ -19,7 +19,6 @@ use App\Livewire\FriendRequestManager;
 use App\Http\Controllers\UploadAlumniController;
 use App\Http\Controllers\CreateEventController;
 use App\Http\Controllers\AlumniOnboardingController;
-use App\Http\Controllers\FeeTemplateController;
 use App\Http\Controllers\AlumniYearController;
 use App\Http\Controllers\AlumniBioDataController;
 use App\Http\Controllers\AlumniPaymentController;
@@ -32,6 +31,7 @@ use App\Http\Controllers\Agent\CandidateController;
 use App\Http\Controllers\Candidate\AgentController;
 use App\Http\Controllers\ARODashboardController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminStatisticsController;
 use App\Providers\RouteServiceProvider;
 
 Route::get('/', function () {
@@ -79,10 +79,10 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     
     // Transaction Management
     Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('transactions/export', [\App\Http\Controllers\Admin\TransactionController::class, 'export'])->name('transactions.export');
     Route::get('transactions/{transaction}', [\App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('transactions.show');
     Route::post('transactions/{transaction}/mark-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markPaid'])->name('transactions.mark-paid');
     Route::post('transactions/{transaction}/mark-failed', [\App\Http\Controllers\Admin\TransactionController::class, 'markFailed'])->name('transactions.mark-failed');
-    Route::get('transactions/export', [\App\Http\Controllers\Admin\TransactionController::class, 'export'])->name('transactions.export');
     
     // Onboarding Settings Management
     Route::get('/onboarding-settings', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'index'])->name('onboarding-settings.index');
@@ -169,72 +169,35 @@ Route::middleware(['auth'])->group(function () {
         })->name('alumni.home');
     });
 
-    // Fee Template Routes
+    // Legacy fee management aliases: keep old URLs working while using the admin fee template implementation.
     Route::prefix('fee-templates')->name('fee-templates.')->middleware(['auth'])->group(function () {
-        // View routes
-        Route::get('/', [FeeTemplateController::class, 'index'])
+        Route::get('/', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'index'])
             ->middleware('can:view fee templates')
             ->name('index');
 
-        // Create routes
         Route::middleware('can:create fee templates')->group(function () {
-            Route::get('/create', [FeeTemplateController::class, 'create'])->name('create');
-            Route::post('/', [FeeTemplateController::class, 'store'])->name('store');
+            Route::get('/create', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'store'])->name('store');
         });
-        
-        // Show route
-        Route::get('/{fee}', [FeeTemplateController::class, 'show'])
+
+        Route::get('/{fee}', function () {
+            return redirect()->route('admin.fee-templates.index');
+        })
             ->middleware('can:view fee template details')
             ->name('show');
 
-        // Edit routes
         Route::middleware('can:edit fee templates')->group(function () {
-            Route::get('/{fee}/edit', [FeeTemplateController::class, 'edit'])->name('edit');
-            Route::put('/{fee}', [FeeTemplateController::class, 'update'])->name('update');
+            Route::get('/{fee}/edit', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'edit'])->name('edit');
+            Route::put('/{fee}', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'update'])->name('update');
         });
 
-        // Delete route
-        Route::delete('/{fee}', [FeeTemplateController::class, 'destroy'])
+        Route::delete('/{fee}', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'destroy'])
             ->middleware('can:delete fee templates')
             ->name('destroy');
 
-        // Status management routes
         Route::middleware('can:activate fee templates')->group(function () {
-            Route::post('/{fee}/activate', [FeeTemplateController::class, 'activate'])->name('activate');
-            Route::post('/{fee}/deactivate', [FeeTemplateController::class, 'deactivate'])->name('deactivate');
-        });
-
-        // Fee Rules routes
-        Route::prefix('{fee}/rules')->name('rules.')->middleware('can:manage fee rules')->group(function () {
-            Route::get('/', [FeeTemplateController::class, 'rules'])->name('index');
-            Route::get('/create', [FeeTemplateController::class, 'createRule'])->name('create');
-            Route::post('/', [FeeTemplateController::class, 'storeRule'])->name('store');
-            Route::get('/{rule}/edit', [FeeTemplateController::class, 'editRule'])->name('edit');
-            Route::put('/{rule}', [FeeTemplateController::class, 'updateRule'])->name('update');
-            Route::delete('/{rule}', [FeeTemplateController::class, 'destroyRule'])->name('destroy');
-            Route::post('/{rule}/activate', [FeeTemplateController::class, 'activateRule'])->name('activate');
-            Route::post('/{rule}/deactivate', [FeeTemplateController::class, 'deactivateRule'])->name('deactivate');
-        });
-
-        // Transactions routes
-        Route::prefix('{fee}/transactions')->name('transactions.')->middleware('can:view fee transactions')->group(function () {
-            Route::get('/', [FeeTemplateController::class, 'transactions'])->name('index');
-            Route::get('/{transaction}', [FeeTemplateController::class, 'showTransaction'])->name('show');
-            Route::post('/{transaction}/mark-paid', [FeeTemplateController::class, 'markTransactionPaid'])
-                ->middleware('can:manage fee transactions')
-                ->name('mark-paid');
-            Route::post('/{transaction}/mark-failed', [FeeTemplateController::class, 'markTransactionFailed'])
-                ->middleware('can:manage fee transactions')
-                ->name('mark-failed');
-        });
-
-        // Reports routes
-        Route::prefix('reports')->name('reports.')->middleware('can:view fee reports')->group(function () {
-            Route::get('/', [FeeTemplateController::class, 'reports'])->name('index');
-            Route::get('/export', [FeeTemplateController::class, 'exportReports'])->name('export');
-            Route::get('/summary', [FeeTemplateController::class, 'summaryReport'])->name('summary');
-            Route::get('/transactions', [FeeTemplateController::class, 'transactionReport'])->name('transactions');
-            Route::get('/categories', [FeeTemplateController::class, 'categoryReport'])->name('categories');
+            Route::post('/{fee}/activate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'activate'])->name('activate');
+            Route::post('/{fee}/deactivate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'deactivate'])->name('deactivate');
         });
     });
 });

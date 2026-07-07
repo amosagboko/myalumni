@@ -38,7 +38,14 @@ class FeeTemplateController extends Controller
         $feeTypes = FeeType::where('is_active', true)->get();
         $categories = AlumniCategory::where('is_active', true)->get();
 
-        return view('admin.fee-templates.index', compact('feeTemplates', 'feeTypes', 'categories'));
+        $stats = [
+            'total' => FeeTemplate::count(),
+            'active' => FeeTemplate::where('is_active', true)->count(),
+            'inactive' => FeeTemplate::where('is_active', false)->count(),
+            'onboarding' => FeeTemplate::where('fee_purpose', 'onboarding')->count(),
+        ];
+
+        return view('admin.fee-templates.index', compact('feeTemplates', 'feeTypes', 'categories', 'stats'));
     }
 
     public function create()

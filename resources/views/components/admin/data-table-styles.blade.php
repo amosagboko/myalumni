@@ -1,96 +1,12 @@
 {{--
-    Shared admin data-table styles.
-    Wrap page content in <div class="admin-data-table"> and use adt-* classes.
-    Include once per page: <x-admin.data-table-styles />
+    Admin data-table styles (lists / tables only).
+    Also include <x-admin.surface-styles /> for page headers, stats, and modals.
+    Wrap content in <div class="admin-data-table"> and use adt-* classes.
 --}}
+@include('components.admin.ui-tokens')
 @once
 @push('styles')
 <style>
-    .admin-data-table {
-        --adt-border: #e8ecf1;
-        --adt-bg: #ffffff;
-        --adt-bg-subtle: #f7f8fa;
-        --adt-text: #1a1d26;
-        --adt-text-muted: #6b7280;
-        --adt-primary: #132977;
-        --adt-radius: 10px;
-    }
-
-    .admin-data-table .adt-page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 1rem;
-        margin-bottom: 1.25rem;
-        flex-wrap: wrap;
-    }
-
-    .admin-data-table .adt-page-title {
-        font-size: 1.35rem;
-        font-weight: 600;
-        color: var(--adt-text);
-        margin: 0 0 0.2rem;
-    }
-
-    .admin-data-table .adt-page-subtitle {
-        font-size: 0.875rem;
-        color: var(--adt-text-muted);
-        margin: 0;
-    }
-
-    .admin-data-table .adt-btn-primary {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        background: var(--adt-primary) !important;
-        border-color: var(--adt-primary) !important;
-        color: #ffffff !important;
-    }
-
-    .admin-data-table .adt-btn-primary:hover,
-    .admin-data-table .adt-btn-primary:focus {
-        color: #ffffff !important;
-        background: #0f2060 !important;
-        border-color: #0f2060 !important;
-    }
-
-    .admin-data-table .adt-stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 0.75rem;
-        margin-bottom: 1.25rem;
-    }
-
-    @media (max-width: 768px) {
-        .admin-data-table .adt-stats {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    .admin-data-table .adt-stat {
-        background: var(--adt-bg);
-        border: 1px solid var(--adt-border);
-        border-radius: var(--adt-radius);
-        padding: 0.85rem 1rem;
-    }
-
-    .admin-data-table .adt-stat-label {
-        display: block;
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--adt-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        margin-bottom: 0.25rem;
-    }
-
-    .admin-data-table .adt-stat-value {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--adt-text);
-        line-height: 1.2;
-    }
-
     .admin-data-table .adt-panel {
         background: var(--adt-bg);
         border: 1px solid var(--adt-border);
@@ -315,6 +231,14 @@
         background: #f59e0b;
     }
 
+    .admin-data-table .adt-status-pending {
+        color: #b45309;
+    }
+
+    .admin-data-table .adt-status-pending .adt-status-dot {
+        background: #f59e0b;
+    }
+
     .admin-data-table .adt-status-inactive {
         color: var(--adt-text-muted);
     }
@@ -353,6 +277,16 @@
     .admin-data-table .adt-action-btn:disabled {
         opacity: 0.35;
         cursor: not-allowed;
+    }
+
+    .admin-data-table .adt-action-btn svg {
+        stroke: currentColor;
+    }
+
+    .admin-data-table .adt-action-danger {
+        color: #dc2626;
+        border-color: #fecaca;
+        background: #fef2f2;
     }
 
     .admin-data-table .adt-action-danger:hover:not(:disabled) {
@@ -422,13 +356,6 @@
         font-size: 0.875rem;
         color: var(--adt-text-muted);
         margin: 0;
-    }
-
-    .adt-modal {
-        --adt-border: #e8ecf1;
-        --adt-radius: 10px;
-        border: 1px solid var(--adt-border);
-        border-radius: var(--adt-radius);
     }
 </style>
 @endpush

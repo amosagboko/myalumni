@@ -108,7 +108,7 @@ class FeeType extends Model
      */
     public function hasFees(): bool
     {
-        return $this->total_fees_count > 0;
+        return $this->feeTemplates()->exists() || $this->feeRules()->exists();
     }
 
     /**

@@ -180,12 +180,19 @@ class ManageUsers extends Component
     public function selectUser(User $user): void
     {
         if (! $this->canAssignRoles || ! $this->canManageUser($user)) {
+            session()->flash('error', 'You do not have permission to assign a role to this user.');
+
             return;
         }
 
-        $this->selectedUser = $user;
+        $this->selectedUser = $user->loadMissing('roles');
         $this->selectedRole = $user->roles->pluck('name')->first() ?? '';
-        $this->dispatch('showAssignRoleModal');
+    }
+
+    public function closeAssignRoleModal(): void
+    {
+        $this->selectedUser = null;
+        $this->selectedRole = '';
     }
 
     public function assignRole(): void
@@ -254,9 +261,7 @@ class ManageUsers extends Component
             }
 
             session()->flash('message', 'Role updated successfully!');
-            $this->dispatch('hideAssignRoleModal');
-            $this->selectedUser = null;
-            $this->selectedRole = '';
+            $this->closeAssignRoleModal();
         } catch (\Exception $e) {
             session()->flash('error', 'Error updating role: ' . $e->getMessage());
         }

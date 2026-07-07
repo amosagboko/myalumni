@@ -1,3 +1,3 @@
 <x-alumniadmin-dashboard>
     @livewire('admin.manage-events')
-</x-alumniadmin-dashboard> 
+</x-alumniadmin-dashboard>

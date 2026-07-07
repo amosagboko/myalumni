@@ -1,0 +1,11 @@
+<x-layouts.alumni-relations-officer>
+    <x-admin.upload-alumni-search-results
+        embedded
+        :alumni="$alumni"
+        :programmes="$programmes"
+        :departments="$departments"
+        :faculties="$faculties"
+        :years="$years"
+        :categories="$categories"
+    />
+</x-layouts.alumni-relations-officer>

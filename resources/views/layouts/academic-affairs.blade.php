@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/css/emoji.css">
     <link rel="stylesheet" href="/css/lightbox.css">
     @livewireStyles
+    @stack('styles')
 </head>
 
 <body class="color-theme-blue mont-font">

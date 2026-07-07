@@ -1,43 +1,41 @@
 {{--
     Admin data table page skeleton — copy into your view and replace placeholders.
-    Requires: <x-admin.data-table-styles /> at top of view, @stack('styles') in layout.
+    Requires surface + table styles and @stack('styles') in layout.
 --}}
+<x-admin.surface-styles />
 <x-admin.data-table-styles />
 
 <div class="main-content admin-data-table">
     <div class="row">
         <div class="col-12">
 
-            {{-- Page header --}}
-            <div class="adt-page-header">
+            <div class="ads-page-header">
                 <div>
-                    <h1 class="adt-page-title">{{ $pageTitle ?? 'Page title' }}</h1>
-                    <p class="adt-page-subtitle">{{ $pageSubtitle ?? 'Short description of this list.' }}</p>
+                    <h1 class="ads-page-title">{{ $pageTitle ?? 'Page title' }}</h1>
+                    <p class="ads-page-subtitle">{{ $pageSubtitle ?? 'Short description of this list.' }}</p>
                 </div>
-                {{-- Optional primary action --}}
-                <a href="{{ $createUrl ?? '#' }}" class="btn btn-primary btn-sm adt-btn-primary text-white">
+                <a href="{{ $createUrl ?? '#' }}" class="btn btn-primary btn-sm ads-btn-primary text-white">
                     <i data-feather="plus" style="width: 15px; height: 15px;"></i>
                     {{ $createLabel ?? 'Add record' }}
                 </a>
             </div>
 
-            {{-- Stats (remove block if not needed) --}}
-            <div class="adt-stats">
-                <div class="adt-stat">
-                    <span class="adt-stat-label">Total</span>
-                    <span class="adt-stat-value">{{ number_format($stats['total'] ?? 0) }}</span>
+            <div class="ads-stats">
+                <div class="ads-stat">
+                    <span class="ads-stat-label">Total</span>
+                    <span class="ads-stat-value">{{ number_format($stats['total'] ?? 0) }}</span>
                 </div>
-                <div class="adt-stat">
-                    <span class="adt-stat-label">Active</span>
-                    <span class="adt-stat-value">{{ number_format($stats['active'] ?? 0) }}</span>
+                <div class="ads-stat">
+                    <span class="ads-stat-label">Active</span>
+                    <span class="ads-stat-value">{{ number_format($stats['active'] ?? 0) }}</span>
                 </div>
-                <div class="adt-stat">
-                    <span class="adt-stat-label">Pending</span>
-                    <span class="adt-stat-value">{{ number_format($stats['pending'] ?? 0) }}</span>
+                <div class="ads-stat">
+                    <span class="ads-stat-label">Pending</span>
+                    <span class="ads-stat-value">{{ number_format($stats['pending'] ?? 0) }}</span>
                 </div>
-                <div class="adt-stat">
-                    <span class="adt-stat-label">Today</span>
-                    <span class="adt-stat-value">{{ number_format($stats['today'] ?? 0) }}</span>
+                <div class="ads-stat">
+                    <span class="ads-stat-label">Today</span>
+                    <span class="ads-stat-value">{{ number_format($stats['today'] ?? 0) }}</span>
                 </div>
             </div>
 

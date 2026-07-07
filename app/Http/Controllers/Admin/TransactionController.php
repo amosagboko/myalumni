@@ -61,7 +61,11 @@ class TransactionController extends Controller
             }
         }
 
-        $transactions = $query->orderBy('created_at', 'desc')->paginate(20);
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        $transactions = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         // Get statistics
         $stats = [
@@ -187,6 +191,10 @@ class TransactionController extends Controller
                     $query->whereYear('created_at', now()->year);
                     break;
             }
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
         }
 
         $transactions = $query->get();

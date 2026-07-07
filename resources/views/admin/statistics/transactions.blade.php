@@ -1,215 +1,173 @@
 <x-alumniadmin-dashboard title="Transaction Statistics | FuLafia Alumni">
-    <div class="main-content right-chat-active">
+    <x-admin.surface-styles />
+    <x-admin.data-table-styles />
+
+    <div class="main-content right-chat-active admin-data-table">
         <div class="middle-sidebar-bottom">
-            <div class="middle-sidebar-left">
+            <div class="middle-sidebar-left pe-0">
                 <div class="row">
                     <div class="col-12">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Transaction Statistics</h5>
+
+                        <div class="ads-page-header">
+                            <div>
+                                <h1 class="ads-page-title">Transaction statistics</h1>
+                                <p class="ads-page-subtitle">Read-only overview of payment activity across the system.</p>
                             </div>
-                            <div class="card-body">
-                                @if(session('success'))
-                                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                        {{ session('success') }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                    </div>
-                                @endif
+                            <a href="{{ route('admin.transactions.index') }}" class="btn btn-sm btn-outline-secondary">
+                                <i data-feather="settings" style="width: 14px; height: 14px;"></i>
+                                Manage transactions
+                            </a>
+                        </div>
 
-                                @if(session('error'))
-                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                        {{ session('error') }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                    </div>
-                                @endif
+                        <div class="ads-stats">
+                            <div class="ads-stat">
+                                <span class="ads-stat-label">Total</span>
+                                <span class="ads-stat-value">{{ number_format($stats['total']) }}</span>
+                            </div>
+                            <div class="ads-stat">
+                                <span class="ads-stat-label">Paid</span>
+                                <span class="ads-stat-value">{{ number_format($stats['paid']) }}</span>
+                            </div>
+                            <div class="ads-stat">
+                                <span class="ads-stat-label">Pending</span>
+                                <span class="ads-stat-value">{{ number_format($stats['pending']) }}</span>
+                            </div>
+                            <div class="ads-stat">
+                                <span class="ads-stat-label">Failed</span>
+                                <span class="ads-stat-value">{{ number_format($stats['failed']) }}</span>
+                            </div>
+                        </div>
 
-                                <!-- Statistics Dashboard -->
-                                <div class="row mb-4">
-                                    <div class="col-md-3">
-                                        <div class="card bg-primary text-white">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between">
-                                                    <div>
-                                                        <h6 class="card-title">Total Transactions</h6>
-                                                        <h3 class="mb-0">{{ $transactions->total() }}</h3>
-                                                    </div>
-                                                    <div class="align-self-center">
-                                                        <i data-feather="credit-card" style="width: 24px; height: 24px;"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                        <div class="adt-panel">
+                            <div class="adt-toolbar">
+                                <form method="GET" class="adt-filters">
+                                    <div class="adt-search">
+                                        <i data-feather="search" class="adt-search-icon"></i>
+                                        <input
+                                            type="text"
+                                            name="search"
+                                            value="{{ request('search') }}"
+                                            placeholder="Reference, name, email"
+                                            class="form-control form-control-sm"
+                                        >
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="card bg-success text-white">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between">
-                                                    <div>
-                                                        <h6 class="card-title">Paid</h6>
-                                                        <h3 class="mb-0">{{ $transactions->where('status', 'paid')->count() }}</h3>
-                                                    </div>
-                                                    <div class="align-self-center">
-                                                        <i data-feather="check-circle" style="width: 24px; height: 24px;"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="card bg-warning text-white">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between">
-                                                    <div>
-                                                        <h6 class="card-title">Pending</h6>
-                                                        <h3 class="mb-0">{{ $transactions->where('status', 'pending')->count() }}</h3>
-                                                    </div>
-                                                    <div class="align-self-center">
-                                                        <i data-feather="clock" style="width: 24px; height: 24px;"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="card bg-danger text-white">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between">
-                                                    <div>
-                                                        <h6 class="card-title">Failed</h6>
-                                                        <h3 class="mb-0">{{ $transactions->where('status', 'failed')->count() }}</h3>
-                                                    </div>
-                                                    <div class="align-self-center">
-                                                        <i data-feather="x-circle" style="width: 24px; height: 24px;"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <select name="status" class="form-select form-select-sm adt-select adt-select-narrow">
+                                        <option value="">All statuses</option>
+                                        <option value="pending" @selected(request('status') === 'pending')>Pending</option>
+                                        <option value="paid" @selected(request('status') === 'paid')>Paid</option>
+                                        <option value="failed" @selected(request('status') === 'failed')>Failed</option>
+                                    </select>
+                                    <select name="fee_type" class="form-select form-select-sm adt-select">
+                                        <option value="">All fee types</option>
+                                        @foreach ($feeTypes as $feeType)
+                                            <option value="{{ $feeType->id }}" @selected(request('fee_type') == $feeType->id)>{{ $feeType->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input
+                                        type="date"
+                                        name="date_from"
+                                        value="{{ request('date_from') }}"
+                                        class="form-control form-control-sm adt-select adt-select-narrow"
+                                        aria-label="Date from"
+                                    >
+                                    <button type="submit" class="btn btn-sm ads-btn-primary">
+                                        <i data-feather="filter" style="width: 14px; height: 14px;"></i>
+                                        Filter
+                                    </button>
+                                    @if (request()->hasAny(['search', 'status', 'fee_type', 'date_from']))
+                                        <a href="{{ route('admin.statistics.transactions') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                                    @endif
+                                </form>
+                            </div>
 
-                                <!-- Filters -->
-                                <div class="mb-4 p-3 bg-light rounded">
-                                    <form method="GET" class="row g-3">
-                                        <div class="col-md-2">
-                                            <label for="search" class="form-label">Search</label>
-                                            <input type="text" name="search" id="search" value="{{ request('search') }}" 
-                                                   placeholder="Reference, Email" 
-                                                   class="form-control">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="status" class="form-label">Status</label>
-                                            <select name="status" id="status" class="form-select">
-                                                <option value="">All Status</option>
-                                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                                <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
-                                                <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="fee_type" class="form-label">Fee Type</label>
-                                            <select name="fee_type" id="fee_type" class="form-select">
-                                                <option value="">All Types</option>
-                                                @foreach($transactions->pluck('feeTemplate.feeType')->unique()->filter() as $feeType)
-                                                    <option value="{{ $feeType->id }}" {{ request('fee_type') == $feeType->id ? 'selected' : '' }}>
-                                                        {{ $feeType->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="date_from" class="form-label">Date From</label>
-                                            <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}" 
-                                                   class="form-control">
-                                        </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <button type="submit" class="btn btn-outline-primary me-2">
-                                                <i data-feather="search" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
-                                                Filter
-                                            </button>
-                                            <button type="button" onclick="clearFilters()" class="btn btn-outline-secondary">
-                                                <i data-feather="x" class="btn-round-md me-1" style="width: 14px; height: 14px;"></i>
-                                                Clear
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-
-                                <!-- Transactions Table -->
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
+                            @if ($transactions->count() > 0)
+                                <div class="adt-table-wrap">
+                                    <table class="adt-table">
                                         <thead>
                                             <tr>
                                                 <th>Reference</th>
                                                 <th>Alumni</th>
-                                                <th>Fee Type</th>
+                                                <th>Fee type</th>
                                                 <th>Amount</th>
                                                 <th>Status</th>
                                                 <th>Date</th>
-                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($transactions as $transaction)
+                                            @foreach ($transactions as $transaction)
                                                 <tr>
+                                                    <td class="fw-medium">{{ $transaction->reference ?? 'N/A' }}</td>
                                                     <td>
-                                                        <div class="fw-bold">{{ $transaction->reference ?? 'N/A' }}</div>
+                                                        <div class="fw-medium">{{ $transaction->alumni->user->name ?? 'N/A' }}</div>
+                                                        <div class="adt-muted small">{{ $transaction->alumni->user->email ?? 'N/A' }}</div>
                                                     </td>
                                                     <td>
-                                                        <div class="fw-bold">{{ $transaction->alumni->user->name ?? 'N/A' }}</div>
-                                                        <small class="text-muted">{{ $transaction->alumni->user->email ?? 'N/A' }}</small>
+                                                        <div class="fw-medium">{{ $transaction->feeTemplate->feeType->name ?? 'N/A' }}</div>
+                                                        <div class="adt-muted small">{{ $transaction->feeTemplate->feeType->code ?? 'N/A' }}</div>
                                                     </td>
+                                                    <td class="fw-medium">₦{{ number_format($transaction->amount, 2) }}</td>
                                                     <td>
-                                                        <div class="fw-bold">{{ $transaction->feeTemplate->feeType->name ?? 'N/A' }}</div>
-                                                        <small class="text-muted">{{ $transaction->feeTemplate->feeType->code ?? 'N/A' }}</small>
-                                                    </td>
-                                                    <td>
-                                                        <span class="fw-bold">₦{{ number_format($transaction->amount, 2) }}</span>
-                                                    </td>
-                                                    <td>
-                                                        @if($transaction->status === 'paid')
-                                                            <span class="badge bg-success">Paid</span>
-                                                        @elseif($transaction->status === 'pending')
-                                                            <span class="badge bg-warning">Pending</span>
+                                                        @if ($transaction->status === 'paid')
+                                                            <span class="adt-status adt-status-active">
+                                                                <span class="adt-status-dot"></span>
+                                                                Paid
+                                                            </span>
+                                                        @elseif ($transaction->status === 'pending')
+                                                            <span class="adt-status adt-status-pending">
+                                                                <span class="adt-status-dot"></span>
+                                                                Pending
+                                                            </span>
                                                         @else
-                                                            <span class="badge bg-danger">Failed</span>
+                                                            <span class="adt-status adt-status-inactive">
+                                                                <span class="adt-status-dot"></span>
+                                                                Failed
+                                                            </span>
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        <div class="fw-bold">{{ $transaction->created_at->format('M d, Y') }}</div>
-                                                        <small class="text-muted">{{ $transaction->created_at->format('H:i') }}</small>
-                                                    </td>
-                                                    <td>
-                                                        <span class="text-muted">View Only</span>
+                                                        <div class="fw-medium">{{ $transaction->created_at->format('M j, Y') }}</div>
+                                                        <div class="adt-muted small">{{ $transaction->created_at->format('H:i') }}</div>
                                                     </td>
                                                 </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="7" class="text-center">No transactions found.</td>
-                                                </tr>
-                                            @endforelse
+                                            @endforeach
                                         </tbody>
                                     </table>
                                 </div>
 
-                                <!-- Pagination -->
-                                <div class="mt-4">
-                                    {{ $transactions->links() }}
+                                @if ($transactions->hasPages())
+                                    <div class="adt-footer">
+                                        <span class="adt-footer-count">
+                                            {{ $transactions->firstItem() }}–{{ $transactions->lastItem() }} of {{ $transactions->total() }}
+                                        </span>
+                                        <div class="adt-pagination">
+                                            {{ $transactions->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="adt-empty">
+                                    <div class="adt-empty-icon">
+                                        <i data-feather="bar-chart-2" style="width: 28px; height: 28px;"></i>
+                                    </div>
+                                    <h3 class="adt-empty-title">No transactions found</h3>
+                                    <p class="adt-empty-text">Try adjusting your filters to see matching payment records.</p>
                                 </div>
-                            </div>
+                            @endif
                         </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</x-alumniadmin-dashboard>
 
-<script>
-function clearFilters() {
-    document.getElementById('search').value = '';
-    document.getElementById('status').value = '';
-    document.getElementById('fee_type').value = '';
-    document.getElementById('date_from').value = '';
-    document.querySelector('form').submit();
-}
-</script> 
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        });
+    </script>
+    @endpush
+</x-alumniadmin-dashboard>

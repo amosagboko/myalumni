@@ -13,7 +13,16 @@ class AlumniYearController extends Controller
     public function index()
     {
         $alumniYears = AlumniYear::orderBy('year', 'desc')->paginate(10);
-        return view('alumni-years.index', compact('alumniYears'));
+        $activeYear = AlumniYear::where('is_active', true)->first();
+
+        $stats = [
+            'total' => AlumniYear::count(),
+            'active' => AlumniYear::where('is_active', true)->count(),
+            'inactive' => AlumniYear::where('is_active', false)->count(),
+            'with_fees' => AlumniYear::all()->filter(fn (AlumniYear $year) => $year->hasFees())->count(),
+        ];
+
+        return view('alumni-years.index', compact('alumniYears', 'stats', 'activeYear'));
     }
 
     /**
@@ -75,8 +84,9 @@ class AlumniYearController extends Controller
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
-            'is_active' => 'boolean'
         ]);
+
+        $validated['is_active'] = $request->boolean('is_active');
 
         if ($validated['is_active']) {
             // Deactivate all other years

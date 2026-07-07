@@ -3,23 +3,23 @@
     <div class="row g-3">
         <div class="col-md-4">
             <label class="form-label">Amount (₦)</label>
-            <input type="number" name="amount" step="0.01" min="0" class="form-control"
+            <input type="number" name="amount" step="0.01" min="0" class="form-control form-control-sm"
                 value="{{ old('amount', $previousAnnualDue?->amount ?? '') }}" required
                 placeholder="{{ $previousAnnualDue ? number_format($previousAnnualDue->amount, 2) : 'e.g. 4000' }}">
         </div>
         <div class="col-md-4">
             <label class="form-label">Valid from</label>
-            <input type="date" name="valid_from" class="form-control"
+            <input type="date" name="valid_from" class="form-control form-control-sm"
                 value="{{ old('valid_from', $paymentYear->start_date->format('Y-m-d')) }}" required>
         </div>
         <div class="col-md-4">
             <label class="form-label">Valid until</label>
-            <input type="date" name="valid_until" class="form-control"
+            <input type="date" name="valid_until" class="form-control form-control-sm"
                 value="{{ old('valid_until', $paymentYear->end_date->format('Y-m-d')) }}">
         </div>
         <div class="col-12">
             <label class="form-label">Description</label>
-            <input type="text" name="description" class="form-control"
+            <input type="text" name="description" class="form-control form-control-sm"
                 value="{{ old('description', "Annual alumni due for {$paymentYear->year}") }}">
         </div>
         <div class="col-12">
@@ -29,5 +29,5 @@
             </div>
         </div>
     </div>
-    <button type="submit" class="btn btn-primary btn-sm mt-3">Create annual due</button>
+    <button type="submit" class="btn btn-sm ads-btn-primary mt-3">Create annual due</button>
 </form>

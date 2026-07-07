@@ -13,6 +13,7 @@
     <!-- Feather Icons CDN -->
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     @livewireStyles
+    @stack('styles')
 </head>
 <body>
     <div class="theme-layout">
@@ -90,5 +91,6 @@
     </script>
     @livewireScripts
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    @stack('scripts')
 </body>
 </html> 

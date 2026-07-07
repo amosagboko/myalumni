@@ -1,0 +1,77 @@
+---
+description: Admin surface UI for dashboards, stats, sections, modals (non-table pages)
+globs: resources/views/**/*.blade.php
+alwaysApply: false
+---
+
+# Admin surfaces pattern (`ads-*`)
+
+Use for **non-table** admin pages: dashboards, overview stats, quick actions, dialogs.
+
+Pair with **adt-*** table kit on list pages that also have a stats row.
+
+## Setup
+
+```blade
+<x-admin.surface-styles />
+
+<div class="main-content admin-surface">
+    {{-- ads-* content --}}
+</div>
+```
+
+Table + stats page:
+
+```blade
+<x-admin.surface-styles />
+<x-admin.data-table-styles />
+
+<div class="main-content admin-data-table">
+    {{-- ads-page-header, ads-stats, then adt-panel table --}}
+</div>
+```
+
+Layout must have `@stack('styles')` in `<head>`.
+
+## Class reference
+
+| Area | Classes |
+|------|---------|
+| Page header | `ads-page-header`, `ads-page-title`, `ads-page-subtitle`, `ads-page-actions`, `ads-filters` |
+| Buttons / filters | `ads-btn-primary`, `ads-select`, `ads-select-narrow` |
+| Sections | `ads-section`, `ads-section-title`, `ads-section-card`, `ads-section-meta` |
+| Stats | `ads-stats`, `ads-stat`, `ads-stat-inner`, `ads-stat-icon`, `ads-stat-label`, `ads-stat-value`, `ads-stat-highlight` |
+| Panels | `ads-panel`, `ads-panel-header`, `ads-panel-title`, `ads-panel-body` |
+| Alerts | `ads-alert`, `ads-alert-success`, `ads-alert-error` |
+| Quick actions | `ads-quick-actions`, `ads-quick-action`, `ads-quick-action-icon` |
+| Modal | `ads-modal-overlay`, `ads-modal-dialog`, `ads-modal-card`, `ads-modal-header`, `ads-modal-body`, `ads-modal-footer` |
+
+## Reusable component
+
+Clearance division dashboards: `<x-admin.clearance-dashboard />` with `title`, `clearance-route`, `audit-route`, `kpis`, `recent-activity`, `faculties`, `years`.
+
+## Reference implementations
+
+- Admin dashboard: `resources/views/livewire/admin/dashboard.blade.php`
+- Clearance divisions: `resources/views/components/admin/clearance-dashboard.blade.php` (Student & Academic Affairs)
+- Agent dashboard: `resources/views/agent/dashboard.blade.php`
+- ELCOM Chairman: `resources/views/elcom-chairman/dashboard.blade.php`
+- Modal: `resources/views/livewire/admin/manage-users.blade.php`
+- Skeleton: `resources/views/templates/admin-surface-page-skeleton.blade.php`
+
+## Layout requirement
+
+Parent layout must include `@stack('styles')` and `@stack('scripts')` in `<head>` / before `</body>`.
+
+## Rules
+
+- Neutral palette; shared tokens via `ui-tokens.blade.php` (`--adt-primary` etc.).
+- No rainbow Bootstrap stat cards (`bg-primary`, `bg-success`, …).
+- Primary buttons: `btn btn-primary btn-sm ads-btn-primary text-white`.
+- Modals: Livewire `ads-modal-*` overlay — **not** Bootstrap Modal.
+- Section titles: small uppercase `ads-section-title`, not heavy card headers.
+- **Elevated look** applies only on `.admin-surface` (dashboards): hero header, `ads-section-card`, stat shadows, icon tiles. Table pages (`.admin-data-table`) keep flat stats.
+
+## Portable kit
+
+`admin-ui-kit/` in repo root.
