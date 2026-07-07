@@ -210,12 +210,15 @@
                                                 id="credo_reference"
                                                 value="{{ old('credo_reference', $transaction->payment_provider_reference) }}"
                                                 class="form-control form-control-sm @error('credo_reference') is-invalid @enderror"
-                                                placeholder="e.g. vs_xxxxxxxxxxxx"
+                                                placeholder="e.g. bNI200QuLL34qft486xE or vs_xxxxxxxxxxxx"
                                                 @if (!$transaction->payment_provider_reference) required @endif
                                             >
                                             @error('credo_reference')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
+                                            <div class="form-text">
+                                                Use the <strong>Credo reference</strong> from the Credo dashboard — not the DUE-/ALUMNI- payment reference.
+                                            </div>
                                         </div>
                                         <div class="col-md-4">
                                             <button type="submit" class="btn btn-sm ads-btn-primary w-100">
@@ -224,6 +227,25 @@
                                             </button>
                                         </div>
                                     </form>
+
+                                    @php
+                                        $lastVerification = data_get($transaction->payment_details, 'verification_data');
+                                    @endphp
+                                    @if (is_array($lastVerification))
+                                        <div class="mt-3 p-3 bg-light rounded small text-start">
+                                            <div class="fw-semibold mb-2">Last Credo verify response</div>
+                                            <div>Status: <code>{{ $lastVerification['status'] ?? 'unknown' }}</code></div>
+                                            <div>Verified with: <code>{{ $lastVerification['verified_with_reference'] ?? 'n/a' }}</code></div>
+                                            <div>Amount match: {{ !empty($lastVerification['amount_matches']) ? 'yes' : 'no' }}</div>
+                                            <div>Reference match: {{ !empty($lastVerification['reference_matches']) ? 'yes' : 'no' }}</div>
+                                            @if (!empty($lastVerification['returned_amount']))
+                                                <div>Credo amount: ₦{{ number_format((float) $lastVerification['returned_amount'], 2) }}</div>
+                                            @endif
+                                            @if (!empty($lastVerification['business_ref']))
+                                                <div>Credo business ref: <code>{{ $lastVerification['business_ref'] }}</code></div>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         @endif

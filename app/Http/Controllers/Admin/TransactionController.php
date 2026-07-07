@@ -193,7 +193,7 @@ class TransactionController extends Controller
                 $transaction->refresh();
             }
 
-            $verification = $this->credocentral->verifyPayment($transaction, $credoReference);
+            $verification = $this->credocentral->verifyPaymentForAdminReconciliation($transaction, $credoReference);
 
             if ($verification['paid']) {
                 $this->paymentCompletion->complete(
@@ -211,7 +211,7 @@ class TransactionController extends Controller
                 return back()->with('success', 'Payment reconciled successfully with Credo Central.');
             }
 
-            if (strtolower($verification['status']) === 'failed') {
+            if (!empty($verification['is_failed_status']) || strtolower($verification['status']) === 'failed') {
                 $transaction->update([
                     'status' => 'failed',
                     'payment_details' => array_merge(
@@ -240,10 +240,7 @@ class TransactionController extends Controller
 
             DB::commit();
 
-            return back()->with(
-                'error',
-                'Credo still shows this payment as pending. Confirm the reference is correct and try again shortly.'
-            );
+            return back()->with('error', $this->reconciliationFeedbackMessage($verification));
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -356,5 +353,42 @@ class TransactionController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    protected function reconciliationFeedbackMessage(array $verification): string
+    {
+        if (!empty($verification['is_success_status']) && empty($verification['paid'])) {
+            $issues = [];
+
+            if (empty($verification['amount_matches'])) {
+                $issues[] = sprintf(
+                    'amount mismatch (expected ₦%s, Credo returned ₦%s)',
+                    number_format((float) ($verification['expected_amount'] ?? 0), 2),
+                    isset($verification['returned_amount'])
+                        ? number_format((float) $verification['returned_amount'], 2)
+                        : 'unknown'
+                );
+            }
+
+            if (empty($verification['reference_matches'])) {
+                $issues[] = sprintf(
+                    'reference mismatch (expected %s, Credo returned %s)',
+                    $verification['expected_reference'] ?? 'unknown',
+                    $verification['business_ref'] ?? 'unknown'
+                );
+            }
+
+            if ($issues !== []) {
+                return 'Credo reports this payment as successful, but local validation failed: '
+                    . implode('; ', $issues)
+                    . '. Confirm you used the Credo transRef (vs_...), not the DUE-/ALUMNI- reference.';
+            }
+        }
+
+        return sprintf(
+            'Credo still shows this payment as pending or unconfirmed (status: %s, verified with: %s). Confirm the Credo reference matches the successful payment in the Credo dashboard, then try again. Check server logs for the full Credo response.',
+            $verification['status'] ?? 'unknown',
+            $verification['verified_with_reference'] ?? 'unknown'
+        );
     }
 } 

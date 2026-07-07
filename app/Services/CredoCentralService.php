@@ -296,8 +296,11 @@ class CredoCentralService
     /**
      * Verify a payment transaction with Credo's /transaction/{transRef}/verify endpoint.
      */
-    public function verifyPayment(Transaction $transaction, ?string $credoReference = null)
-    {
+    public function verifyPayment(
+        Transaction $transaction,
+        ?string $credoReference = null,
+        bool $adminReconciliation = false
+    ) {
         try {
             $transRef = $credoReference ?: $transaction->payment_provider_reference;
 
@@ -310,6 +313,7 @@ class CredoCentralService
                 'reference' => $transaction->payment_reference,
                 'provider_reference' => $transRef,
                 'current_status' => $transaction->status,
+                'admin_reconciliation' => $adminReconciliation,
             ]);
 
             $verifyUrl = $this->baseUrl . '/transaction/' . rawurlencode($transRef) . '/verify';
@@ -326,35 +330,52 @@ class CredoCentralService
                     'status_from_provider' => $payload['status'] ?? 'unknown',
                 ]);
 
-                $rawStatus = $payload['status'] ?? '';
+                $rawStatus = $payload['status']
+                    ?? $payload['transactionStatus']
+                    ?? $payload['paymentStatus']
+                    ?? '';
                 $status = strtolower((string) $rawStatus);
-                $isPaid = $this->isSuccessfulStatus($rawStatus);
+                $isSuccessStatus = $this->isSuccessfulStatus($rawStatus);
+                $isFailedStatus = $this->isFailedStatus($rawStatus);
+                $amountMatches = $this->amountMatches($transaction, $payload);
+                $referenceMatches = $this->referenceMatches($transaction, $payload, $transRef);
 
-                $transAmountKobo = (int) ($payload['transAmount'] ?? $payload['amount'] ?? 0);
-                $expectedKobo = (int) round(((float) $transaction->amount) * 100);
-                $amountMatches = $transAmountKobo > 0
-                    ? $transAmountKobo === $expectedKobo
-                    : true;
+                $transAmountKobo = $this->resolveTransAmountKobo($payload);
+                $returnedNaira = $transAmountKobo !== null ? $transAmountKobo / 100 : null;
 
-                $businessRef = $payload['businessRef'] ?? null;
-                $referenceMatches = !$businessRef || $businessRef === $transaction->payment_reference;
+                $paid = $isSuccessStatus && $amountMatches && $referenceMatches;
+                if ($adminReconciliation && $isSuccessStatus && $amountMatches) {
+                    $paid = true;
+                }
 
                 Log::info('Payment status verification result', [
                     'transaction_id' => $transaction->id,
                     'original_status' => $status,
-                    'is_paid' => $isPaid,
+                    'is_success_status' => $isSuccessStatus,
+                    'is_failed_status' => $isFailedStatus,
                     'amount_matches' => $amountMatches,
                     'reference_matches' => $referenceMatches,
+                    'paid' => $paid,
                     'returned_amount_kobo' => $transAmountKobo,
-                    'expected_amount_kobo' => $expectedKobo,
+                    'expected_amount_kobo' => (int) round(((float) $transaction->amount) * 100),
                     'provider_reference' => $transRef,
                     'payment_reference' => $transaction->payment_reference,
+                    'business_ref' => $payload['businessRef'] ?? $payload['reference'] ?? null,
                 ]);
 
                 return [
                     'status' => $status,
-                    'paid' => $isPaid && $amountMatches && $referenceMatches,
-                    'amount' => $transAmountKobo / 100,
+                    'paid' => $paid,
+                    'is_success_status' => $isSuccessStatus,
+                    'is_failed_status' => $isFailedStatus,
+                    'amount_matches' => $amountMatches,
+                    'reference_matches' => $referenceMatches,
+                    'expected_amount' => (float) $transaction->amount,
+                    'returned_amount' => $returnedNaira,
+                    'business_ref' => $payload['businessRef'] ?? $payload['reference'] ?? null,
+                    'expected_reference' => $transaction->payment_reference,
+                    'verified_with_reference' => $transRef,
+                    'amount' => $returnedNaira ?? 0,
                     'paid_at' => $payload['transactionDate'] ?? $payload['paid_at'] ?? null,
                     'raw_data' => $payload,
                 ];
@@ -377,6 +398,65 @@ class CredoCentralService
         }
     }
 
+    /**
+     * Try multiple Credo references for admin reconciliation.
+     */
+    public function verifyPaymentForAdminReconciliation(Transaction $transaction, ?string $primaryReference = null): array
+    {
+        $references = array_values(array_unique(array_filter([
+            $primaryReference,
+            $transaction->payment_provider_reference,
+            $transaction->payment_reference,
+        ])));
+
+        if ($references === []) {
+            throw new \Exception('No Credo transaction reference available for verification.');
+        }
+
+        $lastVerification = null;
+        $lastException = null;
+
+        foreach ($references as $reference) {
+            try {
+                $verification = $this->verifyPayment($transaction, $reference, true);
+                $lastVerification = $verification;
+
+                if (!empty($verification['paid'])) {
+                    return $verification;
+                }
+            } catch (\Exception $e) {
+                $lastException = $e;
+                Log::warning('Admin reconciliation verify attempt failed', [
+                    'transaction_id' => $transaction->id,
+                    'reference' => $reference,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($lastVerification) {
+            return $lastVerification;
+        }
+
+        throw $lastException ?? new \Exception('Unable to verify payment with Credo Central.');
+    }
+
+    protected function referenceMatches(Transaction $transaction, array $payload, string $transRef): bool
+    {
+        $businessRef = $payload['businessRef'] ?? $payload['reference'] ?? null;
+        $payloadTransRef = $payload['transRef'] ?? $payload['credoReference'] ?? null;
+
+        if ($businessRef && strcasecmp(trim((string) $businessRef), trim($transaction->payment_reference)) === 0) {
+            return true;
+        }
+
+        if ($payloadTransRef && strcasecmp(trim((string) $payloadTransRef), trim($transRef)) === 0) {
+            return true;
+        }
+
+        return $businessRef === null && $payloadTransRef === null;
+    }
+
     protected function isSuccessfulStatus(mixed $rawStatus): bool
     {
         if (is_numeric($rawStatus)) {
@@ -390,6 +470,83 @@ class CredoCentralService
             'completed',
             '0',
         ], true);
+    }
+
+    protected function isFailedStatus(mixed $rawStatus): bool
+    {
+        if (is_numeric($rawStatus)) {
+            return in_array((int) $rawStatus, [3, 7, 9, 10], true);
+        }
+
+        return in_array(strtolower((string) $rawStatus), [
+            'failed',
+            'declined',
+            'cancelled',
+            'canceled',
+        ], true);
+    }
+
+    protected function amountMatches(Transaction $transaction, array $payload): bool
+    {
+        $expectedNaira = round((float) $transaction->amount, 2);
+        $expectedKobo = (int) round($expectedNaira * 100);
+
+        $candidates = array_filter([
+            $payload['transAmount'] ?? null,
+            $payload['settlementAmount'] ?? null,
+            $payload['amount'] ?? null,
+        ], static fn ($value) => $value !== null && $value !== '');
+
+        if ($candidates === []) {
+            return true;
+        }
+
+        foreach ($candidates as $raw) {
+            $value = (float) $raw;
+
+            if ((int) round($value) === $expectedKobo) {
+                return true;
+            }
+
+            if (abs($value - $expectedNaira) < 0.01) {
+                return true;
+            }
+
+            if (abs(($value / 100) - $expectedNaira) < 0.01) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function resolveTransAmountKobo(array $payload): ?int
+    {
+        $expectedFields = ['transAmount', 'settlementAmount', 'amount'];
+
+        foreach ($expectedFields as $field) {
+            if (!isset($payload[$field]) || $payload[$field] === '') {
+                continue;
+            }
+
+            $value = (float) $payload[$field];
+
+            if ($value >= 100000) {
+                return (int) round($value);
+            }
+
+            if (fmod($value, 1.0) !== 0.0) {
+                return (int) round($value * 100);
+            }
+
+            if ($value >= 1000) {
+                return (int) round($value);
+            }
+
+            return (int) round($value * 100);
+        }
+
+        return null;
     }
 
     /**
