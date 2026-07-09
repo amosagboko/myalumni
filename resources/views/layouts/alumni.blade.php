@@ -65,7 +65,7 @@
         <div class="app-footer border-0 shadow-lg bg-primary-gradiant">
             <a href="{{ route('alumni.home') }}" class="nav-content-bttn nav-center"><i class="feather-home"></i></a>
             <a href="{{ route('friends') }}" class="nav-content-bttn"><i class="feather-users"></i></a>
-            <a href="#" class="nav-content-bttn"><i class="feather-map-pin"></i></a>
+            <a href="{{ route('alumni.events') }}" class="nav-content-bttn"><i class="feather-map-pin"></i></a>
             <a href="{{ route('profile.edit') }}" class="nav-content-bttn">
                 @auth
                     <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" alt="user" class="w30 shadow-xss rounded-circle">

@@ -16,7 +16,8 @@ use Illuminate\Http\UploadedFile;
 class PostService
 {
     public function __construct(
-        protected FeedService $feedService
+        protected FeedService $feedService,
+        protected NotificationService $notificationService
     ) {}
 
     public function createPost(
@@ -98,6 +99,11 @@ class PostService
             } else {
                 Like::create(['post_id' => $post->id, 'user_id' => $user->id]);
                 $post->increment('likes');
+
+                $post->loadMissing('user');
+                if ($post->user) {
+                    $this->notificationService->postLiked($post->user, $user, $post);
+                }
             }
         });
     }
@@ -115,6 +121,11 @@ class PostService
         ]);
 
         $post->increment('comments');
+
+        $post->loadMissing('user');
+        if ($post->user) {
+            $this->notificationService->postCommented($post->user, $user, $post);
+        }
 
         return $commentModel->load('user');
     }

@@ -17,7 +17,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="nav-content-bttn open-font" title="Official events — coming soon">
+                        <a href="{{ route('alumni.events') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni.events*') ? 'active' : '' }}">
                             <i class="feather-map-pin btn-round-md bg-gold-gradiant me-3"></i><span>Official Events</span>
                         </a>
                     </li>

@@ -211,6 +211,7 @@ class FriendRequestManager extends Component
                 $this->loadUserRequests();
                 $this->searchUsers();
                 $this->dispatch('connection-updated');
+                $this->dispatch('notifications-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error sending friend request', [
@@ -281,6 +282,7 @@ class FriendRequestManager extends Component
             if ($success) {
                 $this->loadUserRequests();
                 $this->dispatch('connection-updated');
+                $this->dispatch('notifications-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error accepting friend request', [
@@ -297,6 +299,7 @@ class FriendRequestManager extends Component
             if ($success) {
                 $this->loadUserRequests();
                 $this->dispatch('connection-updated');
+                $this->dispatch('notifications-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error rejecting friend request', [
@@ -314,6 +317,7 @@ class FriendRequestManager extends Component
                 $this->loadUserRequests();
                 $this->searchUsers();
                 $this->dispatch('connection-updated');
+                $this->dispatch('notifications-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error removing friend', [
@@ -371,6 +375,7 @@ class FriendRequestManager extends Component
             if ($success) {
                 $this->loadUserRequests();
                 $this->dispatch('connection-updated');
+                $this->dispatch('notifications-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error creating test request', [

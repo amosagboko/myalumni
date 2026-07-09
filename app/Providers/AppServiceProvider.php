@@ -58,5 +58,8 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('social.post-comments', \App\Livewire\Social\PostComments::class);
         Livewire::component('social.connection-requests', \App\Livewire\Social\ConnectionRequests::class);
         Livewire::component('social.suggested-connections', \App\Livewire\Social\SuggestedConnections::class);
+        Livewire::component('social.official-events', \App\Livewire\Social\OfficialEvents::class);
+        Livewire::component('social.event-show', \App\Livewire\Social\EventShow::class);
+        Livewire::component('social.notification-bell', \App\Livewire\Social\NotificationBell::class);
     }
 }

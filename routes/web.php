@@ -218,6 +218,10 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
         return view('alumni.home');
     })->name('alumni.home');
 
+    // Official Events (social layer)
+    Route::get('/alumni/events', \App\Livewire\Social\OfficialEvents::class)->name('alumni.events');
+    Route::get('/alumni/events/{event}', \App\Livewire\Social\EventShow::class)->name('alumni.events.show');
+
     // Bio Data Routes
     Route::get('/bio-data', [AlumniBioDataController::class, 'show'])->name('alumni.bio-data');
     Route::put('/bio-data', [AlumniBioDataController::class, 'update'])->name('alumni.bio-data.update');

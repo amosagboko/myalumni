@@ -45,9 +45,10 @@
     <div class="card w-100 shadow-xss rounded-xxl border-0 mb-3">
         <div class="card-body d-flex align-items-center p-4">
             <h4 class="fw-700 mb-0 font-xssss text-grey-900">Official Events</h4>
-            <a href="#" class="fw-600 ms-auto font-xssss text-primary">See all</a>
+            <a href="{{ route('alumni.events') }}" class="fw-600 ms-auto font-xssss text-primary">See all</a>
         </div>
         @forelse($upcomingEvents as $event)
+            <a href="{{ route('alumni.events.show', $event) }}" class="text-decoration-none d-block">
             <div class="card-body d-flex pt-0 ps-4 pe-4 pb-3 overflow-hidden {{ $loop->first ? 'border-top-xs bor-0' : '' }}">
                 @php
                     $month = $event->date?->format('M');
@@ -64,6 +65,7 @@
                     <span class="d-block font-xsssss fw-500 mt-1 lh-4 text-grey-500">{{ $event->venue ?? 'Venue TBA' }}</span>
                 </h4>
             </div>
+            </a>
         @empty
             <div class="card-body pt-0 ps-4 pe-4 pb-4 border-top-xs bor-0">
                 <p class="font-xssss text-grey-500 mb-0">No upcoming official events.</p>

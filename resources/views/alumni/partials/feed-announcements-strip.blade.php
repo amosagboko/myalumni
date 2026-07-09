@@ -21,6 +21,7 @@
         </div>
         @forelse($upcomingEvents as $event)
             <div class="item">
+                <a href="{{ route('alumni.events.show', $event) }}" class="text-decoration-none d-block">
                 <div class="card w125 h200 d-block border-0 shadow-xss rounded-xxxl bg-gradiant-bottom overflow-hidden cursor-pointer mb-3 mt-3"
                      @if($event->image) style="background-image: url('{{ asset('storage/' . $event->image) }}'); background-size: cover; background-position: center;" @else style="background: linear-gradient(135deg, #10d876 0%, #132977 100%);" @endif>
                     <div class="card-body d-block p-3 w-100 position-absolute bottom-0 text-center">
@@ -29,6 +30,7 @@
                         <span class="d-block font-xsssss text-white opacity-75">{{ $event->date?->format('M j') }}</span>
                     </div>
                 </div>
+                </a>
             </div>
         @empty
             <div class="item">

@@ -37,6 +37,7 @@ class PostComments extends Component
             $postService->addComment($post, Auth::user(), $this->body);
             $this->body = '';
             $this->dispatch('comment-added');
+            $this->dispatch('notifications-updated');
         } catch (\Throwable $e) {
             session()->flash('error', $e->getMessage());
         }

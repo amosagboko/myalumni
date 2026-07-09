@@ -16,6 +16,7 @@ class ConnectionRequests extends Component
     {
         if ($connectionService->acceptRequest(Auth::id(), $senderId)) {
             $this->dispatch('connection-updated');
+            $this->dispatch('notifications-updated');
             session()->flash('success', 'Connection request accepted.');
         } else {
             session()->flash('error', 'Could not accept this request.');

@@ -22,21 +22,14 @@
     <a href="{{ route('friends') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Connections">
         <i class="feather-users font-lg {{ request()->routeIs('friends') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
-    <a href="#" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Official Events — coming soon">
-        <i class="feather-map-pin font-lg bg-greylight btn-round-lg theme-dark-bg text-grey-500"></i>
+    <a href="{{ route('alumni.events') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Official Events">
+        <i class="feather-map-pin font-lg {{ request()->routeIs('alumni.events*') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
     <a href="{{ route('profile.edit') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Profile">
         <i class="feather-user font-lg {{ request()->routeIs('profile.*') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
 
-    <a href="#" class="p-2 text-center ms-auto menu-icon" id="dropdownMenu3" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
-        <span class="dot-count bg-warning"></span>
-        <i class="feather-bell font-xl text-current"></i>
-    </a>
-    <div class="dropdown-menu dropdown-menu-end p-4 rounded-3 border-0 shadow-lg" aria-labelledby="dropdownMenu3">
-        <h4 class="fw-700 font-xss mb-4">Notifications</h4>
-        <p class="font-xssss text-grey-500 mb-0">No new notifications yet.</p>
-    </div>
+    <livewire:social.notification-bell />
 
     <a href="#" class="p-2 text-center ms-3 menu-icon chat-active-btn" title="Chat — Phase 2"><i class="feather-message-square font-xl text-current"></i></a>
 

@@ -4,11 +4,15 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\FriendRequest;
+use App\Services\Social\NotificationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 
 class FriendRequestService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
     /**
      * Search for users to add as friends
      */
@@ -76,6 +80,14 @@ class FriendRequestService
 
             // Create the request
             FriendRequest::createRequest($senderId, $receiverId);
+
+            $sender = User::find($senderId);
+            $receiver = User::find($receiverId);
+
+            if ($sender && $receiver) {
+                $this->notificationService->connectionRequestReceived($receiver, $sender);
+            }
+
             return true;
         } catch (\Exception $e) {
             Log::error('Error sending friend request', [
@@ -116,6 +128,16 @@ class FriendRequestService
                 'success' => $success,
                 'request_id' => $request->id
             ]);
+
+            if ($success) {
+                $sender = User::find($senderId);
+                $receiver = User::find($receiverId);
+
+                if ($sender && $receiver) {
+                    $this->notificationService->connectionRequestAccepted($sender, $receiver);
+                }
+            }
+
             return $success;
         } catch (\Exception $e) {
             Log::error('Error accepting friend request', [

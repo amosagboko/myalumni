@@ -16,6 +16,7 @@
 
     @if($post->isEventShare() && $post->event)
         <div class="card-body p-0 mb-3">
+            <a href="{{ route('alumni.events.show', $post->event) }}" class="text-decoration-none d-block">
             <div class="bg-greylight rounded-xxl p-3">
                 <div class="d-flex align-items-start">
                     @if($post->event->date)
@@ -40,6 +41,7 @@
                     <img src="{{ asset('storage/' . $post->event->image) }}" alt="{{ $post->event->eventname }}" class="img-fluid rounded-xxl mt-3 w-100">
                 @endif
             </div>
+            </a>
         </div>
     @endif
 

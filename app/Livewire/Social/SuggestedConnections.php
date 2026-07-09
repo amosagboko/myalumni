@@ -16,6 +16,7 @@ class SuggestedConnections extends Component
     {
         if ($connectionService->sendRequest(Auth::id(), $userId)) {
             $this->dispatch('connection-updated');
+            $this->dispatch('notifications-updated');
             session()->flash('success', 'Connection request sent.');
         } else {
             session()->flash('error', 'Could not send connection request.');

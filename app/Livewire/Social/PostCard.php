@@ -32,6 +32,7 @@ class PostCard extends Component
 
         try {
             $postService->toggleLike($post, Auth::user());
+            $this->dispatch('notifications-updated');
         } catch (\Throwable $e) {
             session()->flash('error', $e->getMessage());
         }

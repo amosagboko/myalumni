@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Livewire\Social;
+
+use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
+
+class NotificationBell extends Component
+{
+    protected $listeners = [
+        'connection-updated' => '$refresh',
+        'notifications-updated' => '$refresh',
+    ];
+
+    public function markAsRead(string $notificationId): void
+    {
+        $notification = Auth::user()->notifications()->where('id', $notificationId)->first();
+
+        if ($notification) {
+            $notification->markAsRead();
+        }
+
+        $this->dispatch('notifications-updated');
+    }
+
+    public function markAllRead(): void
+    {
+        Auth::user()->unreadNotifications->markAsRead();
+        $this->dispatch('notifications-updated');
+    }
+
+    public function render()
+    {
+        $user = Auth::user();
+        $notifications = $user->notifications()->limit(10)->get();
+        $unreadCount = $user->unreadNotifications()->count();
+
+        return view('livewire.social.notification-bell', [
+            'notifications' => $notifications,
+            'unreadCount' => $unreadCount,
+        ]);
+    }
+}
