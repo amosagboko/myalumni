@@ -4,8 +4,8 @@
             <i class="feather-zap text-success display1-size me-2 ms-0"></i>
             <span class="d-inline-block fredoka-font ls-3 fw-600 text-current font-xxl logo-text mb-0">{{ config('app.name') }}</span>
         </a>
-        <a href="#" class="mob-menu ms-auto me-2 chat-active-btn" title="Chat — Phase 2"><i class="feather-message-circle text-grey-900 font-sm btn-round-md bg-greylight"></i></a>
-        <a href="#" class="me-2 menu-search-icon mob-menu"><i class="feather-search text-grey-900 font-sm btn-round-md bg-greylight"></i></a>
+        <a href="#" class="mob-menu ms-auto me-2 nav-icon-disabled chat-active-btn" title="Chat (coming soon)" aria-disabled="true"><i class="feather-message-circle text-grey-900 font-sm btn-round-md bg-greylight"></i></a>
+        <a href="#" class="me-2 menu-search-icon mob-menu" title="Search" aria-label="Search"><i class="feather-search text-grey-900 font-sm btn-round-md bg-greylight"></i></a>
         <button class="nav-menu me-0 ms-2" type="button" aria-label="Toggle menu"></button>
     </div>
 
@@ -16,25 +16,25 @@
         </div>
     </form>
 
-    <a href="{{ route('alumni.home') }}" class="p-2 text-center ms-3 menu-icon center-menu-icon" title="Home">
-        <i class="feather-home font-lg {{ request()->routeIs('alumni.home') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
+    <a href="{{ route('alumni.home') }}" class="p-2 text-center ms-3 menu-icon center-menu-icon" title="Newsfeed" aria-label="Newsfeed">
+        <i class="feather-activity font-lg {{ request()->routeIs('alumni.home') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
-    <a href="{{ route('friends') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Connections">
+    <a href="{{ route('friends') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Connections" aria-label="Connections">
         <i class="feather-users font-lg {{ request()->routeIs('friends') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
-    <a href="{{ route('alumni.events') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Official Events">
-        <i class="feather-map-pin font-lg {{ request()->routeIs('alumni.events*') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
+    <a href="{{ route('alumni.events') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Official Events" aria-label="Official Events">
+        <i class="feather-calendar font-lg {{ request()->routeIs('alumni.events*') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
-    <a href="{{ route('profile.edit') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Profile">
+    <a href="{{ route('profile.edit') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="My Profile" aria-label="My Profile">
         <i class="feather-user font-lg {{ request()->routeIs('profile.*') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
 
     <livewire:social.notification-bell />
 
-    <a href="#" class="p-2 text-center ms-3 menu-icon chat-active-btn" title="Chat — Phase 2"><i class="feather-message-square font-xl text-current"></i></a>
+    <a href="#" class="p-2 text-center ms-3 menu-icon nav-icon-disabled chat-active-btn" title="Chat (coming soon)" aria-disabled="true"><i class="feather-message-square font-xl text-grey-400"></i></a>
 
-    <div class="p-2 text-center ms-3 position-relative dropdown-menu-icon menu-icon cursor-pointer">
-        <i class="feather-settings animation-spin d-inline-block font-xl text-current"></i>
+    <div class="p-2 text-center ms-3 position-relative dropdown-menu-icon menu-icon cursor-pointer" title="Theme & display" aria-label="Theme and display options">
+        <i class="feather-sliders d-inline-block font-xl text-current"></i>
         <div class="dropdown-menu-settings switchcolor-wrap">
             <h4 class="fw-700 font-sm mb-4">Settings</h4>
             <h6 class="font-xssss text-grey-500 fw-700 mb-3 d-block">Choose Color Theme</h6>

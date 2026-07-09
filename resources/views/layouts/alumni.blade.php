@@ -63,10 +63,10 @@
         @include('layouts.partials.alumni-right-chat')
 
         <div class="app-footer border-0 shadow-lg bg-primary-gradiant">
-            <a href="{{ route('alumni.home') }}" class="nav-content-bttn nav-center"><i class="feather-home"></i></a>
-            <a href="{{ route('friends') }}" class="nav-content-bttn"><i class="feather-users"></i></a>
-            <a href="{{ route('alumni.events') }}" class="nav-content-bttn"><i class="feather-map-pin"></i></a>
-            <a href="{{ route('profile.edit') }}" class="nav-content-bttn">
+            <a href="{{ route('alumni.home') }}" class="nav-content-bttn nav-center {{ request()->routeIs('alumni.home') ? 'active' : '' }}" title="Newsfeed" aria-label="Newsfeed"><i class="feather-activity"></i></a>
+            <a href="{{ route('friends') }}" class="nav-content-bttn {{ request()->routeIs('friends') ? 'active' : '' }}" title="Connections" aria-label="Connections"><i class="feather-users"></i></a>
+            <a href="{{ route('alumni.events') }}" class="nav-content-bttn {{ request()->routeIs('alumni.events*') ? 'active' : '' }}" title="Official Events" aria-label="Official Events"><i class="feather-calendar"></i></a>
+            <a href="{{ route('profile.edit') }}" class="nav-content-bttn {{ request()->routeIs('profile.*') ? 'active' : '' }}" title="My Profile" aria-label="My Profile">
                 @auth
                     <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" alt="user" class="w30 shadow-xss rounded-circle">
                 @else
@@ -166,6 +166,19 @@
             opacity: 0.6 !important;
             cursor: not-allowed !important;
             text-decoration: none !important;
+        }
+        .nav-icon-disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .app-footer .nav-content-bttn.active i,
+        .app-footer .nav-content-bttn.active img {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .app-footer .nav-content-bttn:not(.active) i {
+            opacity: 0.75;
         }
     </style>
 </body>

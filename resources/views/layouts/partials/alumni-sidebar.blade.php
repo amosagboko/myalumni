@@ -8,7 +8,7 @@
                     <li class="logo d-none d-xl-block d-lg-block"></li>
                     <li>
                         <a href="{{ route('alumni.home') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni.home') ? 'active' : '' }}">
-                            <i class="feather-tv btn-round-md bg-blue-gradiant me-3"></i><span>Newsfeed</span>
+                            <i class="feather-activity btn-round-md bg-blue-gradiant me-3"></i><span>Newsfeed</span>
                         </a>
                     </li>
                     <li>
@@ -18,7 +18,7 @@
                     </li>
                     <li>
                         <a href="{{ route('alumni.events') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni.events*') ? 'active' : '' }}">
-                            <i class="feather-map-pin btn-round-md bg-gold-gradiant me-3"></i><span>Official Events</span>
+                            <i class="feather-calendar btn-round-md bg-gold-gradiant me-3"></i><span>Official Events</span>
                         </a>
                     </li>
                     <li>
@@ -36,7 +36,7 @@
                 <ul class="mb-1 top-content">
                     <li>
                         <a href="{{ route('alumni.payments.history') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni.payments.history') ? 'active' : '' }}">
-                            <i class="feather-file-text btn-round-md bg-red-gradiant me-3"></i><span>Payment History</span>
+                            <i class="feather-credit-card btn-round-md bg-red-gradiant me-3"></i><span>Payment History</span>
                         </a>
                     </li>
                     <li>
@@ -47,7 +47,7 @@
                                tabindex="-1" aria-disabled="true"
                            @endif
                         >
-                            <i class="feather-file-text btn-round-md bg-blue-gradiant me-3"></i><span>Clearance Form</span>
+                            <i class="feather-edit-3 btn-round-md bg-blue-gradiant me-3"></i><span>Clearance Form</span>
                         </a>
                     </li>
                     <li>
@@ -64,7 +64,7 @@
                                tabindex="-1" aria-disabled="true"
                            @endif
                         >
-                            <i class="feather-check-square btn-round-md bg-warning me-3"></i><span>Elections</span>
+                            <i class="feather-flag btn-round-md bg-warning me-3"></i><span>Elections</span>
                         </a>
                     </li>
                     <li>
@@ -87,7 +87,7 @@
                     <li>
                         <a href="{{ route('agent.dashboard') }}"
                            class="nav-content-bttn open-font {{ request()->routeIs('agent.dashboard') ? 'active' : '' }}">
-                            <i class="feather-home btn-round-md bg-blue-gradiant me-3"></i><span>Agent Dashboard</span>
+                            <i class="feather-briefcase btn-round-md bg-blue-gradiant me-3"></i><span>Agent Dashboard</span>
                         </a>
                     </li>
                     @endif
