@@ -56,5 +56,7 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('social.post-composer', \App\Livewire\Social\PostComposer::class);
         Livewire::component('social.post-card', \App\Livewire\Social\PostCard::class);
         Livewire::component('social.post-comments', \App\Livewire\Social\PostComments::class);
+        Livewire::component('social.connection-requests', \App\Livewire\Social\ConnectionRequests::class);
+        Livewire::component('social.suggested-connections', \App\Livewire\Social\SuggestedConnections::class);
     }
 }

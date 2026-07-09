@@ -29,7 +29,9 @@ class FriendRequestManager extends Component
     public $followingCount = 0;
     public $isSearching = false;
 
-    protected $listeners = [];
+    protected $listeners = [
+        'connection-updated' => 'loadUserRequests',
+    ];
 
     protected $rules = [
         'search' => 'nullable|string|min:2|max:50'
@@ -207,7 +209,8 @@ class FriendRequestManager extends Component
             $success = $this->friendRequestService->sendRequest(Auth::id(), $userId);
             if ($success) {
                 $this->loadUserRequests();
-                $this->searchUsers(); // Refresh search results
+                $this->searchUsers();
+                $this->dispatch('connection-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error sending friend request', [
@@ -277,6 +280,7 @@ class FriendRequestManager extends Component
             $success = $this->friendRequestService->acceptRequest(Auth::id(), $senderId);
             if ($success) {
                 $this->loadUserRequests();
+                $this->dispatch('connection-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error accepting friend request', [
@@ -292,6 +296,7 @@ class FriendRequestManager extends Component
             $success = $this->friendRequestService->rejectRequest(Auth::id(), $senderId);
             if ($success) {
                 $this->loadUserRequests();
+                $this->dispatch('connection-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error rejecting friend request', [
@@ -307,7 +312,8 @@ class FriendRequestManager extends Component
             $success = $this->friendRequestService->unfriend(Auth::id(), $userId);
             if ($success) {
                 $this->loadUserRequests();
-                $this->searchUsers(); // Refresh search results
+                $this->searchUsers();
+                $this->dispatch('connection-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error removing friend', [
@@ -364,6 +370,7 @@ class FriendRequestManager extends Component
             
             if ($success) {
                 $this->loadUserRequests();
+                $this->dispatch('connection-updated');
             }
         } catch (\Exception $e) {
             Log::error('Error creating test request', [
