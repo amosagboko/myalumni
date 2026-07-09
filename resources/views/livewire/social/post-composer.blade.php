@@ -28,18 +28,22 @@
             </div>
 
             <div class="card-body d-flex flex-wrap p-0 mt-2 gap-2 align-items-center">
+                @if($supportsVisibility ?? true)
                 <select wire:model="visibility" class="form-select form-select-sm w-auto font-xssss rounded-xl border-0 bg-greylight">
                     @foreach($visibilityOptions as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
                 </select>
+                @endif
 
+                @if($shareableEvents->isNotEmpty())
                 <select wire:model="sharedEventId" class="form-select form-select-sm font-xssss rounded-xl border-0 bg-greylight flex-grow-1">
                     <option value="">Share an official event (optional)</option>
                     @foreach($shareableEvents as $event)
                         <option value="{{ $event->id }}">{{ $event->eventname }} — {{ $event->date?->format('M j, Y') }}</option>
                     @endforeach
                 </select>
+                @endif
             </div>
 
             <div class="card-body d-flex p-0 mt-3 align-items-center">

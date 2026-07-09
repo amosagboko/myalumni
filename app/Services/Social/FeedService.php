@@ -6,12 +6,19 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\FriendRequest;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class FeedService
 {
     public const VISIBILITY_CONNECTIONS = 'connections';
     public const VISIBILITY_ALL_ALUMNI = 'all_alumni';
+
+    public function supportsVisibility(): bool
+    {
+        return Schema::hasColumn('posts', 'visibility');
+    }
 
     public function getConnectionUserIds(User $user): Collection
     {
@@ -27,8 +34,16 @@ class FeedService
                 : $request->sender_id);
     }
 
-    public function feedQuery(User $user)
+    public function feedQuery(User $user): Builder
     {
+        if (!$this->supportsVisibility()) {
+            return Post::visibleTo($user)
+                ->where('status', 'published')
+                ->with($this->baseRelations())
+                ->withCount('comments')
+                ->latest();
+        }
+
         $connectionIds = $this->getConnectionUserIds($user);
 
         return Post::query()
@@ -47,15 +62,25 @@ class FeedService
                             ->whereIn('user_id', $connectionIds);
                     });
             })
-            ->with([
-                'user',
-                'media',
-                'event',
-                'likes',
-                'comments' => fn ($q) => $q->latest()->with('user'),
-            ])
+            ->with($this->baseRelations())
             ->withCount('comments')
             ->latest();
+    }
+
+    protected function baseRelations(): array
+    {
+        $relations = [
+            'user',
+            'media',
+            'likes',
+            'comments' => fn ($q) => $q->latest()->with('user'),
+        ];
+
+        if (Schema::hasColumn('posts', 'event_id')) {
+            $relations[] = 'event';
+        }
+
+        return $relations;
     }
 
     public function paginateFeed(User $user, int $perPage = 10): LengthAwarePaginator
@@ -69,11 +94,17 @@ class FeedService
             return true;
         }
 
-        if ($post->visibility === self::VISIBILITY_ALL_ALUMNI) {
+        if (!$this->supportsVisibility()) {
+            return $post->canBeViewedBy($user);
+        }
+
+        $visibility = $post->visibility ?? self::VISIBILITY_CONNECTIONS;
+
+        if ($visibility === self::VISIBILITY_ALL_ALUMNI) {
             return $user->hasRole('alumni') || (bool) $user->alumni;
         }
 
-        if ($post->visibility === self::VISIBILITY_CONNECTIONS) {
+        if ($visibility === self::VISIBILITY_CONNECTIONS) {
             return $this->getConnectionUserIds($user)->contains($post->user_id);
         }
 

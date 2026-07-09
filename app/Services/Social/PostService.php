@@ -9,6 +9,7 @@ use App\Models\Like;
 use App\Models\PostMedia;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 
@@ -31,16 +32,24 @@ class PostService
                 Event::published()->findOrFail($eventId);
             }
 
-            $post = Post::create([
+            $attributes = [
                 'uuid' => (string) Str::uuid(),
                 'user_id' => $user->id,
                 'content' => $content,
                 'status' => 'published',
-                'visibility' => $visibility,
-                'event_id' => $eventId,
                 'likes' => 0,
                 'comments' => 0,
-            ]);
+            ];
+
+            if ($this->feedService->supportsVisibility()) {
+                $attributes['visibility'] = $visibility;
+            }
+
+            if ($eventId && Schema::hasColumn('posts', 'event_id')) {
+                $attributes['event_id'] = $eventId;
+            }
+
+            $post = Post::create($attributes);
 
             foreach ($images as $image) {
                 $this->storeMedia($post, $image, 'image');
@@ -50,7 +59,12 @@ class PostService
                 $this->storeMedia($post, $video, 'video');
             }
 
-            return $post->load(['user', 'media', 'event']);
+            $relations = ['user', 'media'];
+            if (Schema::hasColumn('posts', 'event_id')) {
+                $relations[] = 'event';
+            }
+
+            return $post->load($relations);
         });
     }
 

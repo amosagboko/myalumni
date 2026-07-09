@@ -1,6 +1,11 @@
 @php
     use App\Models\Event;
-    $upcomingEvents = Event::published()->ordered()->where('date', '>=', now()->toDateString())->limit(5)->get();
+    $upcomingEvents = collect();
+    try {
+        $upcomingEvents = Event::published()->ordered()->where('date', '>=', now()->toDateString())->limit(5)->get();
+    } catch (\Throwable $e) {
+        report($e);
+    }
 @endphp
 
 <div class="card w-100 shadow-none bg-transparent bg-transparent-card border-0 p-0 mb-0">

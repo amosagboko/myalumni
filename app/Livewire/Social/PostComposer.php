@@ -74,15 +74,22 @@ class PostComposer extends Component
 
     public function render(FeedService $feedService)
     {
-        $shareableEvents = Event::published()
-            ->ordered()
-            ->where('date', '>=', now()->toDateString())
-            ->limit(20)
-            ->get();
+        $shareableEvents = collect();
+
+        try {
+            $shareableEvents = Event::published()
+                ->ordered()
+                ->where('date', '>=', now()->toDateString())
+                ->limit(20)
+                ->get();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return view('livewire.social.post-composer', [
             'visibilityOptions' => $feedService->visibilityOptions(),
             'shareableEvents' => $shareableEvents,
+            'supportsVisibility' => $feedService->supportsVisibility(),
         ]);
     }
 }

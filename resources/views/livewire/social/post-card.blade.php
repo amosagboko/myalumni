@@ -6,9 +6,9 @@
         <h4 class="fw-700 text-grey-900 font-xssss mt-1">
             {{ $post->user->name }}
             <span class="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">{{ $post->created_at->diffForHumans() }}</span>
-            @if($post->visibility === 'all_alumni')
+            @if(isset($post->visibility) && $post->visibility === 'all_alumni')
                 <span class="badge bg-primary font-xsssss mt-1">All Alumni</span>
-            @else
+            @elseif(isset($post->visibility))
                 <span class="badge bg-secondary font-xsssss mt-1">Connections</span>
             @endif
         </h4>

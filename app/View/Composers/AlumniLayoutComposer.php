@@ -17,9 +17,18 @@ class AlumniLayoutComposer
             || !$alumni->phone_number
             || !$alumni->qualification_type;
 
-        $activeFees = $alumni ? $alumni->getActiveFees() : collect();
-        $unpaidFees = $activeFees->filter(fn ($fee) => !$fee->isPaid());
-        $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
+        $needsPayments = false;
+
+        if ($alumni) {
+            try {
+                $activeFees = $alumni->getActiveFees();
+                $unpaidFees = $activeFees->filter(fn ($fee) => !$fee->isPaid());
+                $needsPayments = $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
+            } catch (\Throwable $e) {
+                report($e);
+                $needsPayments = false;
+            }
+        }
 
         $clearanceDisabled = $needsBioData || $needsPayments;
         $electionLinksDisabled = $needsBioData || $needsPayments;

@@ -9,10 +9,16 @@
         ->limit(3)
         ->get();
 
-    $upcomingEvents = Event::published()->ordered()->where('date', '>=', now()->toDateString())->limit(3)->get();
+    $upcomingEvents = collect();
+
+    try {
+        $upcomingEvents = Event::published()->ordered()->where('date', '>=', now()->toDateString())->limit(3)->get();
+    } catch (\Throwable $e) {
+        report($e);
+    }
 
     $alumni = Auth::user()->alumni;
-    $yearOfGraduation = $alumni->year_of_graduation ?? null;
+    $yearOfGraduation = $alumni?->year_of_graduation;
     $requiresClearance = $yearOfGraduation && $yearOfGraduation >= 2025;
 @endphp
 
@@ -24,7 +30,7 @@
             <div class="d-flex flex-wrap gap-2">
                 <span class="badge {{ $alumniNeedsBioData ? 'bg-danger' : 'bg-success' }} font-xssss">Onboarding: {{ $alumniNeedsBioData ? 'Pending' : 'Done' }}</span>
                 <span class="badge {{ $alumniNeedsPayments ? 'bg-danger' : 'bg-success' }} font-xssss">Payments: {{ $alumniNeedsPayments ? 'Pending' : 'Done' }}</span>
-                @if($requiresClearance)
+                @if($requiresClearance && $alumni)
                     @php
                         $studentCleared = (bool) ($alumni->student_affairs_cleared ?? false);
                         $academicCleared = (bool) ($alumni->academic_affairs_cleared ?? false);

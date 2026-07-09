@@ -85,7 +85,8 @@ class Post extends Model
 
     public function isEventShare(): bool
     {
-        return $this->event_id !== null;
+        return \Illuminate\Support\Facades\Schema::hasColumn('posts', 'event_id')
+            && $this->event_id !== null;
     }
 
     /**

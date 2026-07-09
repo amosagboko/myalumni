@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Services\Social\FeedService;
 use App\Services\Social\PostService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
 class PostCard extends Component
@@ -43,9 +44,13 @@ class PostCard extends Component
 
     public function render(FeedService $feedService, PostService $postService)
     {
-        $post = Post::with(['user', 'media', 'event'])
-            ->withCount('comments')
-            ->findOrFail($this->postId);
+        $query = Post::with(['user', 'media'])->withCount('comments');
+
+        if (Schema::hasColumn('posts', 'event_id')) {
+            $query->with('event');
+        }
+
+        $post = $query->findOrFail($this->postId);
 
         if (!$feedService->canViewPost($post, Auth::user())) {
             return view('livewire.social.post-card-hidden');
