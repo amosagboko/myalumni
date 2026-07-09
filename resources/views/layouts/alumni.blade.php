@@ -6,8 +6,8 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>{{ $title ?? 'FuLafia | Alumni' }}</title>
 
-    <link rel="stylesheet" href="/css/themify-icons.css">
-    <link rel="stylesheet" href="/css/feather.css">
+    <link rel="stylesheet" href="{{ asset('css/themify-icons.css') }}?v=2">
+    <link rel="stylesheet" href="{{ asset('css/feather.css') }}?v=2">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/emoji.css">

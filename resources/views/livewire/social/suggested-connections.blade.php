@@ -28,8 +28,10 @@
                     wire:click="connect({{ $user->id }})"
                     wire:loading.attr="disabled"
                     wire:target="connect({{ $user->id }})"
-                    class="btn-round-sm bg-white text-grey-900 feather-plus font-xss ms-auto mt-2 border-0"
-                    title="Send connection request"></button>
+                    class="btn-round-sm bg-white text-grey-900 ms-auto mt-2 border-0 d-flex align-items-center justify-content-center"
+                    title="Send connection request">
+                <i class="feather-user-plus font-xss"></i>
+            </button>
         </div>
     @empty
         <div class="card-body pt-0 ps-4 pe-4 pb-4">
