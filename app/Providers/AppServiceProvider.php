@@ -5,8 +5,10 @@ namespace App\Providers;
 use App\Models\Election;
 use App\Policies\ElectionPolicy;
 use App\Policies\CandidatePolicy;
+use App\View\Composers\AlumniLayoutComposer;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -27,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        View::composer([
+            'layouts.alumni',
+            'layouts.partials.alumni-sidebar',
+            'layouts.partials.alumni-top-nav',
+            'alumni.partials.feed-right-sidebar',
+        ], AlumniLayoutComposer::class);
+
         Gate::policy(Election::class, ElectionPolicy::class);
         Gate::policy(\App\Models\Candidate::class, CandidatePolicy::class);
 
@@ -42,5 +51,10 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('student-affairs.audit', \App\Livewire\StudentAffairs\Audit::class);
         Livewire::component('academic-affairs.dashboard', \App\Livewire\AcademicAffairs\Dashboard::class);
         Livewire::component('academic-affairs.audit', \App\Livewire\AcademicAffairs\Audit::class);
+
+        Livewire::component('social.feed', \App\Livewire\Social\Feed::class);
+        Livewire::component('social.post-composer', \App\Livewire\Social\PostComposer::class);
+        Livewire::component('social.post-card', \App\Livewire\Social\PostCard::class);
+        Livewire::component('social.post-comments', \App\Livewire\Social\PostComments::class);
     }
 }

@@ -1,5 +1,5 @@
 
-<div wire:poll.2s class="card w-100 shadow-xss rounded-xxl border-0 p-4 mb-3">
+<div wire:poll.2s>
     @foreach ($posts as $data )
     <div class="card w-100 shadow-xss rounded-xxl border-0 p-4 mb-3">
     <div class="card-body p-0 d-flex">

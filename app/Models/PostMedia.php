@@ -30,6 +30,33 @@ class PostMedia extends Model
      */
     public function media(): BelongsTo
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(Post::class, 'post_id');
+    }
+
+    public function post(): BelongsTo
+    {
+        return $this->belongsTo(Post::class, 'post_id');
+    }
+
+    public function getMediaPath(): ?string
+    {
+        $data = $this->file;
+
+        if (is_string($data)) {
+            $data = json_decode($data, true);
+        }
+
+        return $data['media_path'] ?? null;
+    }
+
+    public function getMediaType(): ?string
+    {
+        $data = $this->file;
+
+        if (is_string($data)) {
+            $data = json_decode($data, true);
+        }
+
+        return $data['media_type'] ?? $this->filetype;
     }
 }

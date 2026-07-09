@@ -2,93 +2,62 @@
 
 namespace App\Livewire;
 
-use DateTime;
-use App\Models\Like;
-use App\Models\Post;
-use App\Models\User;
-use Livewire\Component;
-use App\Models\PostMedia;
-use Illuminate\Support\Facades\DB;
+use App\Services\Social\FeedService;
+use App\Services\Social\PostService;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
 
+/**
+ * @deprecated Use App\Livewire\Social\Feed on alumni social pages.
+ */
 class Returnpost extends Component
 {
     public $newComment = '';
 
-    public function like($postId) {
-        $userId = Auth::id();
-    
-        DB::beginTransaction();
-        try {
-            // Get the post
-            $post = Post::findOrFail($postId);
+    protected $listeners = ['post-created' => '$refresh'];
 
-            // Check if user can like this post
-            if (!$post->canBeViewedBy(Auth::user())) {
-                toastr()->error('You cannot like this post.');
-                return;
-            }
-
-            // Attempt to find an existing like record
-            $like = Like::where(['post_id' => $postId, 'user_id' => $userId])->first();
-    
-            if ($like) {
-                // If the like exists, delete it and decrement the likes count
-                $like->delete();
-                $post->decrement('likes');
-            } else {
-                // If the like does not exist, create it and increment the likes count
-                Like::create(['post_id' => $postId, 'user_id' => $userId]);
-                $post->increment('likes');
-            }
-    
-            DB::commit();
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
-        }
-    }
-
-    public function addComment($postId)
+    public function like($postId, PostService $postService, FeedService $feedService): void
     {
-        $this->validate([
-            'newComment' => 'required|min:1|max:1000'
-        ]);
+        $post = \App\Models\Post::findOrFail($postId);
 
-        $post = Post::findOrFail($postId);
-
-        // Check if user can comment on this post
-        if (!$post->canBeViewedBy(Auth::user())) {
-            toastr()->error('You cannot comment on this post.');
+        if (!$feedService->canViewPost($post, Auth::user())) {
+            session()->flash('error', 'You cannot like this post.');
             return;
         }
 
-        $post->comments()->create([
-            'user_id' => Auth::id(),
-            'comment' => $this->newComment
-        ]);
-
-        $this->newComment = '';
-        toastr()->success('Comment added successfully.');
+        try {
+            $postService->toggleLike($post, Auth::user());
+        } catch (\Throwable $e) {
+            session()->flash('error', $e->getMessage());
+        }
     }
 
-    public function render()
+    public function addComment($postId, PostService $postService, FeedService $feedService): void
     {
-        $user = Auth::user();
+        $this->validate([
+            'newComment' => 'required|min:1|max:1000',
+        ]);
 
-        // Get posts visible to the current user with all necessary relationships
-        $posts = Post::visibleTo($user)
-            ->with([
-                'media',
-                'user',
-                'likes',
-                'comments.user'
-            ])
-            ->latest()
-            ->get();
-         
+        $post = \App\Models\Post::findOrFail($postId);
+
+        if (!$feedService->canViewPost($post, Auth::user())) {
+            session()->flash('error', 'You cannot comment on this post.');
+            return;
+        }
+
+        try {
+            $postService->addComment($post, Auth::user(), $this->newComment);
+            $this->newComment = '';
+            session()->flash('success', 'Comment added successfully.');
+        } catch (\Throwable $e) {
+            session()->flash('error', $e->getMessage());
+        }
+    }
+
+    public function render(FeedService $feedService)
+    {
         return view('livewire.returnpost', [
-            'posts' => $posts
+            'posts' => $feedService->feedQuery(Auth::user())->get(),
         ]);
     }
 }

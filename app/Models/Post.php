@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Like;
 use App\Models\User;
+use App\Models\Event;
 use App\Models\Comment;
 use App\Models\PostMedia;
 use Illuminate\Database\Eloquent\Model;
@@ -26,8 +27,13 @@ class Post extends Model
         'user_id',
         'content',
         'status',
+        'visibility',
+        'event_id',
         'likes'
     ];
+
+    public const VISIBILITY_CONNECTIONS = 'connections';
+    public const VISIBILITY_ALL_ALUMNI = 'all_alumni';
 
     /**
      * Get the user that owns the Post
@@ -70,6 +76,16 @@ class Post extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
+    }
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    public function isEventShare(): bool
+    {
+        return $this->event_id !== null;
     }
 
     /**
