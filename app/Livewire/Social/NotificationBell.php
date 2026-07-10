@@ -17,7 +17,7 @@ class NotificationBell extends Component
                 'connection-updated' => '$refresh',
                 'notifications-updated' => '$refresh',
             ],
-            $this->socialNotificationEchoListeners()
+            $this->backgroundNotificationListener()
         );
     }
 

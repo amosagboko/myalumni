@@ -65,7 +65,6 @@ class PostComposer extends Component
             $this->isUploading = false;
 
             $this->dispatch('post-created');
-            session()->flash('success', 'Post created successfully!');
         } catch (\Throwable $e) {
             $this->isUploading = false;
             session()->flash('error', 'Failed to create post: ' . $e->getMessage());

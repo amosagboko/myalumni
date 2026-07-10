@@ -20,9 +20,16 @@ class PostCard extends Component
     public function getListeners(): array
     {
         return array_merge(
-            ['comment-added' => '$refresh'],
-            $this->socialEchoListeners()
+            ['comment-added' => 'onCommentAdded'],
+            $this->backgroundFeedListener()
         );
+    }
+
+    public function onCommentAdded(?int $postId = null): void
+    {
+        if ($postId !== null && (int) $postId !== $this->postId) {
+            return;
+        }
     }
 
     protected function shouldRefreshFromSocialBroadcast(?array $payload): bool

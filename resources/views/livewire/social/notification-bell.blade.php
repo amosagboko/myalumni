@@ -37,7 +37,7 @@
                      class="w40 position-absolute left-0 rounded-circle">
                 <h5 class="font-xsss text-grey-900 mb-1 mt-0 fw-700 d-block">
                     {{ $data['actor_name'] ?? 'Alumni' }}
-                    <span class="text-grey-400 font-xsssss fw-600 float-end mt-1">{{ $notification->created_at->diffForHumans(short: true) }}</span>
+                    <span class="text-grey-400 font-xsssss fw-600 float-end mt-1">{{ $notification->created_at->diffForHumans() }}</span>
                 </h5>
                 <h6 class="text-grey-500 fw-500 font-xssss lh-4 mb-0">{{ $message }}</h6>
             </a>

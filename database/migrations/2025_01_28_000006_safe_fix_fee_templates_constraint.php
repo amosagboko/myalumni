@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('fee_templates') || ! Schema::hasColumn('fee_templates', 'category_id')) {
+            return;
+        }
+
         // First, let's check if there are any foreign key constraints that might be using the unique constraint
         // We'll disable foreign key checks temporarily to safely modify the constraint
         

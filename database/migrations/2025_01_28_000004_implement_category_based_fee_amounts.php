@@ -9,19 +9,29 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('fee_types') || ! Schema::hasTable('fee_templates') || ! Schema::hasTable('alumni_categories')) {
+            return;
+        }
+
         // Get fee types
         $registrationFeeType = DB::table('fee_types')->where('code', 'registration')->first();
         $developmentLevyType = DB::table('fee_types')->where('code', 'development_levy')->first();
         $dataProcessingType = DB::table('fee_types')->where('code', 'data_processing')->first();
         $techSupportType = DB::table('fee_types')->where('code', 'tech_support')->first();
 
-        // Get categories
+        if (! $registrationFeeType || ! $developmentLevyType || ! $dataProcessingType || ! $techSupportType) {
+            return;
+        }
+
         $postgraduateCategory = DB::table('alumni_categories')->where('slug', 'postgraduate')->first();
         $undergraduateFullTimeCategory = DB::table('alumni_categories')->where('slug', 'undergraduate-full-time')->first();
         $undergraduatePartTimeCategory = DB::table('alumni_categories')->where('slug', 'undergraduate-part-time')->first();
         $diplomaCategory = DB::table('alumni_categories')->where('slug', 'diploma')->first();
 
-        // Clear existing 2025 templates
+        if (! $postgraduateCategory || ! $undergraduateFullTimeCategory || ! $undergraduatePartTimeCategory || ! $diplomaCategory) {
+            return;
+        }
+
         DB::table('fee_templates')
             ->where('graduation_year', 2025)
             ->whereIn('fee_type_id', [$registrationFeeType->id, $developmentLevyType->id, $dataProcessingType->id, $techSupportType->id])

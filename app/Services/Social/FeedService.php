@@ -73,7 +73,6 @@ class FeedService
             'user',
             'media',
             'likes',
-            'comments' => fn ($q) => $q->latest()->with('user'),
         ];
 
         if (Schema::hasColumn('posts', 'event_id')) {
@@ -83,9 +82,11 @@ class FeedService
         return $relations;
     }
 
-    public function paginateFeed(User $user, int $perPage = 10): LengthAwarePaginator
+    public function paginateFeed(User $user, ?int $perPage = null): LengthAwarePaginator
     {
-        return $this->feedQuery($user)->paginate($perPage);
+        $perPage = $perPage ?? config('social.feed_per_page', 15);
+
+        return $this->feedQuery($user)->paginate(max(1, $perPage));
     }
 
     public function canViewPost(Post $post, User $user): bool

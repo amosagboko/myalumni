@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    @livewireStyles
+    <link rel="stylesheet" href="/css/alumni-social.css">
     @stack('styles')
 </head>
 
@@ -93,6 +93,7 @@
     <script src="/js/lightbox.js"></script>
     <script src="/js/scripts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    @include('layouts.partials.alumni-echo')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (typeof feather !== 'undefined') {
@@ -142,24 +143,7 @@
                 });
             }
         });
-
-        document.addEventListener('livewire:navigated', function () {
-            if (typeof feather !== 'undefined') {
-                feather.replace();
-            }
-            if (typeof $ !== 'undefined' && $.fn.owlCarousel) {
-                $('.category-card').owlCarousel({
-                    loop: false,
-                    margin: 10,
-                    nav: false,
-                    dots: false,
-                    autoWidth: true
-                });
-            }
-        });
     </script>
-    @include('layouts.partials.alumni-echo')
-    @livewireScripts
     @stack('scripts')
     <style>
         .disabled-link {

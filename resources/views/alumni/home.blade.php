@@ -17,6 +17,7 @@
 </div>
 
 @include('alumni.partials.onboarding-modal')
+@endsection
 
 @push('scripts')
 <script>
@@ -29,7 +30,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('post');
+    if (postId) {
+        const scrollToPost = function() {
+            const el = document.getElementById('post-' + postId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('post-highlight');
+                setTimeout(function() { el.classList.remove('post-highlight'); }, 4000);
+            }
+        };
+        setTimeout(scrollToPost, 600);
+        document.addEventListener('livewire:navigated', scrollToPost);
+    }
 });
 </script>
 @endpush
-@endsection

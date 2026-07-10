@@ -14,27 +14,30 @@
 
             @if($supportsReplies && $depth === 0)
                 <button type="button"
-                        wire:click="startReply({{ $comment->id }})"
+                        wire:click.prevent="startReply({{ $comment->id }})"
                         class="btn btn-link font-xsssss fw-600 text-primary p-0 mt-1 border-0 text-decoration-none">
                     Reply
                 </button>
             @endif
 
             @if($replyingToId === $comment->id)
-                <form wire:submit.prevent="addReply" class="d-flex align-items-center mt-2 gap-2">
+                <div class="d-flex align-items-center mt-2 gap-2">
                     <input type="text"
                            wire:model="replyBody"
+                           wire:keydown.enter.prevent="addReply"
                            class="form-control rounded-xxl bg-white border-0 ps-3 font-xssss text-grey-900 fw-500 p-2 social-comment-input"
                            placeholder="Write a reply...">
-                    <button type="submit" class="btn-round-sm bg-current text-white font-xssss border-0">
+                    <button type="button"
+                            wire:click.prevent="addReply"
+                            class="btn-round-sm bg-current text-white font-xssss border-0">
                         <i class="feather-send font-xss"></i>
                     </button>
                     <button type="button"
-                            wire:click="cancelReply"
+                            wire:click.prevent="cancelReply"
                             class="btn btn-link font-xsssss text-grey-500 p-0 border-0">
                         Cancel
                     </button>
-                </form>
+                </div>
                 @error('replyBody') <p class="text-danger font-xssss mt-1 mb-0">{{ $message }}</p> @enderror
             @endif
         </div>

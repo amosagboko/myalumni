@@ -3,56 +3,73 @@
 namespace App\Console\Commands;
 
 use App\Models\Post;
-use App\Models\Comment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class CleanupOldContent extends Command
 {
-    protected $signature = 'content:cleanup';
-    protected $description = 'Remove posts and comments older than 30 days';
+    protected $signature = 'content:cleanup {--dry-run : Report what would be deleted without deleting}';
 
-    public function handle()
+    protected $description = 'Remove published posts older than the configured retention period';
+
+    public function handle(): int
     {
-        $this->info('Starting content cleanup...');
-        
+        $retentionDays = config('social.content_retention_days', 0);
+
+        if ($retentionDays <= 0) {
+            $this->info('Social content retention is disabled (SOCIAL_CONTENT_RETENTION_DAYS=0). Skipping cleanup.');
+
+            return self::SUCCESS;
+        }
+
+        $dryRun = (bool) $this->option('dry-run');
+
+        $this->info($dryRun
+            ? "Dry run: checking posts older than {$retentionDays} days..."
+            : "Starting content cleanup (retention: {$retentionDays} days)...");
+
         try {
-            // Count old posts before deletion
-            $oldPostsCount = Post::olderThan(30)->count();
-            $this->info("Found {$oldPostsCount} posts older than 30 days");
-            
-            // Delete old posts
-            $deletedPosts = Post::olderThan(30)->delete();
-            $this->info("Deleted {$deletedPosts} old posts");
-            
-            // Count old comments before deletion
-            $oldCommentsCount = Comment::olderThan(30)->count();
-            $this->info("Found {$oldCommentsCount} comments older than 30 days");
-            
-            // Delete old comments
-            $deletedComments = Comment::olderThan(30)->delete();
-            $this->info("Deleted {$deletedComments} old comments");
-            
-            // Log the cleanup activity
-            \Illuminate\Support\Facades\Log::info('Content cleanup completed', [
+            $query = Post::query()
+                ->where('status', 'published')
+                ->olderThan($retentionDays);
+
+            $oldPostsCount = $query->count();
+            $this->info("Found {$oldPostsCount} published posts older than {$retentionDays} days");
+
+            if ($oldPostsCount === 0) {
+                $this->info('Nothing to clean up.');
+
+                return self::SUCCESS;
+            }
+
+            if ($dryRun) {
+                $this->warn("Dry run complete — {$oldPostsCount} posts (and their comments via cascade) would be deleted.");
+
+                return self::SUCCESS;
+            }
+
+            $deletedPosts = $query->delete();
+
+            Log::info('Content cleanup completed', [
                 'posts_deleted' => $deletedPosts,
-                'comments_deleted' => $deletedComments,
-                'executed_at' => now()->format('Y-m-d H:i:s')
+                'retention_days' => $retentionDays,
+                'executed_at' => now()->toDateTimeString(),
             ]);
-            
-            $this->info('Content cleanup completed successfully');
-            
-        } catch (\Exception $e) {
-            $errorMessage = "Error during content cleanup: " . $e->getMessage();
-            $this->error($errorMessage);
-            
-            // Log the error
-            \Illuminate\Support\Facades\Log::error('Content cleanup failed', [
+
+            $this->info("Deleted {$deletedPosts} old posts (comments removed via cascade).");
+            $this->info('Content cleanup completed successfully.');
+
+            return self::SUCCESS;
+        } catch (\Throwable $e) {
+            $this->error('Error during content cleanup: '.$e->getMessage());
+
+            Log::error('Content cleanup failed', [
                 'error' => $e->getMessage(),
-                'executed_at' => now()->format('Y-m-d H:i:s')
+                'retention_days' => $retentionDays,
+                'executed_at' => now()->toDateTimeString(),
             ]);
-            
-            return 1;
+
+            return self::FAILURE;
         }
     }
-} 
+}

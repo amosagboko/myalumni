@@ -29,7 +29,7 @@ class PostService
         array $videos = [],
         ?int $eventId = null
     ): Post {
-        return DB::transaction(function () use ($user, $content, $visibility, $images, $videos, $eventId) {
+        $post = DB::transaction(function () use ($user, $content, $visibility, $images, $videos, $eventId) {
             if ($eventId) {
                 Event::published()->findOrFail($eventId);
             }
@@ -66,11 +66,12 @@ class PostService
                 $relations[] = 'event';
             }
 
-            $post = $post->load($relations);
-            $this->broadcastService->feedUpdated('post.created', $post->id);
-
-            return $post;
+            return $post->load($relations);
         });
+
+        $this->broadcastService->feedUpdated('post.created', $post->id, $user->id);
+
+        return $post;
     }
 
     protected function storeMedia(Post $post, UploadedFile $file, string $type): void
@@ -94,7 +95,9 @@ class PostService
             throw new \RuntimeException('You cannot interact with this post.');
         }
 
-        DB::transaction(function () use ($post, $user) {
+        $liked = false;
+
+        DB::transaction(function () use ($post, $user, &$liked) {
             $like = Like::where('post_id', $post->id)->where('user_id', $user->id)->first();
 
             if ($like) {
@@ -103,15 +106,18 @@ class PostService
             } else {
                 Like::create(['post_id' => $post->id, 'user_id' => $user->id]);
                 $post->increment('likes');
-
-                $post->loadMissing('user');
-                if ($post->user) {
-                    $this->notificationService->postLiked($post->user, $user, $post);
-                }
+                $liked = true;
             }
         });
 
-        $this->broadcastService->feedUpdated('post.liked', $post->id);
+        if ($liked) {
+            $post->loadMissing('user');
+            if ($post->user && $post->user->id !== $user->id) {
+                $this->notificationService->postLiked($post->user, $user, $post);
+            }
+        }
+
+        $this->broadcastService->feedUpdated('post.liked', $post->id, $user->id);
     }
 
     public function addComment(Post $post, User $user, string $comment, ?int $parentId = null): Comment
@@ -129,6 +135,10 @@ class PostService
             $parent = Comment::query()
                 ->where('post_id', $post->id)
                 ->findOrFail($parentId);
+
+            if ($parent->isReply()) {
+                throw new \RuntimeException('You can only reply to top-level comments.');
+            }
         }
 
         $attributes = [
@@ -157,7 +167,7 @@ class PostService
             }
         }
 
-        $this->broadcastService->feedUpdated('comment.added', $post->id);
+        $this->broadcastService->feedUpdated('comment.added', $post->id, $user->id);
 
         return $commentModel->load('user');
     }

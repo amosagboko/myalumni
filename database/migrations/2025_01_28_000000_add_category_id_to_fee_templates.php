@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('fee_templates') || ! Schema::hasTable('alumni_categories')) {
+            return;
+        }
+
         Schema::table('fee_templates', function (Blueprint $table) {
             // Add category_id column if it doesn't exist
             if (!Schema::hasColumn('fee_templates', 'category_id')) {

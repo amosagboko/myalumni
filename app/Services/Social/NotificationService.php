@@ -12,6 +12,11 @@ class NotificationService
         protected SocialBroadcastService $broadcastService
     ) {}
 
+    protected function postUrl(Post $post): string
+    {
+        return route('alumni.home', ['post' => $post->id]);
+    }
+
     public function connectionRequestReceived(User $receiver, User $sender): void
     {
         if ($receiver->id === $sender->id) {
@@ -54,9 +59,10 @@ class NotificationService
 
         $postOwner->notify(new ActivityNotification(
             message: "{$liker->name} liked your post",
-            url: route('alumni.home'),
+            url: $this->postUrl($post),
             actorName: $liker->name,
             actorAvatar: $liker->avatar,
+            postId: $post->id,
         ));
 
         $this->broadcastService->notificationCreated($postOwner->id);
@@ -70,9 +76,10 @@ class NotificationService
 
         $postOwner->notify(new ActivityNotification(
             message: "{$commenter->name} commented on your post",
-            url: route('alumni.home'),
+            url: $this->postUrl($post),
             actorName: $commenter->name,
             actorAvatar: $commenter->avatar,
+            postId: $post->id,
         ));
 
         $this->broadcastService->notificationCreated($postOwner->id);
@@ -86,9 +93,10 @@ class NotificationService
 
         $parentAuthor->notify(new ActivityNotification(
             message: "{$replier->name} replied to your comment",
-            url: route('alumni.home'),
+            url: $this->postUrl($post),
             actorName: $replier->name,
             actorAvatar: $replier->avatar,
+            postId: $post->id,
         ));
 
         $this->broadcastService->notificationCreated($parentAuthor->id);

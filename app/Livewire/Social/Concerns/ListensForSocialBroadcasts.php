@@ -6,40 +6,52 @@ use Illuminate\Support\Facades\Auth;
 
 trait ListensForSocialBroadcasts
 {
-    public int $broadcastTick = 0;
-
     protected function broadcastingEnabled(): bool
     {
-        return config('broadcasting.default') === 'reverb';
+        return config('broadcasting.default') === 'reverb'
+            && config('social.realtime_enabled', false);
     }
 
-    protected function socialEchoListeners(): array
+    protected function backgroundFeedListener(): array
     {
         if (! $this->broadcastingEnabled()) {
             return [];
         }
 
         return [
-            'echo:alumni.social,feed.updated' => 'onSocialFeedUpdated',
+            'background-feed-sync' => 'onBackgroundFeedSync',
         ];
     }
 
-    protected function socialNotificationEchoListeners(): array
+    protected function backgroundNotificationListener(): array
     {
         if (! $this->broadcastingEnabled() || ! Auth::check()) {
             return [];
         }
 
         return [
-            'echo-private:App.Models.User.'.Auth::id().',notification.created' => '$refresh',
+            'background-notification-sync' => '$refresh',
         ];
     }
 
-    public function onSocialFeedUpdated(?array $payload = null): void
+    public function onBackgroundFeedSync(?array $payload = null): void
     {
-        if ($this->shouldRefreshFromSocialBroadcast($payload)) {
-            $this->broadcastTick++;
+        if (! $this->shouldRefreshFromSocialBroadcast($payload)) {
+            return;
         }
+
+        if ($this->isOwnBroadcastAction($payload)) {
+            return;
+        }
+    }
+
+    protected function isOwnBroadcastAction(?array $payload): bool
+    {
+        if (! is_array($payload) || ! isset($payload['actorUserId'])) {
+            return false;
+        }
+
+        return (int) $payload['actorUserId'] === Auth::id();
     }
 
     protected function shouldRefreshFromSocialBroadcast(?array $payload): bool

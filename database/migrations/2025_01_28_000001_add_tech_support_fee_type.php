@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('fee_types') || DB::table('fee_types')->where('code', 'tech_support')->exists()) {
+            return;
+        }
+
         // Add Tech Support Fee type
         DB::table('fee_types')->insert([
             'code' => 'tech_support',

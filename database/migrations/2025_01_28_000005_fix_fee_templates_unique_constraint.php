@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('fee_templates') || ! Schema::hasColumn('fee_templates', 'category_id')) {
+            return;
+        }
+
         Schema::table('fee_templates', function (Blueprint $table) {
             // Drop the old unique constraint
             $table->dropUnique('unique_fee_type_year_valid_from');

@@ -9,10 +9,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('fee_templates', function (Blueprint $table) {
-            $table->string('fee_purpose', 32)->nullable()->after('fee_type_id');
-            $table->index('fee_purpose');
-        });
+        if (! Schema::hasTable('fee_templates')) {
+            return;
+        }
+
+        if (! Schema::hasColumn('fee_templates', 'fee_purpose')) {
+            Schema::table('fee_templates', function (Blueprint $table) {
+                $table->string('fee_purpose', 32)->nullable()->after('fee_type_id');
+                $table->index('fee_purpose');
+            });
+        }
 
         $now = now();
 

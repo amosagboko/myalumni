@@ -17,7 +17,7 @@ class SuggestedConnections extends Component
             [
                 'connection-updated' => '$refresh',
             ],
-            $this->socialEchoListeners()
+            $this->backgroundFeedListener()
         );
     }
 

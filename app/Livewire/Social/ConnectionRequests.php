@@ -17,7 +17,7 @@ class ConnectionRequests extends Component
             [
                 'connection-updated' => '$refresh',
             ],
-            $this->socialEchoListeners()
+            $this->backgroundFeedListener()
         );
     }
 

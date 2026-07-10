@@ -30,10 +30,7 @@ class PostComments extends Component
 
     public function getListeners(): array
     {
-        return array_merge(
-            ['comment-added' => '$refresh'],
-            $this->socialEchoListeners()
-        );
+        return $this->backgroundFeedListener();
     }
 
     protected function shouldRefreshFromSocialBroadcast(?array $payload): bool
@@ -94,7 +91,7 @@ class PostComments extends Component
 
         try {
             $postService->addComment($post, Auth::user(), $text, $parentId);
-            $this->dispatch('comment-added');
+            $this->dispatch('comment-added', postId: $this->postId);
             $this->dispatch('notifications-updated');
         } catch (\Throwable $e) {
             session()->flash('error', $e->getMessage());

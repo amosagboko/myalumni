@@ -12,14 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('fee_types') || ! Schema::hasTable('fee_templates')) {
+            return;
+        }
+
         // Get the fee types
         $registrationFeeType = DB::table('fee_types')->where('code', 'registration')->first();
         $developmentLevyType = DB::table('fee_types')->where('code', 'development_levy')->first();
         $dataProcessingType = DB::table('fee_types')->where('code', 'data_processing')->first();
         $techSupportType = DB::table('fee_types')->where('code', 'tech_support')->first();
 
-        if (!$registrationFeeType || !$developmentLevyType || !$dataProcessingType || !$techSupportType) {
-            throw new \Exception('Required fee types not found. Please ensure all fee types exist before running this migration.');
+        if (! $registrationFeeType || ! $developmentLevyType || ! $dataProcessingType || ! $techSupportType) {
+            return;
         }
 
         // Clear existing 2025 fee templates for these fee types

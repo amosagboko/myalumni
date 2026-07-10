@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class Event extends Model
 {
@@ -28,12 +29,22 @@ class Event extends Model
         'is_published' => 'boolean',
     ];
 
+    public static function supportsContentFields(): bool
+    {
+        return Schema::hasColumn('events', 'is_published')
+            && Schema::hasColumn('events', 'type');
+    }
+
     /**
      * Scope a query to only include published events.
      */
     public function scopePublished($query)
     {
-        return $query->where('is_published', true);
+        if (Schema::hasColumn('events', 'is_published')) {
+            return $query->where('is_published', true);
+        }
+
+        return $query;
     }
 
     /**
@@ -41,7 +52,11 @@ class Event extends Model
      */
     public function scopeOfType($query, string $type)
     {
-        return $query->where('type', $type);
+        if (Schema::hasColumn('events', 'type')) {
+            return $query->where('type', $type);
+        }
+
+        return $query;
     }
 
     /**
@@ -49,7 +64,11 @@ class Event extends Model
      */
     public function scopeOrdered($query)
     {
-        return $query->orderByRaw('COALESCE(`order`, 999999) ASC')->orderBy('date', 'desc');
+        if (Schema::hasColumn('events', 'order')) {
+            return $query->orderByRaw('COALESCE(`order`, 999999) ASC')->orderBy('date', 'desc');
+        }
+
+        return $query->orderBy('date', 'desc');
     }
 
 

@@ -78,17 +78,21 @@
     @endif
 
     <div class="card-body d-flex p-0 mt-3">
-        <button type="button" wire:click.prevent="toggleLike" class="social-like-btn d-flex align-items-center fw-600 text-grey-900 text-dark lh-26 font-xssss me-2 border-0 bg-transparent">
+        <button type="button"
+                wire:click.prevent="toggleLike({{ $post->id }})"
+                wire:loading.attr="disabled"
+                wire:target="toggleLike"
+                class="social-like-btn d-flex align-items-center fw-600 text-grey-900 text-dark lh-26 font-xssss me-2 border-0 bg-transparent">
             <i class="feather-thumbs-up text-white {{ $liked ? 'bg-red-gradiant' : 'bg-primary-gradiant' }} me-1 btn-round-xs font-xss"></i>
             {{ $post->likes ?? 0 }} {{ ($post->likes ?? 0) === 1 ? 'Like' : 'Likes' }}
         </button>
-        <button type="button" wire:click.prevent="toggleComments" class="d-flex align-items-center fw-600 text-grey-900 text-dark lh-26 font-xssss border-0 bg-transparent">
+        <button type="button" wire:click.prevent="toggleComments({{ $post->id }})" class="d-flex align-items-center fw-600 text-grey-900 text-dark lh-26 font-xssss border-0 bg-transparent">
             <i class="feather-message-circle text-dark text-grey-900 btn-round-sm font-lg me-1"></i>
             <span class="d-none-xss">{{ $post->comments_count }} Comments</span>
         </button>
     </div>
 
-    @if($showComments)
+    @if($openCommentsPostId === $post->id)
         <livewire:social.post-comments :post-id="$post->id" :key="'comments-'.$post->id" />
     @endif
 </div>

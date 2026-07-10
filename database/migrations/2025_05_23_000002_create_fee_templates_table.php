@@ -14,6 +14,13 @@ return new class extends Migration
         Schema::create('fee_templates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('fee_type_id')->constrained()->onDelete('restrict');
+
+            if (Schema::hasTable('alumni_categories')) {
+                $table->foreignId('category_id')->nullable()->constrained('alumni_categories')->nullOnDelete();
+            }
+
+            $table->string('name', 255)->nullable();
+            $table->string('fee_purpose', 32)->nullable();
             $table->integer('graduation_year');
             $table->decimal('amount', 10, 2);
             $table->text('description')->nullable();
@@ -22,8 +29,16 @@ return new class extends Migration
             $table->date('valid_until')->nullable();
             $table->timestamps();
 
-            // Ensure unique fee type per graduation year and valid_from date (without category_id)
-            $table->unique(['fee_type_id', 'graduation_year', 'valid_from'], 'unique_fee_type_year_valid_from');
+            if (Schema::hasTable('alumni_categories')) {
+                $table->unique(
+                    ['fee_type_id', 'category_id', 'graduation_year', 'valid_from'],
+                    'unique_fee_type_category_year_valid_from'
+                );
+            } else {
+                $table->unique(['fee_type_id', 'graduation_year', 'valid_from'], 'unique_fee_type_year_valid_from');
+            }
+
+            $table->index('fee_purpose');
         });
     }
 

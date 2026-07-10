@@ -15,6 +15,7 @@ class SocialFeedUpdated implements ShouldBroadcastNow
     public function __construct(
         public string $type,
         public ?int $postId = null,
+        public ?int $actorUserId = null,
     ) {}
 
     public function broadcastOn(): array
@@ -32,6 +33,7 @@ class SocialFeedUpdated implements ShouldBroadcastNow
         return [
             'type' => $this->type,
             'postId' => $this->postId,
+            'actorUserId' => $this->actorUserId,
         ];
     }
 }

@@ -49,6 +49,10 @@ class EventService
 
     public function isVisibleToAlumni(Event $event): bool
     {
+        if (! Schema::hasColumn('events', 'is_published')) {
+            return true;
+        }
+
         return (bool) $event->is_published;
     }
 

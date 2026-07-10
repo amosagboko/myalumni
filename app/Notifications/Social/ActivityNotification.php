@@ -14,6 +14,7 @@ class ActivityNotification extends Notification
         public string $url,
         public ?string $actorName = null,
         public ?string $actorAvatar = null,
+        public ?int $postId = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -28,6 +29,7 @@ class ActivityNotification extends Notification
             'url' => $this->url,
             'actor_name' => $this->actorName,
             'actor_avatar' => $this->actorAvatar,
+            'post_id' => $this->postId,
         ];
     }
 }
