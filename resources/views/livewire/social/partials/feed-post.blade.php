@@ -73,10 +73,13 @@
         <div class="card-body d-block p-0 mt-3">
             <div class="row ps-2 pe-2">
                 @foreach($videoMedia as $media)
-                    @php $mediaPath = $media->getMediaPath(); @endphp
+                    @php
+                        $mediaPath = $media->getMediaPath();
+                        $videoUrl = \App\Support\Social\PostMediaGrid::storageUrl($mediaPath);
+                    @endphp
                     <div class="col-12 p-1">
-                        <video width="100%" controls class="rounded-3 w-100">
-                            <source src="{{ asset('storage/' . $mediaPath) }}" type="video/mp4">
+                        <video width="100%" controls class="rounded-3 w-100" preload="metadata">
+                            <source src="{{ $videoUrl }}" type="video/mp4">
                         </video>
                     </div>
                 @endforeach

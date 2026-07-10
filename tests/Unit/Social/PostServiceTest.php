@@ -121,4 +121,20 @@ class PostServiceTest extends TestCase
             Storage::disk('public')->assertExists($item->getThumbPath());
         }
     }
+
+    public function test_create_post_stores_single_video(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $video = UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4');
+
+        $post = $this->postService->createPost($user, 'Video update', videos: [$video]);
+
+        $media = PostMedia::query()->where('post_id', $post->id)->get();
+
+        $this->assertCount(1, $media);
+        $this->assertSame('video', $media->first()->getMediaType());
+        Storage::disk('public')->assertExists($media->first()->getMediaPath());
+    }
 }

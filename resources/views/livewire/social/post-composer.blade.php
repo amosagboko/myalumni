@@ -52,7 +52,7 @@
                     </label>
                 </div>
                 <div class="position-relative">
-                    <input type="file" wire:model="videos" multiple accept="video/mp4,video/quicktime,video/x-msvideo" class="d-none" id="social-video-upload">
+                    <input type="file" wire:model="videos" accept="video/mp4,video/quicktime,video/x-msvideo" class="d-none" id="social-video-upload">
                     <label for="social-video-upload" class="d-flex align-items-center font-xssss fw-600 ls-1 text-grey-700 text-dark pe-4 mb-0 cursor-pointer">
                         <i class="font-md text-danger feather-video me-2"></i><span class="d-none-xs">Video</span>
                     </label>
@@ -68,6 +68,9 @@
             </div>
 
             @error('content') <p class="text-danger font-xssss mt-2 mb-0">{{ $message }}</p> @enderror
+
+            @error('videos') <p class="text-danger font-xssss mt-2 mb-0 px-2">{{ $message }}</p> @enderror
+            @error('videos.*') <p class="text-danger font-xssss mt-2 mb-0 px-2">{{ $message }}</p> @enderror
 
             @if($isUploading)
             <div class="card-body p-0 mt-2">
@@ -86,7 +89,12 @@
                     ])
                 @endif
                 @if(count($videos) > 0)
-                    <p class="font-xssss text-grey-500 mt-2 mb-0 px-2">{{ count($videos) }} video(s) selected</p>
+                    <div class="post-composer-video-preview px-2 pb-2">
+                        <video controls class="rounded-3 w-100 post-composer-video" preload="metadata">
+                            <source src="{{ $videos[0]->temporaryUrl() }}" type="{{ $videos[0]->getMimeType() }}">
+                        </video>
+                        <p class="font-xssss text-grey-500 mt-2 mb-0">1 video attached (max {{ (int) ceil(config('social.post_videos.max_upload_kb', 51200) / 1024) }}MB)</p>
+                    </div>
                 @endif
             </div>
             @endif

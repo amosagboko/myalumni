@@ -130,3 +130,13 @@
 .post-composer-thumbnail:hover img {
     opacity: 0.92;
 }
+
+.post-composer-video-preview {
+    margin-top: 0.25rem;
+}
+
+.post-composer-video {
+    max-height: 280px;
+    background: #000;
+    object-fit: contain;
+}

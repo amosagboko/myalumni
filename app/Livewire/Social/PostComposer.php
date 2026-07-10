@@ -24,25 +24,33 @@ class PostComposer extends Component
     protected function rules(): array
     {
         $maxImages = (int) config('social.post_images.max_count', 10);
-        $maxUploadKb = (int) config('social.post_images.max_upload_kb', 10240);
+        $maxImageKb = (int) config('social.post_images.max_upload_kb', 10240);
+        $maxVideos = (int) config('social.post_videos.max_count', 1);
+        $maxVideoKb = (int) config('social.post_videos.max_upload_kb', 51200);
+        $videoMimes = implode(',', config('social.post_videos.allowed_mimes', ['mp4', 'mov', 'quicktime', 'x-msvideo']));
 
         return [
             'content' => 'required_without:sharedEventId|string|max:5000',
             'visibility' => 'required|in:connections,all_alumni',
             'images' => 'nullable|array|max:'.$maxImages,
-            'images.*' => 'nullable|image|max:'.$maxUploadKb,
-            'videos.*' => 'nullable|mimes:mp4,mov,avi|max:51200',
+            'images.*' => 'nullable|image|max:'.$maxImageKb,
+            'videos' => 'nullable|array|max:'.$maxVideos,
+            'videos.*' => 'nullable|mimes:'.$videoMimes.'|max:'.$maxVideoKb,
             'sharedEventId' => 'nullable|exists:events,id',
         ];
     }
 
     protected function messages(): array
     {
+        $maxVideoMb = (int) ceil(config('social.post_videos.max_upload_kb', 51200) / 1024);
+
         return [
             'content.required_without' => 'Please add a message or share an official event.',
             'images.*.max' => 'Each image must not exceed 10MB.',
             'images.max' => 'You can attach up to :max images per post.',
-            'videos.*.max' => 'Each video must not exceed 50MB.',
+            'videos.max' => 'You can attach only :max video per post.',
+            'videos.*.max' => "Video must not exceed {$maxVideoMb}MB.",
+            'videos.*.mimes' => 'Video must be MP4, MOV, or AVI format.',
         ];
     }
 
@@ -52,6 +60,15 @@ class PostComposer extends Component
 
         if (count($this->images) > $maxImages) {
             $this->images = array_slice($this->images, 0, $maxImages);
+        }
+    }
+
+    public function updatedVideos(): void
+    {
+        $maxVideos = (int) config('social.post_videos.max_count', 1);
+
+        if (count($this->videos) > $maxVideos) {
+            $this->videos = array_slice($this->videos, 0, $maxVideos);
         }
     }
 

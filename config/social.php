@@ -60,4 +60,19 @@ return [
         'grid_visible_max' => 5,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Post video uploads
+    |--------------------------------------------------------------------------
+    |
+    | 50 MB (~1–2 min at 720p) is a practical default for feed clips without
+    | overloading storage or mobile uploads. Raise via env only if needed.
+    |
+    */
+    'post_videos' => [
+        'max_count' => (int) env('SOCIAL_POST_VIDEO_MAX_COUNT', 1),
+        'max_upload_kb' => (int) env('SOCIAL_POST_VIDEO_MAX_UPLOAD_KB', 51200),
+        'allowed_mimes' => ['mp4', 'mov', 'quicktime', 'x-msvideo'],
+    ],
+
 ];
