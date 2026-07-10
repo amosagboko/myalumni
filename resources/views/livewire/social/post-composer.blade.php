@@ -79,15 +79,14 @@
 
             @if(count($images) > 0 || count($videos) > 0)
             <div class="card-body p-0 mt-2">
-                <div class="row ps-2 pe-2">
-                    @foreach($images as $image)
-                    <div class="col-xs-4 col-sm-4 p-1">
-                        <img src="{{ $image->temporaryUrl() }}" class="rounded-3 w-100" alt="Preview">
-                    </div>
-                    @endforeach
-                </div>
+                @if(count($images) > 0)
+                    @include('livewire.social.partials.post-composer-image-preview', [
+                        'images' => $images,
+                        'lightboxGroup' => 'composer-preview-'.auth()->id(),
+                    ])
+                @endif
                 @if(count($videos) > 0)
-                    <p class="font-xssss text-grey-500 mt-2 mb-0">{{ count($videos) }} video(s) selected</p>
+                    <p class="font-xssss text-grey-500 mt-2 mb-0 px-2">{{ count($videos) }} video(s) selected</p>
                 @endif
             </div>
             @endif

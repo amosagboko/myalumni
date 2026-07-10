@@ -45,4 +45,19 @@ return [
     */
     'poll_interval_seconds' => (int) env('SOCIAL_POLL_INTERVAL_SECONDS', 10),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Post image uploads
+    |--------------------------------------------------------------------------
+    */
+    'post_images' => [
+        'max_count' => (int) env('SOCIAL_POST_IMAGE_MAX_COUNT', 10),
+        'max_upload_kb' => (int) env('SOCIAL_POST_IMAGE_MAX_UPLOAD_KB', 10240),
+        'display_max' => (int) env('SOCIAL_POST_IMAGE_DISPLAY_MAX', 1920),
+        'thumb_size' => (int) env('SOCIAL_POST_IMAGE_THUMB_SIZE', 600),
+        'jpeg_quality' => (int) env('SOCIAL_POST_IMAGE_JPEG_QUALITY', 85),
+        'thumb_quality' => (int) env('SOCIAL_POST_IMAGE_THUMB_QUALITY', 80),
+        'grid_visible_max' => 5,
+    ],
+
 ];

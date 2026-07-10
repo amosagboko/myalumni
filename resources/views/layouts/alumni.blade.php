@@ -96,6 +96,18 @@
     @include('layouts.partials.alumni-echo')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            if (typeof lightbox !== 'undefined') {
+                lightbox.option({
+                    resizeDuration: 400,
+                    fadeDuration: 400,
+                    imageFadeDuration: 400,
+                    albumLabel: 'Image %1 of %2',
+                    wrapAround: true,
+                    disableScrolling: true,
+                    showImageNumberLabel: true,
+                });
+            }
+
             if (typeof feather !== 'undefined') {
                 feather.replace();
             }

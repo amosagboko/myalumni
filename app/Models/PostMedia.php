@@ -40,16 +40,24 @@ class PostMedia extends Model
 
     public function getMediaPath(): ?string
     {
-        $data = $this->file;
+        return $this->filePayload()['media_path'] ?? null;
+    }
 
-        if (is_string($data)) {
-            $data = json_decode($data, true);
-        }
+    public function getThumbPath(): ?string
+    {
+        $data = $this->filePayload();
 
-        return $data['media_path'] ?? null;
+        return $data['thumb_path'] ?? $data['media_path'] ?? null;
     }
 
     public function getMediaType(): ?string
+    {
+        $data = $this->filePayload();
+
+        return $data['media_type'] ?? $this->filetype;
+    }
+
+    protected function filePayload(): array
     {
         $data = $this->file;
 
@@ -57,6 +65,6 @@ class PostMedia extends Model
             $data = json_decode($data, true);
         }
 
-        return $data['media_type'] ?? $this->filetype;
+        return is_array($data) ? $data : [];
     }
 }

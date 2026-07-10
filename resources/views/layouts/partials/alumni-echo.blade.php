@@ -80,6 +80,10 @@
                 if (typeof feather !== 'undefined') {
                     feather.replace();
                 }
+
+                if (typeof lightbox !== 'undefined' && typeof lightbox.init === 'function') {
+                    lightbox.init();
+                }
             });
         }
     });

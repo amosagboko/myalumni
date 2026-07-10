@@ -51,27 +51,34 @@
         </div>
     @endif
 
-    @if($post->media->isNotEmpty())
+    @php
+        $imageItems = \App\Support\Social\PostMediaGrid::normalizeItems(
+            \App\Support\Social\PostMediaGrid::imageMediaForPost($post),
+            $post->user->name."'s post"
+        );
+        $videoMedia = $post->media->filter(
+            fn ($media) => $media->getMediaType() === 'video' && $media->getMediaPath()
+        );
+    @endphp
+
+    @if(count($imageItems) > 0)
+        @include('livewire.social.partials.post-media-grid', [
+            'items' => $imageItems,
+            'lightboxGroup' => 'post-'.$post->id,
+            'caption' => $post->user->name."'s post",
+        ])
+    @endif
+
+    @if($videoMedia->isNotEmpty())
         <div class="card-body d-block p-0 mt-3">
             <div class="row ps-2 pe-2">
-                @foreach($post->media as $media)
-                    @php
-                        $mediaPath = $media->getMediaPath();
-                        $mediaType = $media->getMediaType();
-                    @endphp
-                    @if($mediaType === 'image' && $mediaPath)
-                        <div class="col-xs-4 col-sm-4 p-1">
-                            <a href="{{ asset('storage/' . $mediaPath) }}" data-lightbox="post-{{ $post->id }}" data-title="{{ $post->user->name }}'s post">
-                                <img src="{{ asset('storage/' . $mediaPath) }}" class="rounded-3 w-100" alt="Post image">
-                            </a>
-                        </div>
-                    @elseif($mediaType === 'video' && $mediaPath)
-                        <div class="col-12 p-1">
-                            <video width="100%" controls class="rounded-3 w-100">
-                                <source src="{{ asset('storage/' . $mediaPath) }}" type="video/mp4">
-                            </video>
-                        </div>
-                    @endif
+                @foreach($videoMedia as $media)
+                    @php $mediaPath = $media->getMediaPath(); @endphp
+                    <div class="col-12 p-1">
+                        <video width="100%" controls class="rounded-3 w-100">
+                            <source src="{{ asset('storage/' . $mediaPath) }}" type="video/mp4">
+                        </video>
+                    </div>
                 @endforeach
             </div>
         </div>

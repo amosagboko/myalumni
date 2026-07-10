@@ -4,10 +4,13 @@ namespace Tests\Unit\Social;
 
 use App\Models\Comment;
 use App\Models\Post;
+use App\Models\PostMedia;
 use App\Models\User;
 use App\Services\Social\PostService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\CreatesSocialConnections;
 use Tests\TestCase;
 
@@ -91,5 +94,31 @@ class PostServiceTest extends TestCase
         $this->expectExceptionMessage('You cannot interact with this post.');
 
         $this->postService->toggleLike($post, $stranger);
+    }
+
+    public function test_create_post_stores_processed_images_with_positions(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $images = [
+            UploadedFile::fake()->image('one.jpg', 1200, 900),
+            UploadedFile::fake()->image('two.jpg', 800, 800),
+        ];
+
+        $post = $this->postService->createPost($user, 'Photo dump', images: $images);
+
+        $media = PostMedia::query()->where('post_id', $post->id)->orderBy('position')->get();
+
+        $this->assertCount(2, $media);
+        $this->assertSame(['0', '1'], $media->pluck('position')->all());
+
+        foreach ($media as $item) {
+            $this->assertSame('image', $item->getMediaType());
+            $this->assertNotNull($item->getMediaPath());
+            $this->assertNotNull($item->getThumbPath());
+            Storage::disk('public')->assertExists($item->getMediaPath());
+            Storage::disk('public')->assertExists($item->getThumbPath());
+        }
     }
 }

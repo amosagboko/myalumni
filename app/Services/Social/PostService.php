@@ -18,7 +18,8 @@ class PostService
     public function __construct(
         protected FeedService $feedService,
         protected NotificationService $notificationService,
-        protected SocialBroadcastService $broadcastService
+        protected SocialBroadcastService $broadcastService,
+        protected PostImageProcessor $imageProcessor,
     ) {}
 
     public function createPost(
@@ -53,12 +54,12 @@ class PostService
 
             $post = Post::create($attributes);
 
-            foreach ($images as $image) {
-                $this->storeMedia($post, $image, 'image');
+            foreach ($images as $position => $image) {
+                $this->storeMedia($post, $image, 'image', $position);
             }
 
-            foreach ($videos as $video) {
-                $this->storeMedia($post, $video, 'video');
+            foreach ($videos as $position => $video) {
+                $this->storeMedia($post, $video, 'video', count($images) + $position);
             }
 
             $relations = ['user', 'media'];
@@ -74,14 +75,27 @@ class PostService
         return $post;
     }
 
-    protected function storeMedia(Post $post, UploadedFile $file, string $type): void
+    protected function storeMedia(Post $post, UploadedFile $file, string $type, int $position = 0): void
     {
-        $folder = $type === 'video' ? 'post-videos' : 'post-images';
-        $path = $file->store($folder, 'public');
+        if ($type === 'image') {
+            $payload = $this->imageProcessor->process($file);
+
+            PostMedia::create([
+                'post_id' => $post->id,
+                'filetype' => $type,
+                'position' => $position,
+                'file' => $payload,
+            ]);
+
+            return;
+        }
+
+        $path = $file->store('post-videos', 'public');
 
         PostMedia::create([
             'post_id' => $post->id,
             'filetype' => $type,
+            'position' => $position,
             'file' => [
                 'media_path' => $path,
                 'media_type' => $type,
