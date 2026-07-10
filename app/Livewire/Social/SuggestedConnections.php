@@ -2,15 +2,24 @@
 
 namespace App\Livewire\Social;
 
+use App\Livewire\Social\Concerns\ListensForSocialBroadcasts;
 use App\Services\Social\ConnectionService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class SuggestedConnections extends Component
 {
-    protected $listeners = [
-        'connection-updated' => '$refresh',
-    ];
+    use ListensForSocialBroadcasts;
+
+    public function getListeners(): array
+    {
+        return array_merge(
+            [
+                'connection-updated' => '$refresh',
+            ],
+            $this->socialEchoListeners()
+        );
+    }
 
     public function connect(int $userId, ConnectionService $connectionService): void
     {

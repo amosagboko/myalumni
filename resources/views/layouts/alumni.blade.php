@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'FuLafia | Alumni' }}</title>
 
     <link rel="stylesheet" href="{{ asset('css/themify-icons.css') }}?v=2">
@@ -157,6 +158,7 @@
             }
         });
     </script>
+    @include('layouts.partials.alumni-echo')
     @livewireScripts
     @stack('scripts')
     <style>

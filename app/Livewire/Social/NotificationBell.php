@@ -2,15 +2,24 @@
 
 namespace App\Livewire\Social;
 
+use App\Livewire\Social\Concerns\ListensForSocialBroadcasts;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class NotificationBell extends Component
 {
-    protected $listeners = [
-        'connection-updated' => '$refresh',
-        'notifications-updated' => '$refresh',
-    ];
+    use ListensForSocialBroadcasts;
+
+    public function getListeners(): array
+    {
+        return array_merge(
+            [
+                'connection-updated' => '$refresh',
+                'notifications-updated' => '$refresh',
+            ],
+            $this->socialNotificationEchoListeners()
+        );
+    }
 
     public function markAsRead(string $notificationId): void
     {

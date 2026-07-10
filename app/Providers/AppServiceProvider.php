@@ -7,6 +7,7 @@ use App\Policies\ElectionPolicy;
 use App\Policies\CandidatePolicy;
 use App\View\Composers\AlumniLayoutComposer;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        Broadcast::routes(['middleware' => ['web', 'auth']]);
 
         View::composer([
             'layouts.alumni',

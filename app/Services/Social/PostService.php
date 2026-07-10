@@ -17,7 +17,8 @@ class PostService
 {
     public function __construct(
         protected FeedService $feedService,
-        protected NotificationService $notificationService
+        protected NotificationService $notificationService,
+        protected SocialBroadcastService $broadcastService
     ) {}
 
     public function createPost(
@@ -65,7 +66,10 @@ class PostService
                 $relations[] = 'event';
             }
 
-            return $post->load($relations);
+            $post = $post->load($relations);
+            $this->broadcastService->feedUpdated('post.created', $post->id);
+
+            return $post;
         });
     }
 
@@ -106,28 +110,61 @@ class PostService
                 }
             }
         });
+
+        $this->broadcastService->feedUpdated('post.liked', $post->id);
     }
 
-    public function addComment(Post $post, User $user, string $comment): Comment
+    public function addComment(Post $post, User $user, string $comment, ?int $parentId = null): Comment
     {
         if (!$this->feedService->canViewPost($post, $user)) {
             throw new \RuntimeException('You cannot comment on this post.');
         }
 
-        $commentModel = $post->comments()->create([
+        $parent = null;
+        if ($parentId) {
+            if (! Schema::hasColumn('comments', 'parent_id')) {
+                throw new \RuntimeException('Replies are not available yet. Please run database migrations.');
+            }
+
+            $parent = Comment::query()
+                ->where('post_id', $post->id)
+                ->findOrFail($parentId);
+        }
+
+        $attributes = [
             'user_id' => $user->id,
             'comment' => $comment,
             'status' => 'published',
-        ]);
+        ];
+
+        if ($parentId && Schema::hasColumn('comments', 'parent_id')) {
+            $attributes['parent_id'] = $parentId;
+        }
+
+        $commentModel = $post->comments()->create($attributes);
 
         $post->increment('comments');
 
-        $post->loadMissing('user');
-        if ($post->user) {
-            $this->notificationService->postCommented($post->user, $user, $post);
+        if ($parent) {
+            $parent->loadMissing('user');
+            if ($parent->user && $parent->user->id !== $user->id) {
+                $this->notificationService->commentReplied($parent->user, $user, $post);
+            }
+        } else {
+            $post->loadMissing('user');
+            if ($post->user && $post->user->id !== $user->id) {
+                $this->notificationService->postCommented($post->user, $user, $post);
+            }
         }
 
+        $this->broadcastService->feedUpdated('comment.added', $post->id);
+
         return $commentModel->load('user');
+    }
+
+    public function supportsThreadedReplies(): bool
+    {
+        return Schema::hasColumn('comments', 'parent_id');
     }
 
     public function userHasLiked(Post $post, User $user): bool

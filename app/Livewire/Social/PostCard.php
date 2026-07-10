@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Social;
 
+use App\Livewire\Social\Concerns\ListensForSocialBroadcasts;
 use App\Models\Post;
 use App\Services\Social\FeedService;
 use App\Services\Social\PostService;
@@ -11,10 +12,27 @@ use Livewire\Component;
 
 class PostCard extends Component
 {
+    use ListensForSocialBroadcasts;
+
     public int $postId;
     public bool $showComments = false;
 
-    protected $listeners = ['comment-added' => '$refresh'];
+    public function getListeners(): array
+    {
+        return array_merge(
+            ['comment-added' => '$refresh'],
+            $this->socialEchoListeners()
+        );
+    }
+
+    protected function shouldRefreshFromSocialBroadcast(?array $payload): bool
+    {
+        if (! is_array($payload) || ! isset($payload['postId'])) {
+            return true;
+        }
+
+        return (int) $payload['postId'] === $this->postId;
+    }
 
     public function mount(int $postId): void
     {

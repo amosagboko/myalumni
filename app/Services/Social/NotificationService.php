@@ -8,6 +8,10 @@ use App\Notifications\Social\ActivityNotification;
 
 class NotificationService
 {
+    public function __construct(
+        protected SocialBroadcastService $broadcastService
+    ) {}
+
     public function connectionRequestReceived(User $receiver, User $sender): void
     {
         if ($receiver->id === $sender->id) {
@@ -20,6 +24,9 @@ class NotificationService
             actorName: $sender->name,
             actorAvatar: $sender->avatar,
         ));
+
+        $this->broadcastService->notificationCreated($receiver->id);
+        $this->broadcastService->feedUpdated('connection.updated');
     }
 
     public function connectionRequestAccepted(User $sender, User $receiver): void
@@ -34,6 +41,9 @@ class NotificationService
             actorName: $receiver->name,
             actorAvatar: $receiver->avatar,
         ));
+
+        $this->broadcastService->notificationCreated($sender->id);
+        $this->broadcastService->feedUpdated('connection.updated');
     }
 
     public function postLiked(User $postOwner, User $liker, Post $post): void
@@ -48,6 +58,8 @@ class NotificationService
             actorName: $liker->name,
             actorAvatar: $liker->avatar,
         ));
+
+        $this->broadcastService->notificationCreated($postOwner->id);
     }
 
     public function postCommented(User $postOwner, User $commenter, Post $post): void
@@ -62,5 +74,23 @@ class NotificationService
             actorName: $commenter->name,
             actorAvatar: $commenter->avatar,
         ));
+
+        $this->broadcastService->notificationCreated($postOwner->id);
+    }
+
+    public function commentReplied(User $parentAuthor, User $replier, Post $post): void
+    {
+        if ($parentAuthor->id === $replier->id) {
+            return;
+        }
+
+        $parentAuthor->notify(new ActivityNotification(
+            message: "{$replier->name} replied to your comment",
+            url: route('alumni.home'),
+            actorName: $replier->name,
+            actorAvatar: $replier->avatar,
+        ));
+
+        $this->broadcastService->notificationCreated($parentAuthor->id);
     }
 }

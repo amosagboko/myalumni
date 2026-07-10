@@ -13,23 +13,27 @@
         </div>
     @endif
 
-    <div class="card w-100 shadow-xss rounded-xxl border-0 ps-4 pt-4 pe-4 pb-3 mb-3">
+    <div class="card w-100 shadow-xss rounded-xxl border-0 ps-4 pt-4 pe-4 pb-3 mb-3 post-composer-card">
         <form wire:submit.prevent="createPost">
             <div class="card-body p-0">
-                <a href="#" class="font-xssss fw-600 text-grey-500 card-body p-0 d-flex align-items-center" onclick="return false;">
+                <span class="font-xssss fw-700 text-grey-900 card-body p-0 d-flex align-items-center">
                     <i class="btn-round-sm font-xs text-primary feather-edit-3 me-2 bg-greylight"></i>Create Post
-                </a>
+                </span>
             </div>
             <div class="card-body p-0 mt-3 position-relative">
                 <figure class="avatar position-absolute ms-2 mt-1 top-5">
                     <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : asset('/images/user-8.png') }}" alt="avatar" class="shadow-sm rounded-circle w30">
                 </figure>
-                <textarea wire:model="content" class="h100 bor-0 w-100 rounded-xxl p-2 ps-5 font-xssss text-grey-500 fw-500 border-light-md theme-dark-bg" cols="30" rows="4" placeholder="What's on your mind?"></textarea>
+                <textarea wire:model="content"
+                          class="h100 bor-0 w-100 rounded-xxl p-2 ps-5 font-xssss text-grey-900 fw-500 border-light-md theme-dark-bg post-composer-textarea"
+                          cols="30"
+                          rows="4"
+                          placeholder="What's on your mind?"></textarea>
             </div>
 
             <div class="card-body d-flex flex-wrap p-0 mt-2 gap-2 align-items-center">
                 @if($supportsVisibility ?? true)
-                <select wire:model="visibility" class="form-select form-select-sm w-auto font-xssss rounded-xl border-0 bg-greylight">
+                <select wire:model="visibility" class="form-select form-select-sm w-auto font-xssss fw-500 text-grey-900 rounded-xl border-0 bg-greylight post-composer-select">
                     @foreach($visibilityOptions as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
@@ -37,7 +41,7 @@
                 @endif
 
                 @if($shareableEvents->isNotEmpty())
-                <select wire:model="sharedEventId" class="form-select form-select-sm font-xssss rounded-xl border-0 bg-greylight flex-grow-1">
+                <select wire:model="sharedEventId" class="form-select form-select-sm font-xssss fw-500 text-grey-900 rounded-xl border-0 bg-greylight flex-grow-1 post-composer-select">
                     <option value="">Share an official event (optional)</option>
                     @foreach($shareableEvents as $event)
                         <option value="{{ $event->id }}">{{ $event->eventname }} — {{ $event->date?->format('M j, Y') }}</option>
@@ -94,5 +98,21 @@
 </div>
 
 @push('styles')
-<style>.cursor-pointer { cursor: pointer; }</style>
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .post-composer-textarea {
+        color: #1e2330 !important;
+    }
+    .post-composer-textarea::placeholder {
+        color: #8a94a6;
+        opacity: 1;
+        font-weight: 500;
+    }
+    .post-composer-select {
+        color: #1e2330 !important;
+    }
+    .post-composer-card .text-grey-700 {
+        color: #3a4256 !important;
+    }
+</style>
 @endpush
