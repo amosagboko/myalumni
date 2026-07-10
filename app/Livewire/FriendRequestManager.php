@@ -29,6 +29,8 @@ class FriendRequestManager extends Component
     public $followingCount = 0;
     public $isSearching = false;
 
+    public string $activeTab = 'connections';
+
     protected $listeners = [
         'connection-updated' => 'loadUserRequests',
     ];
@@ -46,6 +48,13 @@ class FriendRequestManager extends Component
         $this->friends = collect();
         $this->sentRequests = collect();
         $this->receivedRequests = collect();
+    }
+
+    public function setActiveTab(string $tab): void
+    {
+        if (in_array($tab, ['connections', 'received', 'sent'], true)) {
+            $this->activeTab = $tab;
+        }
     }
 
     public function mount()

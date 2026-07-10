@@ -50,13 +50,25 @@
         <main class="main-content bg-lightblue theme-dark-bg right-chat-active">
             <div class="middle-sidebar-bottom">
                 <div class="middle-sidebar-left">
-                    @hasSection('feed_layout')
-                        @yield('content')
+                    @isset($slot)
+                        @hasSection('feed_layout')
+                            {{ $slot }}
+                        @elseif (request()->routeIs('friends', 'alumni.events*'))
+                            {{ $slot }}
+                        @else
+                            <div class="middle-wrap">
+                                {{ $slot }}
+                            </div>
+                        @endif
                     @else
-                        <div class="middle-wrap">
+                        @hasSection('feed_layout')
                             @yield('content')
-                        </div>
-                    @endif
+                        @else
+                            <div class="middle-wrap">
+                                @yield('content')
+                            </div>
+                        @endif
+                    @endisset
                 </div>
             </div>
         </main>

@@ -35,6 +35,7 @@ class OfficialEvents extends Component
         return view('livewire.social.official-events', [
             'events' => $events,
             'eventService' => $eventService,
+            'upcomingTeaser' => $eventService->teaser(5),
         ]);
     }
 }

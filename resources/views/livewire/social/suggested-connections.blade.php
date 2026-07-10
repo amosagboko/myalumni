@@ -1,7 +1,9 @@
 <div class="card w-100 shadow-xss rounded-xxl border-0 p-0 mb-3">
     <div class="card-body d-flex align-items-center p-4 mb-0">
         <h4 class="fw-700 mb-0 font-xssss text-grey-900">People You May Know</h4>
-        <a href="{{ route('friends') }}" class="fw-600 ms-auto font-xssss text-primary">See all</a>
+        @unless(request()->routeIs('friends'))
+            <a href="{{ route('friends') }}" class="fw-600 ms-auto font-xssss text-primary">See all</a>
+        @endunless
     </div>
 
     @forelse($suggestions as $suggestion)
