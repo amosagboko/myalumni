@@ -94,11 +94,9 @@ class Feed extends Component
             $likedPostIds[$post->id] = $postService->userHasLiked($post, $user);
         }
 
-        return view('livewire.social.feed', [
+        return view('livewire.social.feed', array_merge([
             'posts' => $posts,
             'likedPostIds' => $likedPostIds,
-            'useBackgroundPoll' => ! $this->broadcastingEnabled(),
-            'pollInterval' => config('social.poll_interval_seconds', 10),
-        ]);
+        ], $this->socialPollViewData()));
     }
 }

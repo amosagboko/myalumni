@@ -4,6 +4,8 @@ namespace App\Livewire\Social;
 
 use App\Livewire\Social\Concerns\ListensForSocialBroadcasts;
 use App\Models\Post;
+use App\Support\Social\CommentTreeBuilder;
+use App\Support\Social\EmojiPicker;
 use App\Services\Social\FeedService;
 use App\Services\Social\PostService;
 use Illuminate\Support\Facades\Auth;
@@ -56,6 +58,16 @@ class PostComments extends Component
         $this->resetErrorBag('replyBody');
     }
 
+    public function insertEmoji(string $field, string $emoji, EmojiPicker $picker): void
+    {
+        if (! in_array($field, ['body', 'replyBody'], true)
+            || ! config('social.emoji_picker.enabled', true)) {
+            return;
+        }
+
+        $this->{$field} = $picker->append($this->{$field}, $emoji);
+    }
+
     public function addComment(PostService $postService, FeedService $feedService): void
     {
         $this->validateOnly('body');
@@ -98,20 +110,25 @@ class PostComments extends Component
         }
     }
 
-    protected function loadComments(Post $post, PostService $postService)
+    protected function loadComments(Post $post, PostService $postService, CommentTreeBuilder $treeBuilder)
     {
         if ($postService->supportsThreadedReplies()) {
-            return $post->comments()
-                ->topLevel()
-                ->with(['user', 'replies' => fn ($q) => $q->latest()->with('user')])
-                ->latest()
+            $flat = $post->comments()
+                ->where('status', 'published')
+                ->with('user')
                 ->get();
+
+            return $treeBuilder->build($flat);
         }
 
-        return $post->comments()->with('user')->latest()->get();
+        return $post->comments()
+            ->where('status', 'published')
+            ->with('user')
+            ->latest()
+            ->get();
     }
 
-    public function render(FeedService $feedService, PostService $postService)
+    public function render(FeedService $feedService, PostService $postService, CommentTreeBuilder $treeBuilder)
     {
         $post = Post::query()->findOrFail($this->postId);
 
@@ -121,8 +138,10 @@ class PostComments extends Component
 
         return view('livewire.social.post-comments', [
             'post' => $post,
-            'comments' => $this->loadComments($post, $postService),
+            'comments' => $this->loadComments($post, $postService, $treeBuilder),
             'supportsReplies' => $postService->supportsThreadedReplies(),
+            'maxNestingDepth' => \App\Models\Comment::maxNestingDepth(),
+            'indentCap' => \App\Models\Comment::indentCap(),
         ]);
     }
 }

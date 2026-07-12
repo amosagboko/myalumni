@@ -63,13 +63,13 @@ class PostServiceTest extends TestCase
         $this->assertSame($parent->id, $reply->parent_id);
     }
 
-    public function test_user_cannot_reply_to_a_reply(): void
+    public function test_user_can_reply_to_nested_comment(): void
     {
         $author = User::factory()->create();
         $replier = User::factory()->create();
         $this->connectUsers($replier, $author);
 
-        $post = Post::factory()->create(['user_id' => $author->id]);
+        $post = Post::factory()->create(['user_id' => $author->id, 'comments' => 0]);
         $parent = Comment::factory()->create([
             'post_id' => $post->id,
             'user_id' => $author->id,
@@ -78,10 +78,41 @@ class PostServiceTest extends TestCase
             'user_id' => $replier->id,
         ]);
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('You can only reply to top-level comments.');
+        $nested = $this->postService->addComment($post, $replier, 'Nested reply', $existingReply->id);
 
-        $this->postService->addComment($post, $replier, 'Nested reply', $existingReply->id);
+        $this->assertSame($existingReply->id, $nested->parent_id);
+        $this->assertSame(3, $nested->threadDepth());
+    }
+
+    public function test_user_cannot_exceed_max_nesting_depth(): void
+    {
+        $author = User::factory()->create();
+        $replier = User::factory()->create();
+        $this->connectUsers($replier, $author);
+
+        $post = Post::factory()->create(['user_id' => $author->id, 'comments' => 0]);
+        $comment = Comment::factory()->create([
+            'post_id' => $post->id,
+            'user_id' => $author->id,
+        ]);
+
+        for ($i = 0; $i < 8; $i++) {
+            $comment = Comment::factory()->reply($comment)->create([
+                'post_id' => $post->id,
+                'user_id' => $author->id,
+            ]);
+        }
+
+        $this->assertSame(9, $comment->threadDepth());
+
+        $deepest = $this->postService->addComment($post, $replier, 'Depth 10', $comment->id);
+
+        $this->assertSame(10, $deepest->threadDepth());
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Maximum reply depth reached.');
+
+        $this->postService->addComment($post, $replier, 'Too deep', $deepest->id);
     }
 
     public function test_stranger_cannot_like_post(): void

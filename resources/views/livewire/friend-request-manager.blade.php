@@ -1,25 +1,18 @@
-<div class="row feed-body connections-page">
+<div
+    class="row feed-body connections-page"
+    @if($useBackgroundPoll && $pollInterval > 0)
+        wire:poll.visible.{{ $pollInterval }}s="refreshQuietly"
+    @endif
+    wire:loading.delay.longest.class="social-connections-syncing"
+>
     <div class="col-xl-8 col-xxl-9 col-lg-8">
         <div class="card shadow-xss w-100 d-block border-0 p-4 mb-3">
-            <div class="card-body d-flex flex-wrap align-items-center p-0 gap-3">
-                <div>
-                    <h2 class="fw-700 mb-0 mt-0 font-md text-grey-900">Connections</h2>
-                    <p class="fw-500 font-xssss text-grey-500 mt-1 mb-0">Find alumni, manage requests, and grow your network.</p>
-                </div>
-                <div class="search-form-2 ms-lg-auto flex-grow-1 connections-page__search">
-                    <i class="ti-search font-xss"></i>
-                    <input type="text"
-                           wire:model.live.debounce.500ms="search"
-                           placeholder="Search by name or email..."
-                           class="form-control text-grey-500 mb-0 bg-greylight theme-dark-bg border-0">
-                </div>
+            <div class="card-body p-0">
+                <h2 class="fw-700 mb-0 mt-0 font-md text-grey-900">Connections</h2>
+                <p class="fw-500 font-xssss text-grey-500 mt-1 mb-0">Find alumni, manage requests, and grow your network.</p>
             </div>
 
-            @if($searchError)
-                <p class="text-danger font-xssss mt-3 mb-0">{{ $searchError }}</p>
-            @endif
-
-            <div class="connections-page__tabs d-flex flex-wrap gap-2 mt-4 pt-2 border-top">
+            <div class="connections-page__tabs d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
                 <button type="button"
                         wire:click="setActiveTab('connections')"
                         class="btn btn-sm rounded-xl font-xssss fw-600 {{ $activeTab === 'connections' ? 'bg-primary-gradiant text-white' : 'bg-greylight text-grey-700' }}">
@@ -47,38 +40,69 @@
             </div>
         </div>
 
-        @if($search && strlen($search) >= 2)
-            <div class="mb-2 ps-2 pe-2 d-flex align-items-center justify-content-between">
-                <h4 class="fw-700 font-xssss text-grey-900 mb-0">Search Results</h4>
-                <span class="font-xssss text-grey-500" wire:loading wire:target="search,updatedSearch,searchUsers">Searching...</span>
+        <div class="card shadow-xss w-100 border-0 p-4 mb-3 connections-page__search-card">
+            <label for="connections-search" class="fw-700 font-xssss text-grey-900 mb-2 d-block">Find alumni</label>
+            <div class="connections-page__search-box search-form-2">
+                <i class="ti-search font-xss" aria-hidden="true"></i>
+                <input id="connections-search"
+                       type="search"
+                       wire:model.live.debounce.400ms="search"
+                       placeholder="Name, email, class year, department, or matric number..."
+                       autocomplete="off"
+                       enterkeyhint="search"
+                       class="form-control connections-page__search-input text-grey-900 mb-0 bg-greylight theme-dark-bg border-0">
+                @if($search !== '')
+                    <button type="button"
+                            wire:click="clearSearch"
+                            class="connections-page__search-clear btn btn-link p-0 border-0"
+                            title="Clear search"
+                            aria-label="Clear search">
+                        <i class="ti-close font-xss text-grey-500"></i>
+                    </button>
+                @endif
             </div>
-
-            @if($users->isNotEmpty())
-                <div class="row ps-2 pe-2">
-                    @foreach($users as $user)
-                        @php
-                            $avatarUrl = $user->avatar ? '/storage/' . ltrim($user->avatar, '/') : '/images/user-8.png';
-                            $subtitle = '@' . Str::before($user->email, '@');
-                        @endphp
-                        @include('livewire.partials.connection-member-card', [
-                            'name' => $user->name,
-                            'subtitle' => $subtitle,
-                            'avatarUrl' => $avatarUrl,
-                            'mode' => $user->request_status ?? 'none',
-                            'userId' => $user->id,
-                        ])
-                    @endforeach
-                </div>
-            @elseif(! $isSearching)
-                <div class="card shadow-xss border-0 rounded-xxl mb-3">
-                    <div class="card-body p-4 text-center">
-                        <p class="font-xssss text-grey-500 mb-0">No alumni found for "{{ $search }}".</p>
-                    </div>
-                </div>
+            <p class="font-xsssss text-grey-500 mb-0 mt-2">
+                @if(strlen(trim($search)) > 0 && strlen(trim($search)) < 2)
+                    Type at least 2 characters to search.
+                @else
+                    Examples: <span class="text-grey-600">James</span>, <span class="text-grey-600">2018</span>, <span class="text-grey-600">Computer Science</span>
+                @endif
+            </p>
+            @if($searchError)
+                <p class="text-danger font-xssss mt-2 mb-0">{{ $searchError }}</p>
             @endif
+        </div>
+
+        @if(strlen(trim($search)) >= 2)
+            <div class="card shadow-xss border-0 rounded-xxl mb-3 connections-page__search-results">
+                <div class="card-body p-4 pb-2 d-flex align-items-center justify-content-between">
+                    <h4 class="fw-700 font-xssss text-grey-900 mb-0">
+                        Search results
+                        @if($searchResults->isNotEmpty())
+                            <span class="text-grey-500 fw-500">({{ $searchResults->count() }})</span>
+                        @endif
+                    </h4>
+                    <span class="font-xssss text-grey-500" wire:loading wire:target="search,updatedSearch,searchUsers">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        Searching...
+                    </span>
+                </div>
+
+                <div class="card-body pt-0 px-4 pb-4">
+                    @forelse($searchResults as $result)
+                        @include('livewire.partials.connection-search-result', ['result' => $result])
+                    @empty
+                        <div class="text-center py-4" wire:loading.remove wire:target="search,updatedSearch,searchUsers">
+                            <i class="feather-search btn-round-lg bg-greylight text-grey-500 font-md mb-3 d-inline-flex align-items-center justify-content-center"></i>
+                            <p class="font-xssss text-grey-500 mb-0">No alumni found for &ldquo;{{ $search }}&rdquo;.</p>
+                            <p class="font-xsssss text-grey-500 mt-2 mb-0">Try a different name, graduation year, or department.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
         @endif
 
-        @if(! $search || strlen($search) < 2)
+        @if(strlen(trim($search)) < 2)
             @if($activeTab === 'connections')
                 @if($friends->isNotEmpty())
                     <div class="row ps-2 pe-2">
@@ -103,7 +127,7 @@
                         <div class="card-body p-5 text-center">
                             <i class="feather-users btn-round-lg bg-greylight text-grey-500 font-md mb-3 d-inline-flex align-items-center justify-content-center"></i>
                             <h4 class="fw-700 font-xssss text-grey-900 mb-2">No connections yet</h4>
-                            <p class="font-xssss text-grey-500 mb-0">Search above to find alumni and send your first connection request.</p>
+                            <p class="font-xssss text-grey-500 mb-0">Use the search box above to find classmates and send your first connection request.</p>
                         </div>
                     </div>
                 @endif
@@ -150,7 +174,9 @@
                                 @php
                                     $receiver = $request->receiver;
                                     $avatarUrl = $receiver->avatar ? '/storage/' . ltrim($receiver->avatar, '/') : '/images/user-8.png';
-                                    $subtitle = '@' . Str::before($receiver->email, '@');
+                                    $subtitle = $receiver->alumni?->year_of_graduation
+                                        ? 'Class of ' . $receiver->alumni->year_of_graduation
+                                        : '@' . Str::before($receiver->email, '@');
                                 @endphp
                                 @include('livewire.partials.connection-member-card', [
                                     'name' => $receiver->name,
@@ -182,8 +208,8 @@
             <div class="card-body p-4">
                 <h4 class="fw-700 mb-2 font-xssss text-grey-900">Quick tips</h4>
                 <ul class="font-xssss text-grey-500 mb-0 ps-3">
-                    <li class="mb-2">Search by name or email to find alumni.</li>
-                    <li class="mb-2">Connections can see your <strong>Connections-only</strong> posts.</li>
+                    <li class="mb-2">Search by name, class year, department, or email.</li>
+                    <li class="mb-2">Tap a result to view their profile before connecting.</li>
                     <li>Check <strong>Requests</strong> to confirm new connections.</li>
                 </ul>
             </div>

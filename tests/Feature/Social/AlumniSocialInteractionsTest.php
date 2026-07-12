@@ -46,6 +46,30 @@ class AlumniSocialInteractionsTest extends TestCase
         ]);
     }
 
+    public function test_emoji_picker_inserts_memorial_candle_into_posts_comments_and_replies(): void
+    {
+        $author = User::factory()->create();
+        $commenter = User::factory()->create();
+        $this->connectUsers($commenter, $author);
+
+        Livewire::actingAs($commenter)
+            ->test(PostComposer::class)
+            ->set('content', 'In loving memory ')
+            ->call('insertEmoji', 'content', '🕯️')
+            ->assertSet('content', 'In loving memory 🕯️');
+
+        $post = Post::factory()->create(['user_id' => $author->id]);
+
+        Livewire::actingAs($commenter)
+            ->test(PostComments::class, ['postId' => $post->id])
+            ->set('body', 'Rest in peace ')
+            ->call('insertEmoji', 'body', '🕯️')
+            ->assertSet('body', 'Rest in peace 🕯️')
+            ->set('replyBody', 'Our condolences ')
+            ->call('insertEmoji', 'replyBody', '🕊️')
+            ->assertSet('replyBody', 'Our condolences 🕊️');
+    }
+
     public function test_connected_alumni_can_like_post(): void
     {
         $author = User::factory()->create();

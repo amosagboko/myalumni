@@ -5,6 +5,7 @@ namespace App\Livewire\Social;
 use App\Models\Event;
 use App\Services\Social\FeedService;
 use App\Services\Social\PostService;
+use App\Support\Social\EmojiPicker;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -70,6 +71,15 @@ class PostComposer extends Component
         if (count($this->videos) > $maxVideos) {
             $this->videos = array_slice($this->videos, 0, $maxVideos);
         }
+    }
+
+    public function insertEmoji(string $field, string $emoji, EmojiPicker $picker): void
+    {
+        if ($field !== 'content' || ! config('social.emoji_picker.enabled', true)) {
+            return;
+        }
+
+        $this->content = $picker->append($this->content, $emoji);
     }
 
     public function createPost(PostService $postService): void

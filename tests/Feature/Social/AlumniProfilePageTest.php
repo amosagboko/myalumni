@@ -36,6 +36,10 @@ class AlumniProfilePageTest extends TestCase
         $response->assertSee('Edit Settings');
         $response->assertSee('alumni-profile-page', false);
         $response->assertSee('wire:snapshot', false);
+
+        if (! config('social.realtime_enabled')) {
+            $response->assertSee('wire:poll.visible.30s', false);
+        }
     }
 
     public function test_alumni_can_view_another_alumni_profile_and_connect(): void

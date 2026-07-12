@@ -1,4 +1,10 @@
-<div class="d-inline-block">
+<div
+    class="d-inline-block"
+    @if($useBackgroundPoll && $pollInterval > 0)
+        wire:poll.visible.{{ $pollInterval }}s="refreshQuietly"
+    @endif
+    wire:loading.delay.longest.class="social-connections-syncing"
+>
     <a href="#"
        class="p-2 text-center ms-auto menu-icon"
        id="alumniNotificationDropdown"

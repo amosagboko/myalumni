@@ -44,9 +44,9 @@ class NotificationBell extends Component
         $notifications = $user->notifications()->limit(10)->get();
         $unreadCount = $user->unreadNotifications()->count();
 
-        return view('livewire.social.notification-bell', [
+        return view('livewire.social.notification-bell', array_merge([
             'notifications' => $notifications,
             'unreadCount' => $unreadCount,
-        ]);
+        ], $this->socialPollViewData()));
     }
 }

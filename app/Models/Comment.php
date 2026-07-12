@@ -50,7 +50,46 @@ class Comment extends Model
 
     public function replies(): HasMany
     {
-        return $this->hasMany(Comment::class, 'parent_id')->latest();
+        return $this->hasMany(Comment::class, 'parent_id')->oldest();
+    }
+
+    public function children(): HasMany
+    {
+        return $this->replies();
+    }
+
+    public static function maxNestingDepth(): int
+    {
+        return max(1, (int) config('social.max_comment_nesting_depth', 10));
+    }
+
+    public static function indentCap(): int
+    {
+        return max(0, (int) config('social.comment_indent_cap', 4));
+    }
+
+    /**
+     * Depth of this comment in its thread (top-level = 1).
+     */
+    public function threadDepth(): int
+    {
+        $depth = 1;
+        $parentId = $this->parent_id;
+        $guard = 0;
+        $limit = self::maxNestingDepth() + 1;
+
+        while ($parentId && $guard < $limit) {
+            $depth++;
+            $parentId = self::query()->whereKey($parentId)->value('parent_id');
+            $guard++;
+        }
+
+        return $depth;
+    }
+
+    public function canAcceptReply(): bool
+    {
+        return $this->threadDepth() < self::maxNestingDepth();
     }
 
     public function scopeTopLevel($query)

@@ -28,9 +28,14 @@ class ConnectionsPageTest extends TestCase
         $response->assertOk();
         $response->assertSee('Connections');
         $response->assertSee('My Connections');
+        $response->assertSee('Find alumni');
         $response->assertSee('People You May Know');
-        $response->assertSee('search-form-2', false);
+        $response->assertSee('connections-page__search-input', false);
         $response->assertSee('connections-page', false);
         $response->assertSee('wire:snapshot', false);
+
+        if (! config('social.realtime_enabled')) {
+            $response->assertSee('wire:poll.visible.30s', false);
+        }
     }
 }

@@ -165,4 +165,65 @@ class ConnectionService
 
         return 'none';
     }
+
+    public function searchAlumni(User $viewer, string $term, int $limit = 20): Collection
+    {
+        $term = trim($term);
+
+        if (strlen($term) < 2) {
+            return collect();
+        }
+
+        $like = '%'.$term.'%';
+
+        return User::query()
+            ->role('alumni')
+            ->where('id', '!=', $viewer->id)
+            ->where('is_banned', false)
+            ->where('status', 'active')
+            ->where(function ($query) use ($like, $term) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhereHas('alumni', function ($alumniQuery) use ($like, $term) {
+                        $alumniQuery->where('matric_number', 'like', $like)
+                            ->orWhere('department', 'like', $like)
+                            ->orWhere('faculty', 'like', $like)
+                            ->orWhere('programme', 'like', $like);
+
+                        if (ctype_digit($term)) {
+                            $alumniQuery->orWhere('year_of_graduation', (int) $term);
+                        }
+                    });
+            })
+            ->with('alumni')
+            ->orderBy('name')
+            ->limit(max(1, $limit))
+            ->get()
+            ->map(fn (User $user) => [
+                'user' => $user,
+                'mode' => $this->getConnectionActionMode($viewer, $user),
+                'mutual_count' => $this->getMutualConnectionCount($viewer, $user),
+                'subtitle' => $this->searchResultSubtitle($user),
+                'avatar_url' => $user->avatar
+                    ? '/storage/'.ltrim($user->avatar, '/')
+                    : '/images/user-8.png',
+            ]);
+    }
+
+    public function searchResultSubtitle(User $user): string
+    {
+        $parts = [];
+
+        if ($user->alumni?->year_of_graduation) {
+            $parts[] = 'Class of '.$user->alumni->year_of_graduation;
+        }
+
+        if ($user->alumni?->department) {
+            $parts[] = $user->alumni->department;
+        } elseif ($user->alumni?->faculty) {
+            $parts[] = $user->alumni->faculty;
+        }
+
+        return implode(' · ', $parts) ?: 'Alumni member';
+    }
 }

@@ -34,8 +34,8 @@ class SuggestedConnections extends Component
 
     public function render(ConnectionService $connectionService)
     {
-        return view('livewire.social.suggested-connections', [
+        return view('livewire.social.suggested-connections', array_merge([
             'suggestions' => $connectionService->getSuggestions(Auth::user(), 3),
-        ]);
+        ], $this->socialConnectionsPollViewData()));
     }
 }

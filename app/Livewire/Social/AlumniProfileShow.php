@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Social;
 
+use App\Livewire\Social\Concerns\ListensForSocialBroadcasts;
 use App\Models\User;
 use App\Services\Social\AlumniProfileService;
 use App\Services\Social\ConnectionService;
@@ -13,6 +14,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.alumni')]
 class AlumniProfileShow extends Component
 {
+    use ListensForSocialBroadcasts;
     use WithPagination;
 
     public int $profileUserId;
@@ -81,7 +83,7 @@ class AlumniProfileShow extends Component
         $profileUser = $this->profileUser;
         $viewer = Auth::user();
 
-        return view('livewire.social.alumni-profile-show', [
+        return view('livewire.social.alumni-profile-show', array_merge([
             'profileUser' => $profileUser,
             'isSelf' => $viewer->id === $profileUser->id,
             'connectionMode' => $connectionService->getConnectionActionMode($viewer, $profileUser),
@@ -90,6 +92,5 @@ class AlumniProfileShow extends Component
             'subtitle' => $profileService->profileSubtitle($profileUser),
             'avatarUrl' => $profileService->avatarUrl($profileUser),
             'posts' => $profileService->paginateProfilePosts($viewer, $profileUser, 10),
-        ]);
-    }
+        ], $this->socialConnectionsPollViewData()));    }
 }

@@ -15,6 +15,10 @@
                    wire:keydown.enter.prevent="addComment"
                    class="form-control rounded-xxl bg-white border-0 ps-4 font-xssss text-grey-900 fw-500 p-2 w-100 social-comment-input"
                    placeholder="Write a comment...">
+            @include('livewire.social.partials.emoji-picker', [
+                'field' => 'body',
+                'label' => 'Add emoji to comment',
+            ])
             <button type="button"
                     wire:click.prevent="addComment"
                     class="btn-round-sm bg-current text-white font-xssss ms-2 border-0"
@@ -33,6 +37,8 @@
             'depth' => 0,
             'supportsReplies' => $supportsReplies,
             'replyingToId' => $replyingToId,
+            'maxNestingDepth' => $maxNestingDepth,
+            'indentCap' => $indentCap,
         ])
     @endforeach
 </div>

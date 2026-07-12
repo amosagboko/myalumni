@@ -44,8 +44,8 @@ class ConnectionRequests extends Component
 
     public function render(ConnectionService $connectionService)
     {
-        return view('livewire.social.connection-requests', [
+        return view('livewire.social.connection-requests', array_merge([
             'pendingRequests' => $connectionService->getPendingIncoming(Auth::user(), 3),
-        ]);
+        ], $this->socialConnectionsPollViewData()));
     }
 }

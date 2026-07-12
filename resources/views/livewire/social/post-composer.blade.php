@@ -57,6 +57,10 @@
                         <i class="font-md text-danger feather-video me-2"></i><span class="d-none-xs">Video</span>
                     </label>
                 </div>
+                @include('livewire.social.partials.emoji-picker', [
+                    'field' => 'content',
+                    'label' => 'Add emoji to post',
+                ])
                 <button type="button"
                         wire:click.prevent="createPost"
                         class="ms-auto btn-round-md bg-primary-gradiant text-white font-xssss fw-600 px-3"

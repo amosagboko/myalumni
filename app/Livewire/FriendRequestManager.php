@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\User;
+use App\Livewire\Social\Concerns\ListensForSocialBroadcasts;
 use Livewire\Component;
 use App\Models\FriendRequest;
 use Illuminate\Support\Facades\Auth;
@@ -12,16 +13,18 @@ use Livewire\Attributes\Layout;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use App\Services\FriendRequestService;
+use App\Services\Social\ConnectionService;
 
 #[Layout('layouts.alumni')]
 class FriendRequestManager extends Component
 {
+    use ListensForSocialBroadcasts;
     use WithPagination;
 
     public $counter = 0;
     public $search = '';
     public $searchError = '';
-    public Collection $users;
+    public Collection $searchResults;
     public Collection $friends;
     public Collection $sentRequests;
     public Collection $receivedRequests;
@@ -35,16 +38,27 @@ class FriendRequestManager extends Component
         'connection-updated' => 'loadUserRequests',
     ];
 
+    public function refreshQuietly(): void
+    {
+        $this->loadUserRequests();
+
+        if ($this->search && strlen($this->search) >= 2) {
+            $this->searchUsers();
+        }
+    }
+
     protected $rules = [
         'search' => 'nullable|string|min:2|max:50'
     ];
 
     protected $friendRequestService;
+    protected ConnectionService $connectionService;
 
-    public function boot(FriendRequestService $friendRequestService)
+    public function boot(FriendRequestService $friendRequestService, ConnectionService $connectionService)
     {
         $this->friendRequestService = $friendRequestService;
-        $this->users = collect();
+        $this->connectionService = $connectionService;
+        $this->searchResults = collect();
         $this->friends = collect();
         $this->sentRequests = collect();
         $this->receivedRequests = collect();
@@ -107,109 +121,52 @@ class FriendRequestManager extends Component
         $this->emit('searchPerformed');
     }
 
-    public function performSearch()
+    public function performSearch(): void
     {
-        Log::info('Perform search called with term: ' . $this->search);
-        
-        try {
-            if (empty($this->search) || strlen($this->search) < 2) {
-                Log::info('Search term too short');
-                $this->users = collect();
-                return;
-            }
-
-            $this->isSearching = true;
-            $currentUserId = Auth::id();
-            
-            Log::info('Searching for users with term: ' . $this->search);
-            
-            $results = User::where('id', '!=', $currentUserId)
-                ->where(function($query) {
-                    $query->where('name', 'like', '%' . $this->search . '%')
-                          ->orWhere('email', 'like', '%' . $this->search . '%');
-                })
-                ->where('is_banned', false)
-                ->where('status', 'active')
-                ->orderBy('name')
-                ->limit(20)
-                ->get();
-
-            Log::info('Search completed. Found ' . $results->count() . ' results');
-            
-            if ($results->isNotEmpty()) {
-                Log::info('First result: ' . $results->first()->name);
-            }
-
-            $this->users = $results;
-            $this->emit('searchPerformed');
-
-        } catch (\Exception $e) {
-            Log::error('Search error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            $this->users = collect();
-            $this->searchError = 'An error occurred while searching. Please try again.';
-        } finally {
-            $this->isSearching = false;
-        }
+        $this->searchUsers();
     }
 
-    public function updatedSearch()
+    public function updatedSearch(): void
     {
-        if (strlen($this->search) >= 2) {
+        $this->searchError = null;
+        $term = trim($this->search);
+
+        if (strlen($term) >= 2) {
             $this->searchUsers();
         } else {
-            $this->users = collect();
+            $this->searchResults = collect();
         }
     }
 
-    public function searchUsers()
+    public function searchUsers(): void
     {
         try {
-            Log::info('Searching users', ['term' => $this->search]);
-            $this->users = $this->friendRequestService->searchUsers(
-                $this->search,
-                Auth::id()
+            $this->searchResults = $this->connectionService->searchAlumni(
+                Auth::user(),
+                $this->search
             );
             $this->searchError = null;
         } catch (\Exception $e) {
             Log::error('Error searching users', [
                 'error' => $e->getMessage(),
-                'term' => $this->search
+                'term' => $this->search,
             ]);
-            $this->searchError = 'An error occurred while searching users.';
-            $this->users = collect();
+            $this->searchError = 'An error occurred while searching. Please try again.';
+            $this->searchResults = collect();
         }
     }
 
-    public function testSearch()
-    {
-        Log::info('Test search button clicked');
-        try {
-            // First, let's check if we can get any users at all
-            $allUsers = User::where('id', '!=', Auth::id())->get();
-            Log::info('Total users in database (excluding current user): ' . $allUsers->count());
-
-            // Now try to get one user
-            $results = User::where('id', '!=', Auth::id())->take(1)->get();
-            $this->users = $results;
-            
-            if ($this->users->isNotEmpty()) {
-                Log::info('Test search result: ' . $this->users->first()->name);
-            } else {
-                Log::info('No users found in database for test search');
-            }
-        } catch (\Exception $e) {
-            Log::error('Test search error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            $this->users = collect();
-        }
-    }
-
-    public function clearSearch()
+    public function clearSearch(): void
     {
         $this->search = '';
         $this->searchError = null;
-        $this->users = collect();
+        $this->searchResults = collect();
+    }
+
+    public function testSearch(): void
+    {
+        $this->search = 'a';
+        $this->searchUsers();
     }
 
     public function sendRequest($userId)
@@ -396,6 +353,6 @@ class FriendRequestManager extends Component
 
     public function render()
     {
-        return view('livewire.friend-request-manager');
+        return view('livewire.friend-request-manager', $this->socialConnectionsPollViewData());
     }
 }

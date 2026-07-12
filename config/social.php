@@ -47,6 +47,47 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Connections / friend-request poll interval (seconds)
+    |--------------------------------------------------------------------------
+    |
+    | Background poll for /friends, member profiles, and connection widgets.
+    | Set to 0 to disable polling on those components.
+    |
+    */
+    'connections_poll_interval_seconds' => (int) env('SOCIAL_CONNECTIONS_POLL_INTERVAL_SECONDS', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Comment thread nesting
+    |--------------------------------------------------------------------------
+    |
+    | Maximum depth for threaded replies (top-level comment = depth 1).
+    | Visual indent in the UI is capped separately so deep threads stay readable.
+    |
+    */
+    'max_comment_nesting_depth' => (int) env('SOCIAL_MAX_COMMENT_NESTING_DEPTH', 10),
+    'comment_indent_cap' => (int) env('SOCIAL_COMMENT_INDENT_CAP', 4),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Curated emoji picker
+    |--------------------------------------------------------------------------
+    |
+    | A small alumni-safe set for posts, comments, and replies. Native emoji
+    | characters are stored directly in the existing utf8mb4 text columns.
+    |
+    */
+    'emoji_picker' => [
+        'enabled' => (bool) env('SOCIAL_EMOJI_PICKER_ENABLED', true),
+        'items' => [
+            '👍', '❤️', '😊', '😂', '🎉', '👏', '🙏', '🎓',
+            '🥳', '✨', '🤝', '💪', '💯', '🙌', '🤔', '😢',
+            '🕯️', '🕊️', '💐', '❤️‍🩹', '📚', '🏆', '🌟', '✅',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Post image uploads
     |--------------------------------------------------------------------------
     */

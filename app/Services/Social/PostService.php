@@ -150,8 +150,8 @@ class PostService
                 ->where('post_id', $post->id)
                 ->findOrFail($parentId);
 
-            if ($parent->isReply()) {
-                throw new \RuntimeException('You can only reply to top-level comments.');
+            if (! $parent->canAcceptReply()) {
+                throw new \RuntimeException('Maximum reply depth reached.');
             }
         }
 

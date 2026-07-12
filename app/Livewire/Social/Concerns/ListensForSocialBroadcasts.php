@@ -58,4 +58,41 @@ trait ListensForSocialBroadcasts
     {
         return true;
     }
+
+    /**
+     * Quiet background refresh when realtime is off (wire:poll.visible).
+     */
+    public function refreshQuietly(): void
+    {
+        // Components may override; default relies on render().
+    }
+
+    /**
+     * @return array{useBackgroundPoll: bool, pollInterval: int}
+     */
+    protected function socialPollViewData(): array
+    {
+        return $this->pollViewDataForConfigKey('social.poll_interval_seconds', 10);
+    }
+
+    /**
+     * @return array{useBackgroundPoll: bool, pollInterval: int}
+     */
+    protected function socialConnectionsPollViewData(): array
+    {
+        return $this->pollViewDataForConfigKey('social.connections_poll_interval_seconds', 30);
+    }
+
+    /**
+     * @return array{useBackgroundPoll: bool, pollInterval: int}
+     */
+    protected function pollViewDataForConfigKey(string $configKey, int $default): array
+    {
+        $interval = (int) config($configKey, $default);
+
+        return [
+            'useBackgroundPoll' => ! $this->broadcastingEnabled() && $interval > 0,
+            'pollInterval' => $interval,
+        ];
+    }
 }

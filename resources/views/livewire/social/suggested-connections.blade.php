@@ -1,4 +1,10 @@
-<div class="card w-100 shadow-xss rounded-xxl border-0 p-0 mb-3">
+<div
+    class="card w-100 shadow-xss rounded-xxl border-0 p-0 mb-3"
+    @if($useBackgroundPoll && $pollInterval > 0)
+        wire:poll.visible.{{ $pollInterval }}s="refreshQuietly"
+    @endif
+    wire:loading.delay.longest.class="social-connections-syncing"
+>
     <div class="card-body d-flex align-items-center p-4 mb-0">
         <h4 class="fw-700 mb-0 font-xssss text-grey-900">People You May Know</h4>
         @unless(request()->routeIs('friends'))

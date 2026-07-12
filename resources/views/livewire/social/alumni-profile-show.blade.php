@@ -1,4 +1,10 @@
-<div class="row feed-body alumni-profile-page">
+<div
+    class="row feed-body alumni-profile-page"
+    @if($useBackgroundPoll && $pollInterval > 0)
+        wire:poll.visible.{{ $pollInterval }}s="refreshQuietly"
+    @endif
+    wire:loading.delay.longest.class="social-connections-syncing"
+>
     <div class="col-xl-12">
         <div class="card w-100 shadow-xss rounded-xxl border-0 mb-3 mt-3 alumni-profile-page__hero-card">
             <div class="card-body position-relative alumni-profile-page__cover bg-primary-gradiant rounded-top-xxl overflow-hidden"></div>
