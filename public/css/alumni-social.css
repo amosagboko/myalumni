@@ -209,3 +209,36 @@
 .events-page .pagination {
     margin-bottom: 0;
 }
+
+.alumni-profile-page__cover {
+    min-height: 240px;
+}
+
+.alumni-profile-page__hero-card {
+    overflow: visible;
+}
+
+.alumni-profile-page__avatar {
+    width: 100px;
+    max-width: 100px;
+}
+
+.alumni-profile-page__hero-body {
+    min-height: 120px;
+}
+
+.alumni-profile-page__actions {
+    z-index: 2;
+}
+
+.alumni-profile-page__actions .btn {
+    min-width: 140px;
+}
+
+.alumni-profile-page .connection-member-card__actions .btn {
+    min-width: 120px;
+}
+
+.connection-member-card a.text-decoration-none:hover .connection-member-card__name {
+    color: var(--theme-color, #132977);
+}

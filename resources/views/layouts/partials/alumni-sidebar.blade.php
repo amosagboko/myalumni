@@ -22,7 +22,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('profile.edit') }}" class="nav-content-bttn open-font {{ request()->routeIs('profile.*') ? 'active' : '' }}">
+                        <a href="{{ route('alumni.members.show', auth()->user()) }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni.members.show') && (int) request()->route('user')?->id === auth()->id() ? 'active' : '' }}">
                             <i class="feather-user btn-round-md bg-mini-gradiant me-3"></i><span>My Profile</span>
                         </a>
                     </li>

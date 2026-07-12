@@ -7,30 +7,35 @@
     </div>
 
     @forelse($suggestions as $suggestion)
-        @php $user = $suggestion['user']; @endphp
+        @php
+            $user = $suggestion['user'];
+            $profileUrl = route('alumni.members.show', $user);
+        @endphp
         <div class="card-body bg-transparent-card d-flex p-3 bg-greylight ms-3 me-3 rounded-3 {{ $loop->last ? 'mb-3' : '' }}" style="{{ !$loop->last ? 'margin-bottom: 0 !important;' : '' }}">
-            <figure class="avatar me-2 mb-0">
-                <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : asset('/images/user-8.png') }}"
-                     alt="{{ $user->name }}"
-                     class="shadow-sm rounded-circle w45">
-            </figure>
-            <h4 class="fw-700 text-grey-900 font-xssss mt-2">
-                {{ $user->name }}
-                <span class="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">
-                    @if($suggestion['mutual_count'] > 0)
-                        {{ $suggestion['mutual_count'] }} mutual {{ Str::plural('connection', $suggestion['mutual_count']) }}
-                    @elseif($user->alumni?->year_of_graduation)
-                        Class of {{ $user->alumni->year_of_graduation }}
-                    @else
-                        Suggested alumni
-                    @endif
-                </span>
-            </h4>
+            <a href="{{ $profileUrl }}" class="d-flex align-items-start flex-grow-1 text-decoration-none me-2">
+                <figure class="avatar me-2 mb-0">
+                    <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : asset('/images/user-8.png') }}"
+                         alt="{{ $user->name }}"
+                         class="shadow-sm rounded-circle w45">
+                </figure>
+                <h4 class="fw-700 text-grey-900 font-xssss mt-2 mb-0">
+                    {{ $user->name }}
+                    <span class="d-block font-xssss fw-500 mt-1 lh-3 text-grey-500">
+                        @if($suggestion['mutual_count'] > 0)
+                            {{ $suggestion['mutual_count'] }} mutual {{ Str::plural('connection', $suggestion['mutual_count']) }}
+                        @elseif($user->alumni?->year_of_graduation)
+                            Class of {{ $user->alumni->year_of_graduation }}
+                        @else
+                            Suggested alumni
+                        @endif
+                    </span>
+                </h4>
+            </a>
             <button type="button"
                     wire:click="connect({{ $user->id }})"
                     wire:loading.attr="disabled"
                     wire:target="connect({{ $user->id }})"
-                    class="btn-round-sm bg-white text-grey-900 ms-auto mt-2 border-0 d-flex align-items-center justify-content-center"
+                    class="btn-round-sm bg-white text-grey-900 ms-auto mt-2 border-0 d-flex align-items-center justify-content-center flex-shrink-0"
                     title="Send connection request">
                 <i class="feather-user-plus font-xss"></i>
             </button>

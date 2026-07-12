@@ -133,4 +133,36 @@ class ConnectionService
     {
         return $this->friendRequestService->getRequestStatus($userId, $otherUserId);
     }
+
+    public function getConnectionActionMode(User $viewer, User $other): string
+    {
+        if ($viewer->id === $other->id) {
+            return 'self';
+        }
+
+        $status = $this->getRequestStatus($viewer->id, $other->id);
+
+        if ($status === 'accepted') {
+            return 'accepted';
+        }
+
+        if ($status === 'pending') {
+            $request = FriendRequest::query()
+                ->where(function ($query) use ($viewer, $other) {
+                    $query->where(function ($inner) use ($viewer, $other) {
+                        $inner->where('sender_id', $viewer->id)
+                            ->where('receiver_id', $other->id);
+                    })->orWhere(function ($inner) use ($viewer, $other) {
+                        $inner->where('sender_id', $other->id)
+                            ->where('receiver_id', $viewer->id);
+                    });
+                })
+                ->where('status', 'pending')
+                ->first();
+
+            return $request && $request->sender_id === $viewer->id ? 'pending' : 'received';
+        }
+
+        return 'none';
+    }
 }

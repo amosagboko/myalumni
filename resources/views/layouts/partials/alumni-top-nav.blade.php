@@ -25,8 +25,8 @@
     <a href="{{ route('alumni.events') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="Official Events" aria-label="Official Events">
         <i class="feather-calendar font-lg {{ request()->routeIs('alumni.events*') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
-    <a href="{{ route('profile.edit') }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="My Profile" aria-label="My Profile">
-        <i class="feather-user font-lg {{ request()->routeIs('profile.*') ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
+    <a href="{{ route('alumni.members.show', auth()->user()) }}" class="p-2 text-center ms-0 menu-icon center-menu-icon" title="My Profile" aria-label="My Profile">
+        <i class="feather-user font-lg {{ request()->routeIs('alumni.members.show') && (int) request()->route('user')?->id === auth()->id() ? 'alert-primary text-current' : 'bg-greylight text-grey-500' }} btn-round-lg theme-dark-bg"></i>
     </a>
 
     <livewire:social.notification-bell />
