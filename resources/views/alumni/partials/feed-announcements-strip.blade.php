@@ -1,45 +1,63 @@
-@php
-    use App\Models\Event;
-    $upcomingEvents = collect();
-    try {
-        $upcomingEvents = Event::published()->ordered()->where('date', '>=', now()->toDateString())->limit(5)->get();
-    } catch (\Throwable $e) {
-        report($e);
-    }
-@endphp
-
 <div class="card w-100 shadow-none bg-transparent bg-transparent-card border-0 p-0 mb-0">
-    <div class="owl-carousel category-card owl-theme overflow-hidden nav-none">
-        <div class="item">
-            <div class="card w125 h200 d-block border-0 shadow-xss rounded-xxxl bg-gradiant-bottom overflow-hidden mb-3 mt-3" style="background: linear-gradient(135deg, #132977 0%, #05f 100%);">
-                <div class="card-body d-block p-3 w-100 position-absolute bottom-0 text-center">
-                    <span class="btn-round-lg bg-white d-inline-flex align-items-center justify-content-center"><i class="feather-zap font-lg text-primary"></i></span>
-                    <div class="clearfix"></div>
-                    <h4 class="fw-700 position-relative z-index-1 ls-1 font-xssss text-white mt-2 mb-1">Welcome, {{ Auth::user()->name }}</h4>
+    @php
+        $welcomeUser = Auth::user();
+        $welcomeAlumni = $welcomeUser->alumni;
+        $welcomeAvatar = $welcomeUser->avatar
+            ? asset('storage/' . $welcomeUser->avatar)
+            : asset('/images/user-8.png');
+        $welcomeClassYear = $welcomeAlumni?->year_of_graduation;
+    @endphp
+    <div class="feed-announcements-row" aria-label="Welcome, highlights, news, and events">
+        <div class="feed-announcements-welcome mb-3 mt-3">
+            <a href="{{ route('alumni.members.show', $welcomeUser) }}"
+               class="text-decoration-none d-block feed-announcements-welcome__link"
+               aria-label="View your profile">
+                <div class="card w125 h200 d-block border-0 shadow-xss rounded-xxxl overflow-hidden mb-0 feed-announcement-event-slide__card feed-announcements-welcome__card">
+                    <div class="feed-announcements-welcome__media">
+                        <img src="{{ $welcomeAvatar }}"
+                             alt="{{ $welcomeUser->name }}"
+                             class="feed-announcements-welcome__avatar-img">
+                    </div>
+                    <div class="feed-announcements-welcome__meta text-center">
+                        <h4 class="fw-700 ls-1 font-xssss text-white mb-0">{{ \Illuminate\Support\Str::limit($welcomeUser->name, 16) }}</h4>
+                        @if($welcomeClassYear)
+                            <span class="d-block font-xsssss text-white opacity-75 mt-1">Class of {{ $welcomeClassYear }}</span>
+                        @else
+                            <span class="d-block font-xsssss text-white opacity-75 mt-1">View profile</span>
+                        @endif
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
-        @forelse($upcomingEvents as $event)
-            <div class="item">
-                <a href="{{ route('alumni.events.show', $event) }}" class="text-decoration-none d-block">
-                <div class="card w125 h200 d-block border-0 shadow-xss rounded-xxxl bg-gradiant-bottom overflow-hidden cursor-pointer mb-3 mt-3"
-                     @if($event->image) style="background-image: url('{{ asset('storage/' . $event->image) }}'); background-size: cover; background-position: center;" @else style="background: linear-gradient(135deg, #10d876 0%, #132977 100%);" @endif>
-                    <div class="card-body d-block p-3 w-100 position-absolute bottom-0 text-center">
-                        <div class="clearfix"></div>
-                        <h4 class="fw-600 position-relative z-index-1 ls-1 font-xssss text-white mt-2 mb-1">{{ \Illuminate\Support\Str::limit($event->eventname, 28) }}</h4>
-                        <span class="d-block font-xsssss text-white opacity-75">{{ $event->date?->format('M j') }}</span>
-                    </div>
-                </div>
-                </a>
-            </div>
-        @empty
-            <div class="item">
-                <div class="card w125 h200 d-block border-0 shadow-xss rounded-xxxl bg-greylight overflow-hidden mb-3 mt-3">
-                    <div class="card-body d-flex align-items-center justify-content-center h-100 p-3 text-center">
-                        <p class="font-xssss text-grey-500 mb-0">Official events will appear here.</p>
-                    </div>
-                </div>
-            </div>
-        @endforelse
+
+        <div class="feed-announcements-carousel-wrap mb-3 mt-3">
+            <p class="feed-announcements-carousel-label mb-1">Highlights</p>
+            @include('alumni.partials.feed-event-carousel', [
+                'items' => $highlightItems,
+                'carouselId' => 'feedAnnouncementsHighlightsCarousel',
+                'variant' => 'announcement',
+                'emptyMessage' => 'No highlights yet.',
+            ])
+        </div>
+
+        <div class="feed-announcements-carousel-wrap mb-3 mt-3">
+            <p class="feed-announcements-carousel-label mb-1">News</p>
+            @include('alumni.partials.feed-event-carousel', [
+                'items' => $newsItems,
+                'carouselId' => 'feedAnnouncementsNewsCarousel',
+                'variant' => 'announcement',
+                'emptyMessage' => 'No news yet.',
+            ])
+        </div>
+
+        <div class="feed-announcements-carousel-wrap mb-3 mt-3">
+            <p class="feed-announcements-carousel-label mb-1">Events</p>
+            @include('alumni.partials.feed-event-carousel', [
+                'items' => $eventItems,
+                'carouselId' => 'feedAnnouncementsEventsCarousel',
+                'variant' => 'announcement',
+                'emptyMessage' => 'No events yet.',
+            ])
+        </div>
     </div>
 </div>

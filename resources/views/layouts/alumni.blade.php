@@ -53,7 +53,7 @@
                     @isset($slot)
                         @hasSection('feed_layout')
                             {{ $slot }}
-                        @elseif (request()->routeIs('friends', 'alumni.events*', 'alumni.members*'))
+                        @elseif (request()->routeIs('friends', 'alumni.discover', 'alumni.events.show', 'alumni.members*'))
                             {{ $slot }}
                         @else
                             <div class="middle-wrap">
@@ -78,7 +78,7 @@
         <div class="app-footer border-0 shadow-lg bg-primary-gradiant">
             <a href="{{ route('alumni.home') }}" class="nav-content-bttn nav-center {{ request()->routeIs('alumni.home') ? 'active' : '' }}" title="Newsfeed" aria-label="Newsfeed"><i class="feather-activity"></i></a>
             <a href="{{ route('friends') }}" class="nav-content-bttn {{ request()->routeIs('friends') ? 'active' : '' }}" title="Connections" aria-label="Connections"><i class="feather-users"></i></a>
-            <a href="{{ route('alumni.events') }}" class="nav-content-bttn {{ request()->routeIs('alumni.events*') ? 'active' : '' }}" title="Official Events" aria-label="Official Events"><i class="feather-calendar"></i></a>
+            <a href="{{ route('alumni.discover') }}" class="nav-content-bttn {{ request()->routeIs('alumni.discover', 'alumni.events.show') ? 'active' : '' }}" title="Discover" aria-label="Discover"><i class="feather-compass"></i></a>
             <a href="{{ route('alumni.members.show', auth()->user()) }}" class="nav-content-bttn {{ request()->routeIs('alumni.members.show') && (int) request()->route('user')?->id === auth()->id() ? 'active' : '' }}" title="My Profile" aria-label="My Profile">
                 @auth
                     <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : asset('/images/user-8.png') }}" alt="user" class="w30 shadow-xss rounded-circle">

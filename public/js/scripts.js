@@ -30,17 +30,6 @@ $(document).ready(function() {
     handlePreloader();
     PageLoad();
 
-    $('.carousel-card').owlCarousel({
-        loop:false,
-        margin:10,
-        nav:false,
-        autoplay:false,  
-        dots:false,
-        autoWidth:true
-    })
-
-
-
      $('.category-card').owlCarousel({
         loop:false,
         margin:7,
@@ -50,6 +39,17 @@ $(document).ready(function() {
         navText:['<i class="ti-angle-left"></i>','<i class="ti-angle-right"></i>'],
         autoWidth:true
     })
+
+     $('.carousel-card').owlCarousel({
+        loop:false,
+        margin:10,
+        nav:false,
+        autoplay:false,  
+        dots:false,
+        autoWidth:true
+    })
+
+
 
      $('.banner-slider').owlCarousel({
         loop:true,

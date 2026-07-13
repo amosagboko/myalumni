@@ -56,12 +56,14 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('academic-affairs.audit', \App\Livewire\AcademicAffairs\Audit::class);
 
         Livewire::component('social.feed', \App\Livewire\Social\Feed::class);
+        Livewire::component('social.feed-announcements-strip', \App\Livewire\Social\FeedAnnouncementsStrip::class);
+        Livewire::component('social.discover', \App\Livewire\Social\Discover::class);
+        Livewire::component('social.feed-official-events-teaser', \App\Livewire\Social\FeedOfficialEventsTeaser::class);
         Livewire::component('social.post-composer', \App\Livewire\Social\PostComposer::class);
         Livewire::component('social.post-card', \App\Livewire\Social\PostCard::class);
         Livewire::component('social.post-comments', \App\Livewire\Social\PostComments::class);
         Livewire::component('social.connection-requests', \App\Livewire\Social\ConnectionRequests::class);
         Livewire::component('social.suggested-connections', \App\Livewire\Social\SuggestedConnections::class);
-        Livewire::component('social.official-events', \App\Livewire\Social\OfficialEvents::class);
         Livewire::component('social.event-show', \App\Livewire\Social\EventShow::class);
         Livewire::component('social.notification-bell', \App\Livewire\Social\NotificationBell::class);
     }

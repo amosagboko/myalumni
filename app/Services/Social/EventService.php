@@ -14,8 +14,51 @@ class EventService
     {
         return Event::query()
             ->published()
-            ->ordered()
-            ->where('date', '>=', now()->toDateString());
+            ->where(function (Builder $query) {
+                $query->whereNull('date')
+                    ->orWhere('date', '>=', now()->toDateString());
+            })
+            ->orderedForAlumniDisplay();
+    }
+
+    public function upcomingByTypeQuery(string $type): Builder
+    {
+        return $this->upcomingQuery()->ofType($type);
+    }
+
+    public function teaser(int $limit = 3)
+    {
+        return $this->upcomingQuery()->limit(max(1, $limit))->get();
+    }
+
+    public function teaserByType(string $type, int $limit = 3)
+    {
+        return $this->upcomingByTypeQuery($type)->limit(max(1, $limit))->get();
+    }
+
+    /**
+     * Alumni home strip: the three most recently created published items of a type.
+     * Ordered oldest-to-newest within the trio for slideshow progression.
+     */
+    public function stripCarouselByType(string $type, int $limit = 3)
+    {
+        $limit = max(1, min(3, $limit));
+
+        $items = Event::query()
+            ->published()
+            ->ofType($type)
+            ->where(function (Builder $query) {
+                $query->whereNull('date')
+                    ->orWhere('date', '>=', now()->toDateString());
+            })
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+
+        return $items
+            ->sortBy(fn (Event $event) => [$event->created_at?->timestamp ?? 0, $event->id])
+            ->values();
     }
 
     public function pastQuery(): Builder
@@ -42,9 +85,42 @@ class EventService
         return $query->paginate($perPage);
     }
 
-    public function teaser(int $limit = 3)
+    public function paginateByType(string $type, string $filter = 'upcoming', int $perPage = 9): LengthAwarePaginator
     {
-        return $this->upcomingQuery()->limit($limit)->get();
+        $query = match ($filter) {
+            'past' => $this->pastQuery()->ofType($type),
+            'all' => $this->allPublishedQuery()->ofType($type),
+            default => $this->upcomingByTypeQuery($type),
+        };
+
+        return $query->paginate($perPage);
+    }
+
+    public function typeForDiscoverTab(string $tab): string
+    {
+        return match ($tab) {
+            'highlights' => 'connect',
+            'news' => 'event',
+            default => 'opportunity',
+        };
+    }
+
+    public function discoverTabForType(?string $type): string
+    {
+        return match ($type) {
+            'connect' => 'highlights',
+            'event' => 'news',
+            default => 'events',
+        };
+    }
+
+    public function discoverTabLabel(string $tab): string
+    {
+        return match ($tab) {
+            'highlights' => 'Highlights',
+            'news' => 'News',
+            default => 'Events',
+        };
     }
 
     public function isVisibleToAlumni(Event $event): bool
@@ -71,10 +147,10 @@ class EventService
     public function typeLabel(?string $type): string
     {
         return match ($type) {
-            'connect' => 'Connect',
+            'connect' => 'Highlights',
             'event' => 'News',
-            'opportunity' => 'Official Event',
-            default => 'Official Event',
+            'opportunity' => 'Events',
+            default => 'Events',
         };
     }
 }

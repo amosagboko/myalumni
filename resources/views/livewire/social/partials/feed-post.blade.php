@@ -15,34 +15,7 @@
     </div>
 
     @if($post->isEventShare() && $post->event)
-        <div class="card-body p-0 mb-3">
-            <a href="{{ route('alumni.events.show', $post->event) }}" class="text-decoration-none d-block">
-            <div class="bg-greylight rounded-xxl p-3">
-                <div class="d-flex align-items-start">
-                    @if($post->event->date)
-                        <div class="bg-primary me-3 p-3 rounded-xxl text-center">
-                            <h4 class="fw-700 font-sm ls-3 lh-1 text-white mb-0">
-                                <span class="ls-1 d-block font-xsss text-white fw-600">{{ strtoupper($post->event->date->format('M')) }}</span>
-                                {{ $post->event->date->format('j') }}
-                            </h4>
-                        </div>
-                    @endif
-                    <div>
-                        <h5 class="fw-700 text-grey-900 font-xssss mb-1">{{ $post->event->eventname }}</h5>
-                        @if($post->event->venue)
-                            <p class="font-xsssss text-grey-500 mb-1"><i class="feather-map-pin me-1"></i>{{ $post->event->venue }}</p>
-                        @endif
-                        @if($post->event->description)
-                            <p class="font-xssss text-grey-500 mb-0">{{ \Illuminate\Support\Str::limit($post->event->description, 160) }}</p>
-                        @endif
-                    </div>
-                </div>
-                @if($post->event->image)
-                    <img src="{{ asset('storage/' . $post->event->image) }}" alt="{{ $post->event->eventname }}" class="img-fluid rounded-xxl mt-3 w-100">
-                @endif
-            </div>
-            </a>
-        </div>
+        @include('livewire.social.partials.feed-event-share', ['post' => $post])
     @endif
 
     @if($post->content)

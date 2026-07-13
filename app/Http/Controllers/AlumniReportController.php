@@ -2,64 +2,79 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Alumni\ClearanceFormService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class AlumniReportController extends Controller
 {
-    public function downloadPdf()
+    public function __construct(
+        private readonly ClearanceFormService $clearanceFormService
+    ) {}
+
+    public function print(): View|RedirectResponse
     {
         $user = Auth::user();
-        $alumni = $user->alumni;
+        $alumni = $user?->alumni;
 
-        if (!$alumni) {
+        if (! $alumni) {
             return redirect()->route('reports')
                 ->with('error', 'Alumni information not found.');
         }
 
-        $data = [
-            'user' => $user,
-            'alumni' => $alumni,
-            'generatedAt' => now(),
-        ];
+        if (! $this->clearanceFormService->canAccess($alumni)) {
+            return redirect()->route('reports')
+                ->with('error', 'Please complete your profile and payments before printing the clearance form.');
+        }
+
+        return view('alumni.clearance.print', $this->clearanceFormService->context($user, $alumni));
+    }
+
+    public function downloadPdf(): Response|RedirectResponse
+    {
+        $user = Auth::user();
+        $alumni = $user?->alumni;
+
+        if (! $alumni) {
+            return redirect()->route('reports')
+                ->with('error', 'Alumni information not found.');
+        }
+
+        if (! $this->clearanceFormService->canAccess($alumni)) {
+            return redirect()->route('reports')
+                ->with('error', 'Please complete your profile and payments before downloading the clearance form.');
+        }
+
+        $data = $this->clearanceFormService->context($user, $alumni);
 
         try {
-            // Increase memory limit for PDF generation
             $originalMemoryLimit = ini_get('memory_limit');
             ini_set('memory_limit', '256M');
-            
+
             try {
-                $html = view('pdf.alumni-report', $data)->render();
-                
-                // Try resolving from container (more reliable than facade)
+                $html = view('alumni.clearance.pdf', $data)->render();
                 $dompdf = app('dompdf.wrapper');
                 $pdf = $dompdf->loadHTML($html);
                 $pdf->setPaper('a4', 'portrait');
 
-                $fileName = 'alumni_report_' . str_replace(' ', '_', strtolower($user->name)) . '_' . now()->format('Ymd_His') . '.pdf';
-
-                return $pdf->download($fileName);
+                return $pdf->download($this->clearanceFormService->pdfFileName($user));
             } finally {
-                // Restore original memory limit
                 ini_set('memory_limit', $originalMemoryLimit);
             }
         } catch (\Throwable $e) {
-            Log::error('PDF Generation Error', [
+            Log::error('Clearance form PDF generation failed', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
                 'user_id' => $user->id ?? null,
                 'alumni_id' => $alumni->id ?? null,
             ]);
-            
-            // Always show the actual error message for debugging
-            $errorMessage = 'Failed to generate PDF: ' . $e->getMessage() . 
-                ' (File: ' . basename($e->getFile()) . ', Line: ' . $e->getLine() . ')';
-            
+
             return redirect()->route('reports')
-                ->with('error', $errorMessage);
+                ->with('error', 'Failed to generate PDF. Please try again or use Print Form instead.');
         }
     }
 }
-

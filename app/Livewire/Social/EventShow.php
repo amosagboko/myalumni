@@ -24,6 +24,10 @@ class EventShow extends Component
         return view('livewire.social.event-show', [
             'shareCount' => $eventService->shareCount($this->event),
             'typeLabel' => $eventService->typeLabel($this->event->type),
+            'discoverTab' => $eventService->discoverTabForType($this->event->type),
+            'upcomingTeaser' => $eventService->stripCarouselByType('opportunity', (int) config('social.events_announcements_strip_limit', 3))
+                ->reject(fn (Event $item) => $item->id === $this->event->id),
+            'isPast' => $this->event->date && $this->event->date->isPast(),
         ]);
     }
 }

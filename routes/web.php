@@ -218,8 +218,9 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
         return view('alumni.home');
     })->name('alumni.home');
 
-    // Official Events (social layer)
-    Route::get('/alumni/events', \App\Livewire\Social\OfficialEvents::class)->name('alumni.events');
+    // Discover hub (highlights, news, events)
+    Route::get('/alumni/discover', \App\Livewire\Social\Discover::class)->name('alumni.discover');
+    Route::redirect('/alumni/events', '/alumni/discover');
     Route::get('/alumni/events/{event}', \App\Livewire\Social\EventShow::class)->name('alumni.events.show');
     Route::get('/alumni/members/{user}', \App\Livewire\Social\AlumniProfileShow::class)->name('alumni.members.show');
 
@@ -241,10 +242,11 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
         Route::get('/{transaction}/failed', [AlumniPaymentController::class, 'paymentFailed'])->name('failed');
     });
 
-    // Reports Routes (component will gate access)
+    // Clearance form (component gates access; print/download require completed profile + payments)
     Route::get('/reports', App\Livewire\AlumniReport::class)->name('reports');
+    Route::get('/reports/print', [\App\Http\Controllers\AlumniReportController::class, 'print'])->name('reports.print');
     Route::get('/reports/download-pdf', [\App\Http\Controllers\AlumniReportController::class, 'downloadPdf'])->name('reports.download-pdf');
-    Route::get('/reports/clearance-form', App\Livewire\ClearanceForm::class)->name('reports.clearance-form');
+    Route::redirect('/reports/clearance-form', '/reports')->name('reports.clearance-form');
 
     // Clearance Status (Alumni)
     Route::get('/alumni/clearance-status', \App\Livewire\Alumni\ClearanceStatus::class)->name('alumni.clearance-status');
@@ -436,10 +438,15 @@ Route::post('students/upload', [AlumniController::class, 'upload'])->name('stude
 Route::get('students', [AlumniController::class, 'index'])->name('students.index');
 
 Route::get('/alumni/{id}/print', function ($id) {
-    $alumni = \App\Models\Alumni::findOrFail($id);
-    $user = $alumni->user;
-    return view('livewire.alumni-report-print', compact('alumni', 'user'));
-})->name('alumni.print');
+    $user = auth()->user();
+    $alumni = $user?->alumni;
+
+    if (! $alumni || (int) $alumni->id !== (int) $id) {
+        abort(403);
+    }
+
+    return redirect()->route('reports.print');
+})->middleware('auth')->name('alumni.print');
 
 // Landing Page Routes
 Route::get('/', [LandingPageController::class, 'index'])->name('landing');

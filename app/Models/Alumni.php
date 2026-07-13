@@ -38,6 +38,13 @@ class Alumni extends Model
         'other_information',
         'created_by',
         'category_id',
+        'student_affairs_cleared',
+        'academic_affairs_cleared',
+    ];
+
+    protected $casts = [
+        'student_affairs_cleared' => 'boolean',
+        'academic_affairs_cleared' => 'boolean',
     ];
 
     /**

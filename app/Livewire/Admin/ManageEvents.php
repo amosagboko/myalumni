@@ -221,7 +221,7 @@ class ManageEvents extends Component
     public function typeLabel(?string $type = null): string
     {
         return match ($type ?? $this->type) {
-            'connect' => 'Connect',
+            'connect' => 'Highlights',
             'event' => 'News',
             'opportunity' => 'Events',
             default => 'Unknown',

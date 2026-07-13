@@ -6,7 +6,7 @@
 @section('content')
 <div class="row feed-body">
     <div class="col-xl-8 col-xxl-9 col-lg-8">
-        @include('alumni.partials.feed-announcements-strip')
+        <livewire:social.feed-announcements-strip />
 
         <livewire:social.post-composer />
 

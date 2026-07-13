@@ -60,6 +60,25 @@ class Event extends Model
     }
 
     /**
+     * Alumni-facing sort: manual order, then soonest upcoming date, then newest.
+     */
+    public function scopeOrderedForAlumniDisplay($query)
+    {
+        if (Schema::hasColumn('events', 'order')) {
+            return $query
+                ->orderByRaw('COALESCE(`order`, 999999) ASC')
+                ->orderByRaw('CASE WHEN `date` IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('date', 'asc')
+                ->orderByDesc('created_at');
+        }
+
+        return $query
+            ->orderByRaw('CASE WHEN `date` IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('date', 'asc')
+            ->orderByDesc('created_at');
+    }
+
+    /**
      * Scope a query to order by order field or date.
      */
     public function scopeOrdered($query)

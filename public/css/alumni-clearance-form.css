@@ -1,0 +1,143 @@
+.clearance-form-page .clearance-form-field + .clearance-form-field {
+    margin-top: 0.5rem;
+}
+
+.clearance-form-document {
+    max-width: 210mm;
+    margin: 0 auto;
+}
+
+.clearance-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.clearance-form-header__text {
+    flex: 1;
+    text-align: center;
+}
+
+.clearance-form-header__text h2 {
+    font-size: 1rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.clearance-form-header__text h3 {
+    font-size: 0.9rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+.clearance-form-header img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+.clearance-form-section {
+    margin-bottom: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+
+.clearance-form-section__header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.35rem 0.5rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.clearance-form-section__body {
+    padding: 0.5rem;
+}
+
+.clearance-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.25rem 0.5rem;
+}
+
+.clearance-form-col {
+    width: 33.33%;
+    padding: 0 0.25rem;
+    box-sizing: border-box;
+}
+
+.clearance-form-col--avatar {
+    text-align: center;
+}
+
+.clearance-form-field__label {
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.clearance-form-field__value {
+    font-size: 0.75rem;
+}
+
+.clearance-form-signatures {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.clearance-form-signatures__box {
+    width: 45%;
+    border-top: 1px solid #dee2e6;
+    padding-top: 0.5rem;
+}
+
+.clearance-form-signatures__box p {
+    margin: 0;
+    font-size: 0.75rem;
+}
+
+.clearance-form-print-page {
+    background: #fff;
+    margin: 0;
+    padding: 1.5rem;
+}
+
+.clearance-form-print-trigger {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.clearance-form-print-trigger:hover {
+    background-color: #c82333;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .clearance-form-print-page {
+        padding: 0;
+    }
+
+    .clearance-form-document {
+        max-width: 100%;
+    }
+
+    .clearance-form-section,
+    .clearance-form-header {
+        page-break-inside: avoid;
+    }
+}

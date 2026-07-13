@@ -2,44 +2,29 @@
 
 namespace App\View\Composers;
 
-use Illuminate\View\View;
+use App\Services\Alumni\ClearanceFormService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class AlumniLayoutComposer
 {
+    public function __construct(
+        private readonly ClearanceFormService $clearanceFormService
+    ) {}
+
     public function compose(View $view): void
     {
         $user = Auth::user();
         $alumni = $user?->alumni;
-
-        $needsBioData = !$alumni
-            || !$alumni->contact_address
-            || !$alumni->phone_number
-            || !$alumni->qualification_type;
-
-        $needsPayments = false;
-
-        if ($alumni) {
-            try {
-                $activeFees = $alumni->getActiveFees();
-                $unpaidFees = $activeFees->filter(fn ($fee) => !$fee->isPaid());
-                $needsPayments = $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
-            } catch (\Throwable $e) {
-                report($e);
-                $needsPayments = false;
-            }
-        }
-
-        $clearanceDisabled = $needsBioData || $needsPayments;
-        $electionLinksDisabled = $needsBioData || $needsPayments;
+        $status = $this->clearanceFormService->accessStatus($alumni);
 
         $view->with([
             'alumniNavUser' => $user,
             'alumniNavAlumni' => $alumni,
-            'alumniNeedsBioData' => $needsBioData,
-            'alumniNeedsPayments' => $needsPayments,
-            'alumniClearanceDisabled' => $clearanceDisabled,
-            'alumniElectionLinksDisabled' => $electionLinksDisabled,
+            'alumniNeedsBioData' => $status['needsBioData'],
+            'alumniNeedsPayments' => $status['needsPayments'],
+            'alumniClearanceDisabled' => ! $status['allOk'],
+            'alumniElectionLinksDisabled' => ! $status['allOk'],
         ]);
     }
 }

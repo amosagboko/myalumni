@@ -30,25 +30,25 @@ class LandingPageController extends Controller
     public function index()
     {
         // Fetch published content for each section
-        // Connect section - displays networking and connection opportunities
+        // Highlights section - featured alumni community content
         $connectItems = Event::published()
             ->ofType('connect')
             ->ordered()
-            ->limit(3)
+            ->limit(6)
             ->get();
         
         // News section (database type: 'event') - displays news and updates
         $eventItems = Event::published()
             ->ofType('event')
             ->ordered()
-            ->limit(3)
+            ->limit(6)
             ->get();
         
         // Events section (database type: 'opportunity') - displays events and happenings
         $opportunityItems = Event::published()
             ->ofType('opportunity')
             ->ordered()
-            ->limit(3)
+            ->limit(6)
             ->get();
 
         return view('landing', compact('connectItems', 'eventItems', 'opportunityItems'));

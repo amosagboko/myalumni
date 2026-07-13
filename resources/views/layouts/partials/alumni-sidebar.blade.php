@@ -17,8 +17,8 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('alumni.events') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni.events*') ? 'active' : '' }}">
-                            <i class="feather-calendar btn-round-md bg-gold-gradiant me-3"></i><span>Official Events</span>
+                        <a href="{{ route('alumni.discover') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni.discover', 'alumni.events.show') ? 'active' : '' }}">
+                            <i class="feather-compass btn-round-md bg-gold-gradiant me-3"></i><span>Discover</span>
                         </a>
                     </li>
                     <li>

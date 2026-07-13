@@ -3,8 +3,20 @@
     @if($useBackgroundPoll && $pollInterval > 0)
         wire:poll.visible.{{ $pollInterval }}s="refreshQuietly"
     @endif
-    wire:loading.delay.longest.class="social-feed-syncing"
 >
+    @if($useBackgroundPoll && $pollInterval > 0)
+        <div
+            wire:loading.delay.flex
+            wire:target="refreshQuietly"
+            class="social-feed-sync-indicator"
+            role="status"
+            aria-live="polite"
+        >
+            <span class="social-feed-sync-spinner" aria-hidden="true"></span>
+            <span>Syncing…</span>
+        </div>
+    @endif
+
     @forelse($posts as $post)
         @include('livewire.social.partials.feed-post', [
             'post' => $post,

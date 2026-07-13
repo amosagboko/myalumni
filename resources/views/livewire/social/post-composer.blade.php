@@ -1,8 +1,24 @@
-<div>
+<div
+    id="post-composer"
+    @if($useBackgroundPoll && $pollInterval > 0)
+        wire:poll.visible.{{ $pollInterval }}s="refreshQuietly"
+    @endif
+    @if($focusOnShare)
+        x-data
+        x-init="$nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'center' }); $el.querySelector('.post-composer-card')?.classList.add('post-composer-card--highlight'); setTimeout(() => $el.querySelector('.post-composer-card')?.classList.remove('post-composer-card--highlight'), 3200); })"
+    @endif
+>
     @if (session()->has('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if($focusOnShare && $sharedEventId)
+        <div class="alert alert-primary d-flex align-items-center font-xssss fw-500 py-2 px-3 mb-3" role="alert">
+            <i class="feather-calendar me-2"></i>
+            <span>Event ready to share. Add a note if you like, then click post.</span>
         </div>
     @endif
 
@@ -63,11 +79,13 @@
                 ])
                 <button type="button"
                         wire:click.prevent="createPost"
-                        class="ms-auto btn-round-md bg-primary-gradiant text-white font-xssss fw-600 px-3"
+                        class="ms-auto btn-round-sm bg-current text-white font-xssss border-0"
+                        title="Post"
+                        aria-label="Post"
                         wire:loading.attr="disabled"
                         wire:target="createPost">
-                    <span wire:loading.remove wire:target="createPost">Post</span>
-                    <span wire:loading wire:target="createPost">Posting...</span>
+                    <i class="feather-send font-xss" wire:loading.remove wire:target="createPost"></i>
+                    <span class="spinner-border spinner-border-sm" wire:loading wire:target="createPost" role="status" aria-hidden="true"></span>
                 </button>
             </div>
 

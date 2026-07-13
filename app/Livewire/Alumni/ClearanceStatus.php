@@ -2,22 +2,21 @@
 
 namespace App\Livewire\Alumni;
 
-use Livewire\Component;
+use App\Services\Alumni\ClearanceStatusService;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
 
 class ClearanceStatus extends Component
 {
-    public function render()
+    public function render(ClearanceStatusService $clearanceStatusService)
     {
         $user = Auth::user();
-        $alumni = $user?->alumni;
-        
-        $yearOfGraduation = $alumni->year_of_graduation ?? null;
-        $requiresClearance = $yearOfGraduation && $yearOfGraduation >= 2025;
 
-        return view('livewire.alumni.clearance-status', [
-            'alumni' => $alumni,
-            'requiresClearance' => $requiresClearance,
-        ])->layout('layouts.alumni');
+        return view('livewire.alumni.clearance-status', $clearanceStatusService->snapshot(
+            $user,
+            $user?->alumni
+        ))->layout('layouts.alumni', [
+            'title' => 'Clearance Status',
+        ]);
     }
 }

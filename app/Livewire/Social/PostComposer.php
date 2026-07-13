@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Social;
 
+use App\Livewire\Social\Concerns\ListensForSocialBroadcasts;
 use App\Models\Event;
+use App\Services\Social\EventService;
 use App\Services\Social\FeedService;
 use App\Services\Social\PostService;
 use App\Support\Social\EmojiPicker;
@@ -12,6 +14,7 @@ use Livewire\WithFileUploads;
 
 class PostComposer extends Component
 {
+    use ListensForSocialBroadcasts;
     use WithFileUploads;
 
     public string $content = '';
@@ -21,6 +24,25 @@ class PostComposer extends Component
     public ?int $sharedEventId = null;
     public bool $isUploading = false;
     public int $uploadProgress = 0;
+    public bool $focusOnShare = false;
+
+    public function mount(?int $shareEvent = null): void
+    {
+        $shareEvent = $shareEvent ?? request()->integer('share_event') ?: null;
+
+        if (! $shareEvent) {
+            return;
+        }
+
+        $event = Event::published()
+            ->where('date', '>=', now()->toDateString())
+            ->find($shareEvent);
+
+        if ($event) {
+            $this->sharedEventId = $event->id;
+            $this->focusOnShare = true;
+        }
+    }
 
     protected function rules(): array
     {
@@ -104,6 +126,7 @@ class PostComposer extends Component
             $this->reset(['content', 'images', 'videos', 'sharedEventId', 'uploadProgress']);
             $this->visibility = FeedService::VISIBILITY_CONNECTIONS;
             $this->isUploading = false;
+            $this->focusOnShare = false;
 
             $this->dispatch('post-created');
         } catch (\Throwable $e) {
@@ -112,24 +135,22 @@ class PostComposer extends Component
         }
     }
 
-    public function render(FeedService $feedService)
+    public function render(FeedService $feedService, EventService $eventService)
     {
         $shareableEvents = collect();
 
         try {
-            $shareableEvents = Event::published()
-                ->ordered()
-                ->where('date', '>=', now()->toDateString())
+            $shareableEvents = $eventService->upcomingQuery()
                 ->limit(20)
                 ->get();
         } catch (\Throwable $e) {
             report($e);
         }
 
-        return view('livewire.social.post-composer', [
+        return view('livewire.social.post-composer', array_merge([
             'visibilityOptions' => $feedService->visibilityOptions(),
             'shareableEvents' => $shareableEvents,
             'supportsVisibility' => $feedService->supportsVisibility(),
-        ]);
+        ], $this->socialPollViewData()));
     }
 }

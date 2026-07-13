@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/lightbox.css">
     
     <style>
         body {
@@ -54,6 +55,73 @@
             width: 50px;
             height: 50px;
             margin-right: 20px;
+        }
+        .landing-content-item {
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .landing-content-carousel {
+            margin-top: 1rem;
+            padding-bottom: 0.5rem;
+        }
+        .landing-content-carousel .carousel-inner {
+            min-height: 180px;
+        }
+        .landing-content-carousel__indicators {
+            position: static;
+            margin: 12px 0 0;
+        }
+        .landing-content-carousel__indicators [data-bs-target] {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+            border: 0;
+            opacity: 1;
+        }
+        .landing-content-carousel__indicators .active {
+            background-color: #0d6efd;
+        }
+        .landing-content-carousel__empty {
+            margin-top: 1rem;
+            color: #6c757d;
+        }
+        .landing-content-item__thumb {
+            display: block;
+            width: 88px;
+            height: 88px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f1f4fb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            text-decoration: none;
+        }
+        .landing-content-item__thumb:hover .landing-content-item__thumb-image {
+            opacity: 0.92;
+        }
+        .landing-content-item__thumb-image {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .landing-content-item__title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #212529;
+        }
+        .landing-content-item__meta {
+            font-size: 0.8125rem;
+            color: #6c757d;
+            margin-bottom: 0;
+        }
+        .landing-content-item__description {
+            font-size: 0.875rem;
+            color: #495057;
+            margin-bottom: 0;
+            line-height: 1.45;
         }
     </style>
 </head>
@@ -143,27 +211,17 @@
     <!-- Features Section -->
     <section class="container my-5">
         <div class="row g-4">
-            <!-- Connect Section -->
+            <!-- Highlights Section -->
             <div class="col-md-4">
                 <div class="feature-card text-center">
-                    <i class="bi bi-people feature-icon"></i>
-                    <h3>Connect</h3>
-                    @if($connectItems && $connectItems->count() > 0)
-                        @foreach($connectItems as $item)
-                            <div class="mb-3 p-2 border rounded">
-                                @if($item->image)
-                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->eventname }}" class="img-fluid mb-2 rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
-                                @endif
-                                <h5 class="mb-1">{{ $item->eventname }}</h5>
-                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Connect with fellow alumni and expand your professional network.', 80) }}</p>
-                                @if($item->link)
-                                    <a href="{{ $item->link }}" target="_blank" class="btn btn-sm btn-outline-primary">Learn More</a>
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <p>Connect with fellow alumni and expand your professional network.</p>
-                    @endif
+                    <i class="bi bi-stars feature-icon"></i>
+                    <h3>Highlights</h3>
+                    @include('landing.partials.content-carousel', [
+                        'items' => $connectItems,
+                        'carouselId' => 'landingHighlightsCarousel',
+                        'lightboxGroup' => 'landing-highlights',
+                        'emptyMessage' => 'Discover highlights and featured stories from the alumni community.',
+                    ])
                 </div>
             </div>
 
@@ -172,28 +230,14 @@
                 <div class="feature-card text-center">
                     <i class="bi bi-calendar-event feature-icon"></i>
                     <h3>News</h3>
-                    @if($eventItems && $eventItems->count() > 0)
-                        @foreach($eventItems as $item)
-                            <div class="mb-3 p-2 border rounded">
-                                @if($item->image)
-                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->eventname }}" class="img-fluid mb-2 rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
-                                @endif
-                                <h5 class="mb-1">{{ $item->eventname }}</h5>
-                                @if($item->date)
-                                    <p class="mb-1 small text-muted"><i class="bi bi-calendar"></i> {{ $item->date->format('M d, Y') }}</p>
-                                @endif
-                                @if($item->venue)
-                                    <p class="mb-1 small text-muted"><i class="bi bi-geo-alt"></i> {{ $item->venue }}</p>
-                                @endif
-                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Stay updated with the latest news and updates from the alumni community.', 80) }}</p>
-                                @if($item->link)
-                                    <a href="{{ $item->link }}" target="_blank" class="btn btn-sm btn-outline-primary">Learn More</a>
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <p>Stay updated with the latest news and updates from the alumni community.</p>
-                    @endif
+                    @include('landing.partials.content-carousel', [
+                        'items' => $eventItems,
+                        'carouselId' => 'landingNewsCarousel',
+                        'lightboxGroup' => 'landing-news',
+                        'showDate' => true,
+                        'showVenue' => true,
+                        'emptyMessage' => 'Stay updated with the latest news and updates from the alumni community.',
+                    ])
                 </div>
             </div>
 
@@ -202,22 +246,14 @@
                 <div class="feature-card text-center">
                     <i class="bi bi-briefcase feature-icon"></i>
                     <h3>Events</h3>
-                    @if($opportunityItems && $opportunityItems->count() > 0)
-                        @foreach($opportunityItems as $item)
-                            <div class="mb-3 p-2 border rounded">
-                                @if($item->image)
-                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->eventname }}" class="img-fluid mb-2 rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
-                                @endif
-                                <h5 class="mb-1">{{ $item->eventname }}</h5>
-                                <p class="mb-2 small">{{ Str::limit($item->description ?? 'Access exclusive job opportunities and career development resources.', 80) }}</p>
-                                @if($item->link)
-                                    <a href="{{ $item->link }}" target="_blank" class="btn btn-sm btn-outline-primary">Learn More</a>
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <p>Stay updated with our latest events and happenings as they unfold.</p>
-                    @endif
+                    @include('landing.partials.content-carousel', [
+                        'items' => $opportunityItems,
+                        'carouselId' => 'landingEventsCarousel',
+                        'lightboxGroup' => 'landing-events',
+                        'showDate' => true,
+                        'showVenue' => true,
+                        'emptyMessage' => 'Stay updated with our latest events and happenings as they unfold.',
+                    ])
                 </div>
             </div>
         </div>
@@ -239,8 +275,22 @@
     </footer>
 
     <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/lightbox.js"></script>
     <script>
+        if (typeof lightbox !== 'undefined') {
+            lightbox.option({
+                resizeDuration: 400,
+                fadeDuration: 400,
+                imageFadeDuration: 400,
+                albumLabel: 'Image %1 of %2',
+                wrapAround: true,
+                disableScrolling: true,
+                showImageNumberLabel: true,
+            });
+        }
+
         // Form validation
         (function () {
             'use strict'

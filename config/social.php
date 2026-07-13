@@ -43,7 +43,7 @@ return [
     | interval while the tab is visible. Set to 0 to disable polling.
     |
     */
-    'poll_interval_seconds' => (int) env('SOCIAL_POLL_INTERVAL_SECONDS', 10),
+    'poll_interval_seconds' => (int) env('SOCIAL_POLL_INTERVAL_SECONDS', 30),
 
     /*
     |--------------------------------------------------------------------------
@@ -54,12 +54,22 @@ return [
     | Set to 0 to disable polling on those components.
     |
     */
-    'connections_poll_interval_seconds' => (int) env('SOCIAL_CONNECTIONS_POLL_INTERVAL_SECONDS', 30),
+    'connections_poll_interval_seconds' => (int) env('SOCIAL_CONNECTIONS_POLL_INTERVAL_SECONDS', 60),
 
     /*
     |--------------------------------------------------------------------------
-    | Comment thread nesting
+    | Official events teasers (alumni home)
     |--------------------------------------------------------------------------
+    |
+    | Home feed widgets only show a subset of upcoming published events.
+    | The full list is always on /alumni/events ("See all").
+    |
+    */
+    'events_sidebar_teaser_limit' => (int) env('SOCIAL_EVENTS_SIDEBAR_TEASER_LIMIT', 3),
+    'events_announcements_strip_limit' => (int) env('SOCIAL_EVENTS_ANNOUNCEMENTS_STRIP_LIMIT', 3),
+    'discover_per_page' => (int) env('SOCIAL_DISCOVER_PER_PAGE', 6),
+
+    /*
     |
     | Maximum depth for threaded replies (top-level comment = depth 1).
     | Visual indent in the UI is capped separately so deep threads stay readable.

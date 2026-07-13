@@ -29,7 +29,7 @@
                                 <span class="ads-stat-value">{{ number_format($stats['published']) }}</span>
                             </div>
                             <div class="ads-stat">
-                                <span class="ads-stat-label">Connect</span>
+                                <span class="ads-stat-label">Highlights</span>
                                 <span class="ads-stat-value">{{ number_format($stats['connect']) }}</span>
                             </div>
                             <div class="ads-stat">
@@ -53,7 +53,7 @@
                                 <div class="adt-filters">
                                     <select wire:model.live="filterType" class="form-select form-select-sm adt-select">
                                         <option value="all">All types</option>
-                                        <option value="connect">Connect</option>
+                                        <option value="connect">Highlights</option>
                                         <option value="event">News</option>
                                         <option value="opportunity">Events</option>
                                     </select>
@@ -80,7 +80,7 @@
                                                     <td>
                                                         <span class="adt-tag">
                                                             @if ($content->type === 'connect')
-                                                                Connect
+                                                                Highlights
                                                             @elseif ($content->type === 'event')
                                                                 News
                                                             @else
@@ -183,7 +183,7 @@
                                     type="text"
                                     class="form-control form-control-sm"
                                     readonly
-                                    value="{{ $selectedEvent->type === 'connect' ? 'Connect' : ($selectedEvent->type === 'event' ? 'News' : 'Events') }}"
+                                    value="{{ $selectedEvent->type === 'connect' ? 'Highlights' : ($selectedEvent->type === 'event' ? 'News' : 'Events') }}"
                                 >
                             </div>
 
@@ -256,7 +256,7 @@
                                 <div class="mb-3">
                                     <label class="form-label small text-muted mb-1">Content type <span class="text-danger">*</span></label>
                                     <select wire:model="type" class="form-select form-select-sm">
-                                        <option value="connect">Connect</option>
+                                        <option value="connect">Highlights</option>
                                         <option value="event">News</option>
                                         <option value="opportunity">Events</option>
                                     </select>
