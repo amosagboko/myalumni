@@ -65,12 +65,13 @@ class AlumniDuesService
     }
 
     /**
-     * Whether cohort default fees are satisfied (2025+ onboarding bundle or pre-2025 subscription).
+     * Whether cohort default fees are satisfied (onboarding + subscription for 2025+, subscription for earlier cohorts).
      */
     public function hasCompletedDefaultFees(Alumni $alumni): bool
     {
         if ($alumni->year_of_graduation >= 2025) {
-            return $this->hasCompletedOnboardingFeesForCohort($alumni);
+            return $this->hasCompletedOnboardingFeesForCohort($alumni)
+                && $this->hasCompletedCohortSubscription($alumni);
         }
 
         return $this->hasCompletedLegacySubscription($alumni);
@@ -84,43 +85,51 @@ class AlumniDuesService
     public function getDefaultFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
     {
         if ($alumni->year_of_graduation >= 2025) {
-            return $this->getOnboardingFeeTemplates($alumni, $includeInactive);
+            if (! $this->hasCompletedOnboardingFeesForCohort($alumni)) {
+                return $this->getOnboardingFeeTemplates($alumni, $includeInactive);
+            }
+
+            return $this->unpaidSubscriptionFeeTemplates($alumni, $includeInactive);
         }
 
-        return $this->getLegacySubscriptionFeeTemplates($alumni, $includeInactive);
+        return $this->unpaidSubscriptionFeeTemplates($alumni, $includeInactive);
     }
 
-    private function hasCompletedOnboardingFeesForCohort(Alumni $alumni): bool
+    private function hasCompletedCohortSubscription(Alumni $alumni): bool
     {
-        $templates = $this->getOnboardingFeeTemplates($alumni, includeInactive: true);
-
-        if ($templates->isEmpty()) {
-            return false;
-        }
-
-        return $templates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
-    }
-
-    private function hasCompletedLegacySubscription(Alumni $alumni): bool
-    {
-        $templates = $this->getLegacySubscriptionFeeTemplates($alumni, includeInactive: true);
+        $templates = $this->getSubscriptionFeeTemplatesForAlumni($alumni, includeInactive: true);
 
         if ($templates->isNotEmpty()) {
             return $templates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
         }
 
-        $subscriptionType = FeeType::where('code', 'subscription')->where('is_active', true)->first();
-        if (! $subscriptionType) {
-            return true;
-        }
-
-        return Transaction::where('alumni_id', $alumni->id)
-            ->where('status', 'paid')
-            ->whereHas('feeTemplate', fn ($query) => $query->where('fee_type_id', $subscriptionType->id))
-            ->exists();
+        return $this->hasPaidSubscriptionTransaction($alumni);
     }
 
-    private function getLegacySubscriptionFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
+    private function hasCompletedLegacySubscription(Alumni $alumni): bool
+    {
+        return $this->hasCompletedCohortSubscription($alumni);
+    }
+
+    private function unpaidSubscriptionFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
+    {
+        $templates = $this->getSubscriptionFeeTemplatesForAlumni($alumni, $includeInactive)
+            ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni));
+
+        if ($templates->isNotEmpty()) {
+            return $templates->values();
+        }
+
+        if ($includeInactive || $this->hasCompletedCohortSubscription($alumni)) {
+            return collect();
+        }
+
+        return $this->getSubscriptionFeeTemplatesForAlumni($alumni, includeInactive: true)
+            ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
+            ->values();
+    }
+
+    private function getSubscriptionFeeTemplatesForAlumni(Alumni $alumni, bool $includeInactive = false): Collection
     {
         $subscriptionType = FeeType::where('code', 'subscription')->where('is_active', true)->first();
         if (! $subscriptionType) {
@@ -130,7 +139,6 @@ class AlumniDuesService
         $query = FeeTemplate::query()
             ->with('feeType')
             ->where('fee_type_id', $subscriptionType->id)
-            ->whereNull('category_id')
             ->where(function ($q) use ($alumni) {
                 $q->where('graduation_year', $alumni->year_of_graduation)
                     ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
@@ -144,6 +152,30 @@ class AlumniDuesService
             'CASE WHEN graduation_year = ? THEN 0 ELSE 1 END',
             [$alumni->year_of_graduation]
         )->orderByDesc('id')->get();
+    }
+
+    private function hasPaidSubscriptionTransaction(Alumni $alumni): bool
+    {
+        $subscriptionType = FeeType::where('code', 'subscription')->where('is_active', true)->first();
+        if (! $subscriptionType) {
+            return true;
+        }
+
+        return Transaction::where('alumni_id', $alumni->id)
+            ->where('status', 'paid')
+            ->whereHas('feeTemplate', fn ($query) => $query->where('fee_type_id', $subscriptionType->id))
+            ->exists();
+    }
+
+    private function hasCompletedOnboardingFeesForCohort(Alumni $alumni): bool
+    {
+        $templates = $this->getOnboardingFeeTemplates($alumni, includeInactive: true);
+
+        if ($templates->isEmpty()) {
+            return false;
+        }
+
+        return $templates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
     }
 
     public function getOnboardingFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
