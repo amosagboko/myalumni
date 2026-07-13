@@ -1,326 +1,266 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container-fluid mt-3 mt-md-5 pt-3 pt-md-7 px-3 px-md-4">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8">
+@php
+    $hubService = app(\App\Services\Alumni\AlumniElectionHubService::class);
+@endphp
 
-            {{-- Current election --}}
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
-                    <h3 class="card-title mb-0 h4 h-md-3">Current Election</h3>
-                    @if($currentElection && $phaseLabel)
-                        <span class="badge bg-primary fs-6">{{ $phaseLabel }}</span>
-                    @endif
-                </div>
-                <div class="card-body">
-                    @if(!$currentElection)
-                        <div class="text-center py-4">
-                            <i class="bi bi-calendar-x fs-1 text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">There is no active election cycle at the moment.</p>
-                            <p class="text-muted small mt-2 mb-0">Check past elections below for historical results.</p>
-                        </div>
-                    @else
-                        @if($currentElection->isByElection() && $parentElection)
-                            <div class="alert alert-info py-2 small mb-3">
-                                <i class="bi bi-info-circle me-1"></i>
-                                This is a <strong>by-election</strong> for
-                                <a href="{{ route('alumni.elections.results', $parentElection) }}">{{ $parentElection->title }}</a>.
-                            </div>
-                        @elseif($currentElection->isIncomplete())
-                            <div class="alert alert-warning py-2 small mb-3">
-                                <i class="bi bi-exclamation-triangle me-1"></i>
-                                Main election is <strong>incomplete</strong> — some offices await a by-election.
-                                @if($actions['view_results'] ?? false)
-                                    <a href="{{ route('alumni.elections.results', $currentElection) }}">View partial results</a>
-                                @endif
-                            </div>
-                        @endif
-                        <div class="mb-3">
-                            <h5 class="fw-bold mb-1">{{ $currentElection->title }}</h5>
-                            @if($currentElection->cycle_label)
-                                <p class="text-muted small mb-2">{{ $currentElection->cycle_label }}</p>
-                            @endif
-                            @if($currentElection->description)
-                                <p class="text-muted small mb-0">{{ Str::limit($currentElection->description, 200) }}</p>
-                            @endif
-                        </div>
+<div class="elections-hub-page w-100 pe-lg-2">
+    <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+                <h4 class="fw-600 mb-1">Elections</h4>
+                <p class="text-grey-500 font-xssss mb-0">
+                    Follow the active election cycle, track your participation, and view past results.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                @if($actions['express_interest'] ?? false)
+                    <a href="{{ route('alumni.elections.expression-of-interest.status') }}" class="btn btn-outline-success btn-sm">
+                        <i class="feather-clipboard me-1"></i> EOI Status
+                    </a>
+                @endif
+                <a href="{{ route('alumni.home') }}" class="btn btn-outline-secondary btn-sm">
+                    Dashboard
+                </a>
+            </div>
+        </div>
 
-                        @if($participation)
-                            <div class="card border-light bg-light mb-4">
-                                <div class="card-body py-3">
-                                    <h6 class="text-muted small text-uppercase mb-3">Your participation</h6>
-                                    <div class="row g-3">
-                                        <div class="col-12 col-md-4">
-                                            <div class="d-flex align-items-start gap-2">
-                                                <i class="bi bi-pencil-square text-success mt-1"></i>
-                                                <div>
-                                                    <span class="fw-medium small d-block">Expression of Interest</span>
-                                                    @if($participation['eoi'])
-                                                        <span class="badge bg-{{ $participation['eoi']['status'] === 'approved' ? 'success' : ($participation['eoi']['status'] === 'rejected' ? 'danger' : 'warning') }}">
-                                                            {{ $participation['eoi']['status_label'] ?? ucfirst(str_replace('_', ' ', $participation['eoi']['status'])) }}
-                                                        </span>
-                                                        @if($participation['eoi']['office'])
-                                                            <small class="text-muted d-block mt-1">{{ $participation['eoi']['office'] }}</small>
-                                                        @endif
-                                                    @else
-                                                        <span class="text-muted small">Not submitted</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12 col-md-4">
-                                            <div class="d-flex align-items-start gap-2">
-                                                <i class="bi bi-person-check text-info mt-1"></i>
-                                                <div>
-                                                    <span class="fw-medium small d-block">Accreditation</span>
-                                                    @if($participation['is_accredited'])
-                                                        <span class="badge bg-success">Accredited</span>
-                                                        @if($participation['accredited_at'])
-                                                            <small class="text-muted d-block mt-1">{{ $participation['accredited_at']->format('M d, Y') }}</small>
-                                                        @endif
-                                                    @else
-                                                        <span class="text-muted small">Not accredited</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12 col-md-4">
-                                            <div class="d-flex align-items-start gap-2">
-                                                <i class="bi bi-check2-square text-primary mt-1"></i>
-                                                <div>
-                                                    <span class="fw-medium small d-block">Vote</span>
-                                                    @if($participation['has_voted'])
-                                                        <span class="badge bg-success">Ballot cast</span>
-                                                        @if($participation['voted_at'])
-                                                            <small class="text-muted d-block mt-1">{{ $participation['voted_at']->format('M d, Y h:i A') }}</small>
-                                                        @endif
-                                                    @elseif($participation['is_accredited'])
-                                                        <span class="text-muted small">Not yet voted</span>
-                                                    @else
-                                                        <span class="text-muted small">Awaiting accreditation</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
+        <div class="card-body p-4 w-100 border-0">
+            @if(session('success'))
+                <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger">{{ session('error') }}</div>
+            @endif
+            @if(session('info'))
+                <div class="alert alert-info">{{ session('info') }}</div>
+            @endif
 
-                        @if($currentElection->offices->isNotEmpty())
-                            <div class="mb-4">
-                                <h6 class="text-muted mb-2 small">Offices</h6>
-                                @foreach($currentElection->offices as $office)
-                                    <div class="card mb-2 border-light">
-                                        <div class="card-body py-2">
-                                            <div class="row align-items-center">
-                                                <div class="col-12 col-md-6 mb-2 mb-md-0">
-                                                    <span class="fw-medium small">{{ $office->title }}</span>
-                                                    @if($office->description)
-                                                        <small class="text-muted d-block">{{ Str::limit($office->description, 80) }}</small>
-                                                    @endif
-                                                </div>
-                                                <div class="col-12 col-md-6">
-                                                    <div class="d-flex flex-wrap gap-1">
-                                                        @if($office->isRunoffByElectionOffice())
-                                                            <span class="badge bg-info text-dark w-100 w-md-auto py-2">
-                                                                <i class="bi bi-arrow-repeat me-1"></i>Runoff — candidates on ballot
-                                                            </span>
-                                                        @elseif($actions['express_interest'] ?? false)
-                                                            @if($office->isAcceptingApplications())
-                                                                <a href="{{ route('alumni.elections.expression-of-interest.form', [$currentElection, $office]) }}"
-                                                                   class="btn btn-sm btn-success w-100 w-md-auto">
-                                                                    <i class="bi bi-pencil-square me-1"></i>
-                                                                    <span class="d-none d-sm-inline">Express Interest</span>
-                                                                    <span class="d-inline d-sm-none">EOI</span>
-                                                                </a>
-                                                                @if($office->getRemainingApplicantSlots() <= 3)
-                                                                    <small class="text-muted w-100 w-md-auto">
-                                                                        {{ $office->getRemainingApplicantSlots() }} slot{{ $office->getRemainingApplicantSlots() === 1 ? '' : 's' }} left
-                                                                    </small>
-                                                                @endif
-                                                            @else
-                                                                <span class="badge bg-secondary w-100 w-md-auto py-2">
-                                                                    <i class="bi bi-lock me-1"></i>
-                                                                    EOI closed — slots full
-                                                                </span>
-                                                            @endif
-                                                        @endif
-                                                        @if($actions['view_candidates'] ?? false)
-                                                            <a href="{{ route('alumni.elections.published-candidates', [$currentElection, $office]) }}"
-                                                               class="btn btn-sm btn-outline-primary w-100 w-md-auto">
-                                                                <i class="bi bi-people me-1"></i>
-                                                                <span class="d-none d-sm-inline">View Candidates</span>
-                                                                <span class="d-inline d-sm-none">Candidates</span>
-                                                            </a>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        <div class="d-flex flex-column flex-md-row flex-wrap gap-2">
-                            @if($actions['express_interest'] ?? false)
-                                <a href="{{ route('alumni.elections.expression-of-interest.status') }}"
-                                   class="btn btn-outline-success w-100 w-md-auto">
-                                    <i class="bi bi-clipboard-check me-2"></i>
-                                    My EOI Status
-                                </a>
-                            @endif
-                            @if($actions['accredit'] ?? false)
-                                <a href="{{ route('alumni.elections.accreditation', $currentElection) }}"
-                                   class="btn btn-info w-100 w-md-auto">
-                                    <i class="bi bi-person-check me-2"></i>
-                                    Get Accredited
-                                </a>
-                            @endif
-                            @if(($actions['view_accreditation_status'] ?? false) && !($actions['accredit'] ?? false))
-                                <a href="{{ route('alumni.elections.accreditation', $currentElection) }}"
-                                   class="btn btn-outline-info w-100 w-md-auto">
-                                    <i class="bi bi-person-check me-2"></i>
-                                    Accreditation Status
-                                </a>
-                            @endif
-                            @if($actions['vote'] ?? false)
-                                <a href="{{ route('alumni.elections.vote', $currentElection) }}"
-                                   class="btn btn-primary w-100 w-md-auto">
-                                    <i class="bi bi-check2-square me-2"></i>
-                                    Cast Your Vote
-                                </a>
-                            @endif
-                            @if(($actions['view_vote_page'] ?? false) && !($actions['vote'] ?? false))
-                                <a href="{{ route('alumni.elections.vote', $currentElection) }}"
-                                   class="btn btn-outline-primary w-100 w-md-auto">
-                                    <i class="bi bi-check2-square me-2"></i>
-                                    Voting Page
-                                </a>
-                            @endif
-                            @if($actions['live_results'] ?? false)
-                                <a href="{{ route('alumni.elections.results', $currentElection) }}"
-                                   class="btn btn-secondary w-100 w-md-auto">
-                                    <i class="bi bi-bar-chart me-2"></i>
-                                    Live Results
-                                </a>
-                            @endif
-                        </div>
-                    @endif
-                </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h5 class="fw-600 mb-0 font-xssss text-grey-900 text-uppercase">Current Election</h5>
+                @if($currentElection && $phaseLabel)
+                    <span class="badge elections-hub-phase-pill {{ $phaseBadgeClass }}">{{ $phaseLabel }}</span>
+                @endif
             </div>
 
-            {{-- Past elections --}}
-            <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex align-items-center justify-content-between gap-10">
-                    <h3 class="card-title mb-0 h4 h-md-3">Past Elections</h3>
-                    @if($pastElections->total() === 1)
-                        @php $solePastElection = $pastElections->first(); @endphp
-                        <span class="badge fs-6 flex-shrink-0 {{ $solePastElection->isArchived() ? 'bg-secondary' : 'bg-success' }}">
-                            {{ $solePastElection->isArchived() ? 'Archived' : 'Completed' }}
-                        </span>
+            @if(!$currentElection)
+                <div class="text-center py-5 border rounded-3 bg-light">
+                    <i class="feather-calendar font-xl text-grey-500 d-block mb-3"></i>
+                    <p class="text-grey-700 font-xssss mb-1">There is no active election cycle at the moment.</p>
+                    <p class="text-grey-500 font-xssss mb-0">Check past elections below for historical results.</p>
+                </div>
+            @else
+                @if($currentElection->isByElection() && $parentElection)
+                    <div class="alert alert-info font-xssss py-2 mb-3">
+                        <i class="feather-info me-1"></i>
+                        This is a <strong>by-election</strong> for
+                        <a href="{{ route('alumni.elections.results', $parentElection) }}">{{ $parentElection->title }}</a>.
+                    </div>
+                @elseif($currentElection->isIncomplete())
+                    <div class="alert alert-warning font-xssss py-2 mb-3">
+                        <i class="feather-alert-triangle me-1"></i>
+                        Main election is <strong>incomplete</strong> — some offices await a by-election.
+                        @if($actions['view_results'] ?? false)
+                            <a href="{{ route('alumni.elections.results', $currentElection) }}">View partial results</a>
+                        @endif
+                    </div>
+                @endif
+
+                <div class="mb-4">
+                    <h5 class="fw-600 mb-1">{{ $currentElection->title }}</h5>
+                    @if($currentElection->cycle_label)
+                        <p class="text-grey-500 font-xssss mb-2">{{ $currentElection->cycle_label }}</p>
+                    @endif
+                    @if($currentElection->description)
+                        <p class="text-grey-500 font-xssss mb-0">{{ Str::limit($currentElection->description, 220) }}</p>
                     @endif
                 </div>
-                <div class="card-body">
-                    @if($pastElections->isEmpty())
-                        <p class="text-muted mb-0 text-center py-3">No past election records yet.</p>
-                    @else
-                        <div class="list-group list-group-flush">
-                            @foreach($pastElections as $election)
-                                <div class="list-group-item px-0 py-3 border-bottom">
-                                    <div class="row align-items-center g-2 g-md-3 past-election-row">
-                                        <div class="col past-election-title">
-                                            <h6 class="fw-bold mb-0 text-break">{{ $election->title }}</h6>
-                                            @if($election->election_year || ($election->isArchived() && $election->archived_at))
-                                                <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
-                                                    @if($election->election_year)
-                                                        <span class="text-muted small">{{ $election->election_year }}</span>
+
+                @if($participation)
+                    <h6 class="fw-600 font-xssss text-grey-900 text-uppercase mb-3">Your participation</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="elections-hub-stat">
+                                <div class="elections-hub-stat__label">Expression of Interest</div>
+                                <div class="elections-hub-stat__value">
+                                    @if($participation['eoi'])
+                                        <span class="badge {{ $hubService->eoiStatusBadgeClass($participation['eoi']['status']) }}">
+                                            {{ $participation['eoi']['status_label'] ?? ucfirst(str_replace('_', ' ', $participation['eoi']['status'])) }}
+                                        </span>
+                                        @if($participation['eoi']['office'])
+                                            <div class="text-grey-500 font-xssss mt-2">{{ $participation['eoi']['office'] }}</div>
+                                        @endif
+                                    @else
+                                        <span class="text-grey-500">Not submitted</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="elections-hub-stat">
+                                <div class="elections-hub-stat__label">Accreditation</div>
+                                <div class="elections-hub-stat__value">
+                                    @if($participation['is_accredited'])
+                                        <span class="badge bg-success">Accredited</span>
+                                        @if($participation['accredited_at'])
+                                            <div class="text-grey-500 font-xssss mt-2">{{ $participation['accredited_at']->format('M d, Y') }}</div>
+                                        @endif
+                                    @else
+                                        <span class="text-grey-500">Not accredited</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="elections-hub-stat">
+                                <div class="elections-hub-stat__label">Vote</div>
+                                <div class="elections-hub-stat__value">
+                                    @if($participation['has_voted'])
+                                        <span class="badge bg-success">Ballot cast</span>
+                                        @if($participation['voted_at'])
+                                            <div class="text-grey-500 font-xssss mt-2">{{ $participation['voted_at']->format('M d, Y h:i A') }}</div>
+                                        @endif
+                                    @elseif($participation['is_accredited'])
+                                        <span class="text-grey-500">Not yet voted</span>
+                                    @else
+                                        <span class="text-grey-500">Awaiting accreditation</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($currentElection->offices->isNotEmpty())
+                    <h6 class="fw-600 font-xssss text-grey-900 text-uppercase mb-3">Offices</h6>
+                    <div class="d-flex flex-column gap-2 mb-4">
+                        @foreach($currentElection->offices as $office)
+                            <div class="elections-hub-office">
+                                <div class="row align-items-center g-2">
+                                    <div class="col-12 col-lg-6">
+                                        <div class="fw-600 font-xssss text-grey-900">{{ $office->title }}</div>
+                                        @if($office->description)
+                                            <div class="text-grey-500 font-xssss">{{ Str::limit($office->description, 100) }}</div>
+                                        @endif
+                                    </div>
+                                    <div class="col-12 col-lg-6">
+                                        <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                                            @if($office->isRunoffByElectionOffice())
+                                                <span class="badge bg-info text-dark">
+                                                    <i class="feather-repeat me-1"></i> Runoff — candidates on ballot
+                                                </span>
+                                            @elseif($actions['express_interest'] ?? false)
+                                                @if($office->isAcceptingApplications())
+                                                    <a href="{{ route('alumni.elections.expression-of-interest.form', [$currentElection, $office]) }}"
+                                                       class="btn btn-sm btn-success">
+                                                        <i class="feather-edit-3 me-1"></i> Express Interest
+                                                    </a>
+                                                    @if($office->getRemainingApplicantSlots() <= 3)
+                                                        <span class="text-grey-500 font-xssss align-self-center">
+                                                            {{ $office->getRemainingApplicantSlots() }} slot{{ $office->getRemainingApplicantSlots() === 1 ? '' : 's' }} left
+                                                        </span>
                                                     @endif
-                                                    @if($election->isArchived() && $election->archived_at)
-                                                        <small class="text-muted">Archived {{ $election->archived_at->format('M d, Y') }}</small>
-                                                    @endif
-                                                </div>
+                                                @else
+                                                    <span class="badge bg-secondary">
+                                                        <i class="feather-lock me-1"></i> EOI closed — slots full
+                                                    </span>
+                                                @endif
+                                            @endif
+                                            @if($actions['view_candidates'] ?? false)
+                                                <a href="{{ route('alumni.elections.published-candidates', [$currentElection, $office]) }}"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="feather-users me-1"></i> View Candidates
+                                                </a>
                                             @endif
                                         </div>
-                                        <div class="col-auto ms-md-auto">
-                                            <a href="{{ route('alumni.elections.results', $election) }}"
-                                               class="btn btn-sm btn-outline-success text-nowrap">
-                                                <i class="bi bi-trophy me-1"></i>
-                                                View Results
-                                            </a>
-                                        </div>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
 
-                        <div class="d-flex justify-content-center mt-3">
-                            {{ $pastElections->links('pagination::bootstrap-5') }}
-                        </div>
+                <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                    @if($actions['express_interest'] ?? false)
+                        <a href="{{ route('alumni.elections.expression-of-interest.status') }}" class="btn btn-outline-success btn-sm">
+                            <i class="feather-clipboard me-1"></i> My EOI Status
+                        </a>
+                    @endif
+                    @if($actions['accredit'] ?? false)
+                        <a href="{{ route('alumni.elections.accreditation', $currentElection) }}" class="btn btn-info btn-sm text-white">
+                            <i class="feather-user-check me-1"></i> Get Accredited
+                        </a>
+                    @endif
+                    @if(($actions['view_accreditation_status'] ?? false) && !($actions['accredit'] ?? false))
+                        <a href="{{ route('alumni.elections.accreditation', $currentElection) }}" class="btn btn-outline-info btn-sm">
+                            <i class="feather-user-check me-1"></i> Accreditation Status
+                        </a>
+                    @endif
+                    @if($actions['vote'] ?? false)
+                        <a href="{{ route('alumni.elections.vote', $currentElection) }}" class="btn btn-primary btn-sm">
+                            <i class="feather-check-square me-1"></i> Cast Your Vote
+                        </a>
+                    @endif
+                    @if(($actions['view_vote_page'] ?? false) && !($actions['vote'] ?? false))
+                        <a href="{{ route('alumni.elections.vote', $currentElection) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="feather-check-square me-1"></i> Voting Page
+                        </a>
+                    @endif
+                    @if($actions['live_results'] ?? false)
+                        <a href="{{ route('alumni.elections.results', $currentElection) }}" class="btn btn-secondary btn-sm">
+                            <i class="feather-bar-chart-2 me-1"></i> Live Results
+                        </a>
                     @endif
                 </div>
-            </div>
+            @endif
+        </div>
+    </div>
 
+    <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h5 class="fw-600 mb-0">Past Elections</h5>
+            @if($pastElections->total() === 1)
+                @php $solePastElection = $pastElections->first(); @endphp
+                <span class="badge {{ $solePastElection->isArchived() ? 'bg-secondary' : 'bg-success' }}">
+                    {{ $solePastElection->isArchived() ? 'Archived' : 'Completed' }}
+                </span>
+            @endif
+        </div>
+        <div class="card-body p-4 w-100 border-0">
+            @if($pastElections->isEmpty())
+                <p class="text-grey-500 font-xssss mb-0 text-center py-4">No past election records yet.</p>
+            @else
+                @foreach($pastElections as $election)
+                    <div class="elections-hub-past-item">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="min-w-0">
+                                <div class="fw-600 font-xssss text-grey-900 text-break">{{ $election->title }}</div>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                    @if($election->election_year)
+                                        <span class="text-grey-500 font-xssss">{{ $election->election_year }}</span>
+                                    @endif
+                                    @if($election->isArchived() && $election->archived_at)
+                                        <span class="text-grey-500 font-xssss">Archived {{ $election->archived_at->format('M d, Y') }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <a href="{{ route('alumni.elections.results', $election) }}" class="btn btn-sm btn-outline-primary text-nowrap">
+                                <i class="feather-award me-1"></i> View Results
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $pastElections->links('pagination::bootstrap-5') }}
+                </div>
+            @endif
         </div>
     </div>
 </div>
 
-<style>
-@media (max-width: 767.98px) {
-    .card-body {
-        padding: 1rem;
-    }
-
-    .h-md-3 {
-        font-size: 1.5rem !important;
-    }
-
-    .btn {
-        font-size: 0.875rem;
-        padding: 0.75rem 1rem;
-    }
-
-    .btn-sm {
-        font-size: 0.8rem;
-        padding: 0.5rem 0.75rem;
-    }
-
-    .badge {
-        font-size: 0.75rem !important;
-    }
-}
-
-.past-election-row {
-    flex-wrap: nowrap;
-}
-
-.past-election-title {
-    min-width: 0;
-    flex: 1 1 auto;
-}
-
-@media (max-width: 575.98px) {
-    .past-election-row {
-        flex-wrap: wrap;
-    }
-
-    .past-election-row .col-auto {
-        padding-top: 0.25rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .w-md-auto {
-        width: auto !important;
-    }
-}
-
-@media (min-width: 992px) {
-    .w-lg-auto {
-        width: auto !important;
-    }
-}
-</style>
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/alumni-elections-hub.css') }}">
+@endpush
 @endsection

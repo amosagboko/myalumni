@@ -80,7 +80,12 @@ class Alumni extends Model
 
     public function hasCompletedOnboardingFees(): bool
     {
-        return app(AlumniDuesService::class)->hasCompletedOnboardingFees($this);
+        return app(AlumniDuesService::class)->hasCompletedDefaultFees($this);
+    }
+
+    public function hasCompletedDefaultFees(): bool
+    {
+        return app(AlumniDuesService::class)->hasCompletedDefaultFees($this);
     }
 
     public function getDuesPhase(): string

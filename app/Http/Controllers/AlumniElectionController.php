@@ -14,7 +14,13 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use Spatie\Activitylog\Facades\Activity;
-use App\Models\FeeTemplate;
+use App\Services\Alumni\AlumniElectionAccreditationService;
+use App\Services\Alumni\AlumniElectionEoiFormService;
+use App\Services\Alumni\AlumniElectionEoiStatusService;
+use App\Services\Alumni\AlumniElectionHubService;
+use App\Services\Alumni\AlumniElectionPublishedCandidatesService;
+use App\Services\Alumni\AlumniElectionResultsService;
+use App\Services\Alumni\AlumniElectionVoteService;
 use App\Services\AlumniElectionParticipationService;
 use App\Services\PaymentCompletionService;
 
@@ -22,6 +28,7 @@ class AlumniElectionController extends Controller
 {
     public function __construct(
         private AlumniElectionParticipationService $participationService,
+        private AlumniElectionHubService $hubService,
         private PaymentCompletionService $paymentCompletion,
     ) {}
 
@@ -99,77 +106,43 @@ class AlumniElectionController extends Controller
             ->with('info', 'You already have an application for this position.');
     }
 
+    private function abortIfOfficeElectionMismatch(Election $election, ElectionOffice $office): void
+    {
+        if ((int) $office->election_id !== (int) $election->id) {
+            abort(404);
+        }
+    }
+
     /**
      * Show a list of elections the alumni is eligible for.
      */
     public function index()
     {
-        $alumni = Auth::user()->alumni;
-
-        $byElection = Election::query()
-            ->where('election_type', 'by_election')
-            ->where('is_active', true)
-            ->whereNotIn('status', ['completed', 'archived'])
-            ->with(['offices', 'parentElection'])
-            ->first();
-
-        $currentElection = $byElection ?? Election::query()
-            ->where('is_active', true)
-            ->where(function ($query) {
-                $query->operational()
-                    ->orWhere('status', 'incomplete');
-            })
-            ->with('offices')
-            ->first();
-
-        $parentElection = $byElection?->parentElection;
-
-        $pastElections = Election::query()
-            ->historical()
-            ->when($currentElection, fn ($query) => $query->where('id', '!=', $currentElection->id))
-            ->when($parentElection, fn ($query) => $query->where('id', '!=', $parentElection->id))
-            ->with('offices')
-            ->orderByDesc('election_year')
-            ->orderByDesc('id')
-            ->paginate(10)
-            ->withQueryString();
-
-        $participation = null;
-        $phaseLabel = null;
-        $actions = null;
-
-        if ($currentElection && $alumni) {
-            $participation = $this->participationService->participationFor($currentElection, $alumni);
-            $phaseLabel = $this->participationService->phaseLabel($currentElection);
-            $actions = $this->participationService->actionsFor($currentElection, $alumni, $participation);
-        }
-
-        return view('alumni.elections.index', compact(
-            'currentElection',
-            'pastElections',
-            'participation',
-            'phaseLabel',
-            'actions',
-            'parentElection'
+        return view('alumni.elections.index', array_merge(
+            $this->hubService->hubData(Auth::user()),
+            ['title' => 'Elections']
         ));
     }
 
     /**
      * Show the accreditation page for an election.
      */
-    public function accreditation(Election $election)
+    public function accreditation(Election $election, AlumniElectionAccreditationService $accreditationService)
     {
         if ($redirect = $this->redirectIfArchived($election)) {
             return $redirect;
         }
 
-        return view('alumni.elections.accreditation', compact('election'));
+        return view('alumni.elections.accreditation', array_merge(
+            $accreditationService->pageData($election, Auth::user()),
+            ['title' => 'Accreditation']
+        ));
     }
 
     /**
      * Show the voting page for an election.
      */
-    public function vote(Election $election)
+    public function vote(Election $election, AlumniElectionVoteService $voteService)
     {
         if ($redirect = $this->redirectIfArchived($election)) {
             return $redirect;
@@ -181,78 +154,39 @@ class AlumniElectionController extends Controller
             return $redirect;
         }
 
-        // Show voting form for this election - ONLY approved candidates
-        $offices = $election->offices()->with(['candidates' => function($query) {
-            $query->where('status', 'approved'); // Only approved candidates appear on ballot
-        }, 'candidates.alumni'])->get();
-        
-        $totalAccredited = $election->getTotalAccreditedVoters();
-        $totalSubscribed = $election->getTotalSubscribedUsers();
-        $totalExempted = $election->getTotalExemptedUsers();
-        
-        // Calculate time remaining
-        $timeRemaining = null;
-        if ($election->canAcceptVoteSubmissions()) {
-            $timeRemaining = $election->voting_end->diffForHumans(['parts' => 2]);
-        }
-        
-        return view('alumni.elections.vote', compact('election', 'offices', 'totalAccredited', 'totalSubscribed', 'totalExempted', 'timeRemaining'));
+        return view('alumni.elections.vote', array_merge(
+            $voteService->votePageData($election, $alumni),
+            ['title' => 'Cast Your Vote']
+        ));
     }
 
     /**
      * Show the results for an election.
      */
-    public function results(Election $election)
+    public function results(Election $election, AlumniElectionResultsService $resultsService)
     {
-        // Show results once voting has ended (incomplete or fully completed)
-        if (!$election->resultsArePublished()) {
+        if (! $election->resultsArePublished()) {
             return redirect()
                 ->route('alumni.elections')
                 ->with('error', 'Election results are not yet available. Results will be published after voting ends.');
         }
 
-        // Load election data with necessary relationships - ONLY approved candidates
-        $election->load(['offices.candidates' => function ($query) {
-            $query->where('status', 'approved')->with('electionResults');
-        }, 'offices.candidates.alumni.user', 'offices.candidates.votes', 'results.candidate.alumni.user', 'results.office']);
-
-        // Calculate basic statistics
-        $totalAccredited = $election->getTotalAccreditedVoters();
-        $totalVotes = $election->getTotalVotes();
-        $voterTurnout = $totalAccredited > 0 ? round(($totalVotes / $totalAccredited) * 100, 2) : 0;
-
-        // Get results for each office
-        $officeResults = $election->offices->map(function ($office) {
-            $candidates = $office->candidates->map(function ($candidate) {
-                $votes = $candidate->votes->count();
-                return [
-                    'candidate' => $candidate,
-                    'votes' => $votes,
-                    'is_winner' => $candidate->electionResults->where('is_winner', true)->isNotEmpty()
-                ];
-            })->sortByDesc('votes');
-
-            $totalOfficeVotes = $candidates->sum('votes');
-
-            return [
-                'office' => $office,
-                'candidates' => $candidates->map(function ($candidate) use ($totalOfficeVotes) {
-                    $percentage = $totalOfficeVotes > 0 ? round(($candidate['votes'] / $totalOfficeVotes) * 100, 1) : 0;
-                    return array_merge($candidate, ['percentage' => $percentage]);
-                }),
-                'total_votes' => $totalOfficeVotes
-            ];
-        });
-
-        return view('alumni.elections.results', compact('election', 'officeResults', 'totalAccredited', 'totalVotes', 'voterTurnout'))
-            ->with('resolution', app(\App\Services\ElectionResultService::class)->getResolutionSummary($election));
+        return view('alumni.elections.results', array_merge(
+            $resultsService->resultsData($election),
+            ['title' => 'Election Results']
+        ));
     }
 
     /**
      * Show the expression of interest form for a specific office in an election.
      */
-    public function expressionOfInterestForm(Election $election, ElectionOffice $office)
-    {
+    public function expressionOfInterestForm(
+        Election $election,
+        ElectionOffice $office,
+        AlumniElectionEoiFormService $eoiFormService,
+    ) {
+        $this->abortIfOfficeElectionMismatch($election, $office);
+
         if ($redirect = $this->redirectIfArchived($election)) {
             return $redirect;
         }
@@ -312,29 +246,28 @@ class AlumniElectionController extends Controller
             }
         }
 
-        // Get the screening fee for this office
-        $screeningFee = FeeTemplate::where('fee_type_id', $office->fee_type_id)
-            ->where('is_active', true)
-            ->where('valid_from', '<=', now())
-            ->where(function ($query) {
-                $query->whereNull('valid_until')->orWhere('valid_until', '>', now());
-            })
-            ->first();
+        $pageData = $eoiFormService->formPageData($election, $office);
 
-        if (!$screeningFee) {
+        if (! $pageData['screeningFee']) {
             return redirect()
                 ->route('alumni.elections')
                 ->with('error', 'Screening fee not found for this position. Please contact support.');
         }
 
-        return view('alumni.elections.expression-of-interest', compact('election', 'office', 'screeningFee'));
+        return view('alumni.elections.expression-of-interest', $pageData);
     }
 
     /**
      * Handle the preview step of expression of interest submission.
      */
-    public function previewExpressionOfInterest(Request $request, Election $election, ElectionOffice $office)
-    {
+    public function previewExpressionOfInterest(
+        Request $request,
+        Election $election,
+        ElectionOffice $office,
+        AlumniElectionEoiFormService $eoiFormService,
+    ) {
+        $this->abortIfOfficeElectionMismatch($election, $office);
+
         if ($redirect = $this->redirectIfArchived($election)) {
             return $redirect;
         }
@@ -374,16 +307,9 @@ class AlumniElectionController extends Controller
             'documents.*' => 'nullable|file|mimes:pdf,doc,docx|max:5120', // 5MB max
         ]);
 
-        // Get the screening fee
-        $screeningFee = FeeTemplate::where('fee_type_id', $office->fee_type_id)
-            ->where('is_active', true)
-            ->where('valid_from', '<=', now())
-            ->where(function ($query) {
-                $query->whereNull('valid_until')->orWhere('valid_until', '>', now());
-            })
-            ->first();
+        $screeningFee = $eoiFormService->screeningFeeForOffice($office);
 
-        if (!$screeningFee) {
+        if (! $screeningFee) {
             return redirect()
                 ->back()
                 ->with('error', 'Screening fee not found for this position. Please contact support.');
@@ -416,22 +342,27 @@ class AlumniElectionController extends Controller
             ]
         ]);
 
-        return view('alumni.elections.expression-of-interest-preview', [
-            'election' => $election,
-            'office' => $office,
-            'screeningFee' => $screeningFee,
-            'manifesto' => $validated['manifesto'] ?? null,
-            'documents' => $documentPaths,
-            'passport' => $passportPath,
-            'previewToken' => $previewToken
-        ]);
+        return view('alumni.elections.expression-of-interest-preview', $eoiFormService->previewPageData(
+            $election,
+            $office,
+            $validated['manifesto'] ?? null,
+            $documentPaths,
+            $passportPath,
+            $previewToken,
+        ));
     }
 
     /**
      * Handle final submission of the expression of interest form (with payment).
      */
-    public function submitExpressionOfInterest(Request $request, Election $election, ElectionOffice $office)
-    {
+    public function submitExpressionOfInterest(
+        Request $request,
+        Election $election,
+        ElectionOffice $office,
+        AlumniElectionEoiFormService $eoiFormService,
+    ) {
+        $this->abortIfOfficeElectionMismatch($election, $office);
+
         if ($redirect = $this->redirectIfArchived($election)) {
             return $redirect;
         }
@@ -508,16 +439,9 @@ class AlumniElectionController extends Controller
                 ->with('error', 'Invalid preview data. Please submit your application again.');
         }
 
-        // Get the screening fee
-        $screeningFee = FeeTemplate::where('fee_type_id', $office->fee_type_id)
-            ->where('is_active', true)
-            ->where('valid_from', '<=', now())
-            ->where(function ($query) {
-                $query->whereNull('valid_until')->orWhere('valid_until', '>', now());
-            })
-            ->first();
+        $screeningFee = $eoiFormService->screeningFeeForOffice($office);
 
-        if (!$screeningFee) {
+        if (! $screeningFee) {
             session()->forget('eoi_preview');
             return redirect()
                 ->route('alumni.elections')
@@ -634,29 +558,31 @@ class AlumniElectionController extends Controller
     /**
      * Show the status of the alumni's expression of interest.
      */
-    public function expressionOfInterestStatus()
+    public function expressionOfInterestStatus(AlumniElectionEoiStatusService $eoiStatusService)
     {
-        $alumni = Auth::user()->alumni;
-        $expressionOfInterest = $alumni->getCurrentExpressionOfInterest();
+        $pageData = $eoiStatusService->pageData(Auth::user());
 
-        if ($expressionOfInterest) {
-            // Show EOI details/status view
-            return view('alumni.elections.expression-of-interest-status', compact('expressionOfInterest'));
+        if ($pageData) {
+            return view('alumni.elections.expression-of-interest-status', array_merge(
+                $pageData,
+                ['title' => 'EOI Status']
+            ));
         }
 
-        // If no EOI found, redirect to EOI form for the current election/office if possible
-        // Try to find an active election and office for EOI
-        $activeElection = \App\Models\Election::whereIn('status', ['eoi', 'eoi_closed'])
-            ->orderBy('accreditation_start', 'desc')
+        $openElection = Election::query()
+            ->where('status', 'eoi')
+            ->where('is_active', true)
+            ->orderByDesc('accreditation_start')
             ->first();
-        if ($activeElection) {
-            $office = $activeElection->offices()->first();
+
+        if ($openElection?->canAcceptEoiSubmissions()) {
+            $office = $openElection->offices()->first();
             if ($office) {
-                return redirect()->route('alumni.elections.expression-of-interest.form', ['election' => $activeElection->id, 'office' => $office->id])
+                return redirect()->route('alumni.elections.expression-of-interest.form', ['election' => $openElection->id, 'office' => $office->id])
                     ->with('info', 'You have not expressed interest yet. Please complete the EOI form.');
             }
         }
-        // Fallback: redirect to elections list
+
         return redirect()->route('alumni.elections')
             ->with('info', 'You have not expressed interest in any position yet.');
     }
@@ -664,10 +590,17 @@ class AlumniElectionController extends Controller
     /**
      * Show published (approved) candidates for an election/office.
      */
-    public function publishedCandidates(Election $election, ElectionOffice $office)
-    {
-        $candidates = $office->candidates()->where('status', 'approved')->with('alumni.user')->get();
-        return view('alumni.elections.published-candidates', compact('election', 'office', 'candidates'));
+    public function publishedCandidates(
+        Election $election,
+        ElectionOffice $office,
+        AlumniElectionPublishedCandidatesService $publishedCandidatesService,
+    ) {
+        $this->abortIfOfficeElectionMismatch($election, $office);
+
+        return view(
+            'alumni.elections.published-candidates',
+            $publishedCandidatesService->pageData($election, $office)
+        );
     }
 
     /**
@@ -803,7 +736,11 @@ class AlumniElectionController extends Controller
             'expires_at' => now()->addMinutes(30)
         ]]);
 
-        return view('alumni.elections.vote-preview', compact('election', 'selectedCandidates'));
+        return view('alumni.elections.vote-preview', [
+            'election' => $election,
+            'selectedCandidates' => $selectedCandidates,
+            'title' => 'Preview Your Votes',
+        ]);
     }
 
     /**

@@ -1,260 +1,149 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container-fluid mt-5 pt-7 px-3 px-md-4">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h3 class="card-title mb-0">Accreditation - {{ $election->title }}</h3>
-                </div>
-                <div class="card-body">
-                    @php
-                        $alumni = auth()->user()->alumni;
-                        $isEligible = $election->isAlumniEligibleToVote($alumni);
-                        $isAccredited = $election->accreditedVoters()->where('alumni_id', $alumni->id)->exists();
-                        $accreditationPeriodActive = $election->canAcceptAccreditationSubmissions();
-                        $accreditationEnded = $election->status === 'accreditation' && $election->hasAccreditationEnded();
-                        $accreditationNotStarted = $election->status === 'accreditation' && !$election->hasAccreditationStarted();
-                    @endphp
+<div class="elections-hub-page elections-accreditation-page w-100 pe-lg-2">
+    <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+                <h4 class="fw-600 mb-1">Accreditation</h4>
+                <p class="text-grey-500 font-xssss mb-0">{{ $election->title }}</p>
+            </div>
+            <a href="{{ route('alumni.elections') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="feather-arrow-left me-1"></i> Back to Elections
+            </a>
+        </div>
 
-                    <!-- Accreditation Period Status -->
-                    <div class="alert {{ $accreditationPeriodActive ? 'alert-info' : 
-                        ($accreditationEnded ? 'alert-danger' : 
-                        ($accreditationNotStarted ? 'alert-warning' : 'alert-secondary')) }} mb-4">
-                        <h5 class="alert-heading">
-                            <i class="bi {{ $accreditationPeriodActive ? 'bi-info-circle' : 
-                                ($accreditationEnded ? 'bi-x-circle' : 
-                                ($accreditationNotStarted ? 'bi-clock' : 'bi-dash-circle')) }} me-2"></i>
-                            Accreditation Period Status
-                        </h5>
-                        <p class="mb-0">
+        <div class="card-body p-4 w-100 border-0">
+            @if(session('success'))
+                <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger">{{ session('error') }}</div>
+            @endif
+
+            <div class="alert {{ $periodAlertClass }} font-xssss mb-4">
+                <div class="fw-600 mb-1"><i class="feather-info me-1"></i> Accreditation period</div>
+                <p class="mb-0">{{ $periodMessage }}</p>
+                @if($election->accreditation_start && $election->accreditation_end)
+                    <p class="mb-0 mt-2 text-muted">
+                        {{ $election->accreditation_start->format('M d, Y h:i A') }}
+                        –
+                        {{ $election->accreditation_end->format('M d, Y h:i A') }}
+                    </p>
+                @endif
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="elections-hub-stat text-center">
+                        <div class="elections-hub-stat__label">Your status</div>
+                        <div class="elections-hub-stat__value">
+                            @if($isAccredited)
+                                <span class="badge bg-success">Accredited</span>
+                            @else
+                                <span class="badge bg-secondary">Not accredited</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="elections-hub-stat text-center">
+                        <div class="elections-hub-stat__label">Eligibility</div>
+                        <div class="elections-hub-stat__value">
+                            @if($isEligible || $isAccredited)
+                                <span class="badge bg-success">Eligible</span>
+                            @else
+                                <span class="badge bg-danger">Not eligible</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="elections-hub-stat text-center">
+                        <div class="elections-hub-stat__label">Window</div>
+                        <div class="elections-hub-stat__value">
                             @if($accreditationPeriodActive)
-                                Accreditation is currently active. You can submit your accreditation request now.
+                                <span class="badge bg-info">Open now</span>
                             @elseif($accreditationNotStarted)
-                                Accreditation period will start on {{ $election->accreditation_start->format('M d, Y h:i A') }}.
-                                Please check back later to submit your accreditation request.
+                                <span class="badge bg-warning text-dark">Not started</span>
                             @elseif($accreditationEnded)
-                                Accreditation period has ended on {{ $election->accreditation_end->format('M d, Y h:i A') }}.
-                                You can no longer submit accreditation requests for this election.
-                            @elseif($election->status === 'voting')
-                                Accreditation period has ended. The election is now in the voting phase.
-                            @elseif($election->isIncomplete())
-                                This election is incomplete. Accreditation is closed while pending offices await a by-election.
-                            @elseif($election->status === 'completed')
-                                This election has been completed. Accreditation is no longer available.
+                                <span class="badge bg-danger">Closed</span>
                             @else
-                                Accreditation period has not been scheduled for this election yet.
-                            @endif
-                        </p>
-                        <small class="d-block mt-2">
-                            Period: {{ $election->accreditation_start->format('M d, Y h:i A') }} - 
-                            {{ $election->accreditation_end->format('M d, Y h:i A') }}
-                        </small>
-                    </div>
-
-                    <!-- Accreditation Status -->
-                    @if($isAccredited)
-                        <div class="alert alert-success mb-4">
-                            <h5 class="alert-heading">
-                                <i class="bi bi-check-circle me-2"></i>
-                                Accreditation Status
-                            </h5>
-                            <p class="mb-0">You have been successfully accredited for this election.</p>
-                            @php
-                                $accreditation = $election->accreditedVoters()
-                                    ->where('alumni_id', $alumni->id)
-                                    ->first();
-                            @endphp
-                            <small class="d-block mt-2">
-                                Accredited on: {{ $accreditation->accredited_at->format('M d, Y h:i A') }}
-                            </small>
-                        </div>
-                    @else
-                        <!-- Eligibility Status - Only show if not accredited -->
-                        <div class="alert {{ $isEligible ? 'alert-success' : 'alert-danger' }} mb-4">
-                            <h5 class="alert-heading">
-                                <i class="bi {{ $isEligible ? 'bi-check-circle' : 'bi-x-circle' }} me-2"></i>
-                                Eligibility Status
-                            </h5>
-                            @if($isEligible)
-                                <p class="mb-0">You are eligible to be accredited for this election.</p>
-                            @else
-                                <p class="mb-0">You are not eligible for accreditation. Please check the following:</p>
-                                <ul class="mb-0 mt-2">
-                                    @if(!$alumni->getActiveFees()->every(fn($fee) => $fee->isPaid()))
-                                        <li>Complete all pending payments</li>
-                                    @endif
-                                    @if(!$alumni->contact_address || !$alumni->phone_number || !$alumni->qualification_type)
-                                        <li>Complete your bio data profile</li>
-                                    @endif
-                                </ul>
+                                <span class="badge bg-secondary">Unavailable</span>
                             @endif
                         </div>
-
-                        <!-- Accreditation Form -->
-                        @if($isEligible && $accreditationPeriodActive)
-                            <div class="card border-0 bg-light">
-                                <div class="card-body">
-                                    <h5 class="card-title">Submit Accreditation</h5>
-                                    <p class="card-text">Please confirm your details before submitting for accreditation:</p>
-                                    
-                                    <div class="mb-4">
-                                        <div class="row">
-                                            <div class="col-12">
-                                                <div class="card border">
-                                                    <div class="card-body p-0">
-                                                        <div class="row g-0">
-                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
-                                                                <div class="p-3">
-                                                                    <strong>Name</strong>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-12 col-sm-8 col-md-9">
-                                                                <div class="p-3">
-                                                                    {{ $alumni->user->name }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row g-0 border-top">
-                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
-                                                                <div class="p-3">
-                                                                    <strong>Matriculation Number</strong>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-12 col-sm-8 col-md-9">
-                                                                <div class="p-3">
-                                                                    {{ $alumni->matriculation_number }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row g-0 border-top">
-                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
-                                                                <div class="p-3">
-                                                                    <strong>Email</strong>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-12 col-sm-8 col-md-9">
-                                                                <div class="p-3">
-                                                                    {{ $alumni->user->email }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row g-0 border-top">
-                                                            <div class="col-12 col-sm-4 col-md-3 bg-light border-end">
-                                                                <div class="p-3">
-                                                                    <strong>Phone Number</strong>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-12 col-sm-8 col-md-9">
-                                                                <div class="p-3">
-                                                                    {{ $alumni->phone_number }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <form action="{{ route('alumni.elections.accreditation.submit', $election) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="btn btn-primary w-100 w-md-auto">
-                                            <i class="bi bi-check-circle me-2"></i>
-                                            Submit Accreditation Request
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        @elseif(!$accreditationPeriodActive)
-                            <div class="alert alert-secondary">
-                                <i class="bi bi-info-circle me-2"></i>
-                                @if($accreditationEnded)
-                                    The accreditation period has ended. You can no longer submit accreditation requests.
-                                @elseif($accreditationNotStarted)
-                                    The accreditation period has not started yet. Please check back later.
-                                @else
-                                    Accreditation is not available at this time.
-                                @endif
-                            </div>
-                        @endif
-                    @endif
-
-                    <!-- Navigation -->
-                    <div class="mt-4 d-flex flex-column flex-md-row gap-2">
-                        <a href="{{ route('alumni.elections') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            <span class="d-none d-sm-inline">Back to Elections</span>
-                            <span class="d-inline d-sm-none">Back</span>
-                        </a>
-                        @if($isAccredited)
-                            <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-primary">
-                                <i class="bi bi-check-square me-2"></i>
-                                <span class="d-none d-sm-inline">Proceed to Vote</span>
-                                <span class="d-inline d-sm-none">Vote</span>
-                            </a>
-                        @endif
                     </div>
                 </div>
+            </div>
+
+            @if($isAccredited)
+                <div class="alert alert-success font-xssss mb-4">
+                    <i class="feather-check-circle me-1"></i>
+                    You have been successfully accredited for this election.
+                    @if($accreditation?->accredited_at)
+                        <div class="mt-2 text-muted">Accredited on {{ $accreditation->accredited_at->format('M d, Y h:i A') }}</div>
+                    @endif
+                </div>
+            @else
+                <div class="alert {{ $isEligible ? 'alert-success' : 'alert-danger' }} font-xssss mb-4">
+                    @if($isEligible)
+                        <i class="feather-check-circle me-1"></i>
+                        You are eligible to be accredited for this election.
+                    @else
+                        <i class="feather-x-circle me-1"></i>
+                        You are not eligible for accreditation yet. Please resolve the following:
+                        <ul class="mb-0 mt-2">
+                            @foreach($ineligibilityReasons as $reason)
+                                <li>{{ $reason }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+
+                @if($isEligible && $accreditationPeriodActive)
+                    <h6 class="fw-600 font-xssss text-grey-900 text-uppercase mb-3">Confirm your details</h6>
+                    <div class="border rounded-3 p-3 mb-4">
+                        <div class="row g-2 font-xssss">
+                            <div class="col-sm-4 text-grey-500">Name</div>
+                            <div class="col-sm-8 fw-600">{{ $user?->name ?? 'N/A' }}</div>
+                            <div class="col-sm-4 text-grey-500">Matriculation number</div>
+                            <div class="col-sm-8">{{ app(\App\Services\Alumni\AlumniElectionAccreditationService::class)->matricNumber($alumni) }}</div>
+                            <div class="col-sm-4 text-grey-500">Email</div>
+                            <div class="col-sm-8">{{ $user?->email ?? 'N/A' }}</div>
+                            <div class="col-sm-4 text-grey-500">Phone</div>
+                            <div class="col-sm-8">{{ $alumni?->phone_number ?? 'N/A' }}</div>
+                        </div>
+                    </div>
+
+                    <form action="{{ route('alumni.elections.accreditation.submit', $election) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="btn btn-primary">
+                            <i class="feather-check-circle me-1"></i> Submit accreditation request
+                        </button>
+                    </form>
+                @elseif(! $accreditationPeriodActive)
+                    <div class="alert alert-secondary font-xssss mb-0">
+                        <i class="feather-clock me-1"></i>
+                        Accreditation submissions are not open right now.
+                    </div>
+                @endif
+            @endif
+
+            <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+                <a href="{{ route('alumni.elections') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="feather-arrow-left me-1"></i> Back to Elections
+                </a>
+                @if($isAccredited)
+                    <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-primary btn-sm">
+                        <i class="feather-check-square me-1"></i> Proceed to vote
+                    </a>
+                @endif
             </div>
         </div>
     </div>
 </div>
 
-<style>
-@media (max-width: 768px) {
-    .container-fluid {
-        margin-left: 0 !important;
-    }
-    
-    .card-body {
-        padding: 1rem;
-    }
-    
-    .alert-heading {
-        font-size: 1.1rem;
-    }
-    
-    .card-title {
-        font-size: 1.25rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .container-fluid {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-    }
-    
-    .card-title {
-        font-size: 1.1rem;
-    }
-    
-    .alert {
-        padding: 0.75rem;
-    }
-    
-    .alert-heading {
-        font-size: 1rem;
-    }
-    
-    .btn {
-        font-size: 0.875rem;
-        padding: 0.5rem 1rem;
-    }
-    
-    .card-body {
-        padding: 0.75rem;
-    }
-    
-    .p-3 {
-        padding: 0.75rem !important;
-    }
-    
-    .bg-light {
-        background-color: #f8f9fa !important;
-    }
-}
-</style>
-@endsection 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/alumni-elections-hub.css') }}">
+@endpush
+@endsection

@@ -1,168 +1,106 @@
 @extends('layouts.alumni')
 
 @section('content')
-<div class="container-fluid mt-3 mt-md-5 pt-3 pt-md-7 px-3 px-md-4">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0 h4 h-md-3">Preview Your Votes - {{ $election->title }}</h3>
-                        <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            <span class="d-none d-sm-inline">Back to Voting</span>
-                            <span class="d-inline d-sm-none">Back</span>
-                        </a>
-                    </div>
-                </div>
+@php
+    $voteService = app(\App\Services\Alumni\AlumniElectionVoteService::class);
+@endphp
 
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        Please review your selections carefully. Once confirmed, your votes cannot be changed.
-                    </div>
+<div class="elections-hub-page elections-vote-page w-100 pe-lg-2">
+    <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+                <h4 class="fw-600 mb-1">Preview Your Votes</h4>
+                <p class="text-grey-500 font-xssss mb-0">{{ $election->title }}</p>
+            </div>
+            <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="feather-arrow-left me-1"></i> Back to voting
+            </a>
+        </div>
 
-                    <!-- Mobile View - Cards -->
-                    <div class="d-md-none">
-                        @foreach($selectedCandidates as $selection)
-                            <div class="vote-preview-card mb-3 p-3 border rounded">
-                                <div class="d-flex align-items-center mb-2">
-                                    @if($selection['candidate']->passport)
-                                        <img src="{{ Storage::url($selection['candidate']->passport) }}" 
-                                             alt="Candidate Photo" 
-                                             class="rounded-circle me-2"
-                                             style="width: 50px; height: 50px; object-fit: cover;">
-                                    @endif
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1">{{ $selection['candidate']->alumni->user->name }}</h6>
-                                        <small class="text-muted">{{ $selection['candidate']->alumni->matriculation_number }}</small>
-                                    </div>
+        <div class="card-body p-4 w-100 border-0">
+            <div class="alert alert-info font-xssss mb-4">
+                <i class="feather-info me-1"></i>
+                Review your selections carefully. Once confirmed, your votes cannot be changed.
+            </div>
+
+            <div class="d-flex flex-column gap-3 mb-4">
+                @foreach($selectedCandidates as $selection)
+                    <div class="elections-vote-preview-card">
+                        <div class="text-grey-500 font-xsssss text-uppercase fw-600 mb-1">{{ $selection['office']->title }}</div>
+                        @if($selection['office']->description)
+                            <p class="text-grey-500 font-xssss mb-3">{{ $selection['office']->description }}</p>
+                        @endif
+                        <div class="d-flex align-items-start gap-3">
+                            @if($selection['candidate']->passport)
+                                <img src="{{ asset('storage/' . $selection['candidate']->passport) }}"
+                                     alt="Candidate photo"
+                                     class="rounded-circle elections-ballot-option__avatar">
+                            @else
+                                <div class="elections-ballot-option__avatar elections-ballot-option__avatar--placeholder rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="feather-user text-grey-500"></i>
                                 </div>
-                                <div class="mb-2">
-                                    <strong class="text-primary">{{ $selection['office']->title }}</strong>
-                                    @if($selection['office']->description)
-                                        <br>
-                                        <small class="text-muted">{{ $selection['office']->description }}</small>
-                                    @endif
-                                </div>
+                            @endif
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="fw-600 font-xssss text-grey-900">{{ $voteService->candidateName($selection['candidate']) }}</div>
+                                <div class="text-grey-500 font-xssss">{{ $voteService->candidateMatric($selection['candidate']) }}</div>
                                 @if($selection['candidate']->manifesto)
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-primary w-100"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#manifestoModal{{ $selection['candidate']->id }}">
-                                        <i class="bi bi-file-text me-1"></i>
-                                        <span class="d-none d-sm-inline">View Manifesto</span>
-                                        <span class="d-inline d-sm-none">Manifesto</span>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary mt-2"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#previewManifestoModal{{ $selection['candidate']->id }}">
+                                        <i class="feather-file-text me-1"></i> View manifesto
                                     </button>
                                 @endif
                             </div>
-                        @endforeach
-                    </div>
-
-                    <!-- Desktop View - Table -->
-                    <div class="d-none d-md-block">
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Office</th>
-                                        <th>Selected Candidate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($selectedCandidates as $selection)
-                                    <tr>
-                                        <td>
-                                            <strong>{{ $selection['office']->title }}</strong>
-                                            @if($selection['office']->description)
-                                                <br>
-                                                <small class="text-muted">{{ $selection['office']->description }}</small>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                @if($selection['candidate']->passport)
-                                                    <img src="{{ Storage::url($selection['candidate']->passport) }}" 
-                                                         alt="Candidate Photo" 
-                                                         class="rounded-circle me-2"
-                                                         style="width: 40px; height: 40px; object-fit: cover;">
-                                                @endif
-                                                <div>
-                                                    <strong>{{ $selection['candidate']->alumni->user->name }}</strong>
-                                                    @if($selection['candidate']->manifesto)
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-outline-primary ms-2"
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#manifestoModal{{ $selection['candidate']->id }}">
-                                                            View Manifesto
-                                                        </button>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
                         </div>
                     </div>
+                @endforeach
+            </div>
 
-                    <div class="alert alert-warning mt-3">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Important:</strong> Your votes will be recorded after confirmation. This action cannot be undone.
-                    </div>
+            <div class="alert alert-warning font-xssss mb-4">
+                <i class="feather-alert-triangle me-1"></i>
+                <strong>Important:</strong> Your votes will be recorded after confirmation. This action cannot be undone.
+            </div>
 
-                    <div class="card-footer">
-                        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
-                            <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-secondary">
-                                <i class="bi bi-pencil me-2"></i>
-                                <span class="d-none d-sm-inline">Modify Votes</span>
-                                <span class="d-inline d-sm-none">Modify</span>
-                            </a>
-                            <form action="{{ route('alumni.elections.submit-vote', $election) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-success w-100 w-md-auto" onclick="return confirm('Are you sure you want to submit these votes? This action cannot be undone.')">
-                                    <i class="bi bi-check-circle me-2"></i>
-                                    <span class="d-none d-sm-inline">Confirm & Submit Votes</span>
-                                    <span class="d-inline d-sm-none">Confirm & Submit</span>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+            <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                <a href="{{ route('alumni.elections.vote', $election) }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="feather-edit-2 me-1"></i> Modify votes
+                </a>
+                <form action="{{ route('alumni.elections.submit-vote', $election) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit"
+                            class="btn btn-success btn-sm"
+                            onclick="return confirm('Are you sure you want to submit these votes? This action cannot be undone.')">
+                        <i class="feather-check-circle me-1"></i> Confirm &amp; submit votes
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Manifesto Modals -->
 @foreach($selectedCandidates as $selection)
     @if($selection['candidate']->manifesto)
-        <div class="modal fade" id="manifestoModal{{ $selection['candidate']->id }}" tabindex="-1">
-            <div class="modal-dialog modal-lg">
+        <div class="modal fade" id="previewManifestoModal{{ $selection['candidate']->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title h6 h-md-5">
-                            Manifesto - {{ $selection['candidate']->alumni->user->name }}
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title h6">Manifesto — {{ $voteService->candidateName($selection['candidate']) }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="manifesto-content">
-                            {!! nl2br(e($selection['candidate']->manifesto)) !!}
-                        </div>
+                        <div class="elections-manifesto-content font-xssss">{!! nl2br(e($selection['candidate']->manifesto)) !!}</div>
                         @if($selection['candidate']->documents)
                             <div class="mt-4">
-                                <h6>Supporting Documents:</h6>
-                                <ul class="list-unstyled">
+                                <h6 class="font-xssss">Supporting documents</h6>
+                                <ul class="list-unstyled mb-0">
                                     @foreach($selection['candidate']->documents as $document)
                                         <li class="mb-2">
-                                            <a href="{{ asset('storage/' . $document) }}" 
-                                                target="_blank" 
-                                                class="btn btn-sm btn-outline-secondary">
-                                                <i class="bi bi-file-earmark me-2"></i>
-                                                <span class="d-none d-sm-inline">View Document</span>
-                                                <span class="d-inline d-sm-none">Document</span>
+                                            <a href="{{ asset('storage/' . $document) }}"
+                                               target="_blank"
+                                               rel="noopener"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="feather-file me-1"></i> View document
                                             </a>
                                         </li>
                                     @endforeach
@@ -176,90 +114,7 @@
     @endif
 @endforeach
 
-<style>
-.vote-preview-card {
-    background: white;
-    transition: all 0.3s ease;
-}
-
-.vote-preview-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.manifesto-content {
-    line-height: 1.6;
-    white-space: pre-line;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .container-fluid {
-        margin-left: 0 !important;
-    }
-    
-    .card-body {
-        padding: 1rem;
-    }
-    
-    .vote-preview-card {
-        margin-bottom: 1rem;
-    }
-    
-    .btn {
-        font-size: 0.875rem;
-        padding: 0.5rem 0.75rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .container-fluid {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-    }
-    
-    .card-body {
-        padding: 0.75rem;
-    }
-    
-    .vote-preview-card {
-        padding: 0.75rem !important;
-        margin-bottom: 0.75rem;
-    }
-    
-    .btn {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    
-    .modal-dialog {
-        margin: 0.5rem;
-    }
-    
-    .modal-body {
-        padding: 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .container-fluid {
-        padding-left: 0.25rem;
-        padding-right: 0.25rem;
-    }
-    
-    .card-body {
-        padding: 0.5rem;
-    }
-    
-    .vote-preview-card {
-        padding: 0.5rem !important;
-        margin-bottom: 0.5rem;
-    }
-    
-    .btn {
-        font-size: 0.75rem;
-        padding: 0.35rem 0.5rem;
-    }
-}
-</style>
-@endsection 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/alumni-elections-hub.css') }}">
+@endpush
+@endsection

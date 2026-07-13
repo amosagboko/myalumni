@@ -1,0 +1,193 @@
+.elections-hub-page .elections-hub-stat {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    height: 100%;
+    background: #fff;
+}
+
+.elections-hub-page .elections-hub-stat__label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    color: #888;
+}
+
+.elections-hub-page .elections-hub-stat__value {
+    font-size: 0.8rem;
+    color: #111;
+    margin-top: 0.35rem;
+}
+
+.elections-hub-page .elections-hub-office {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+}
+
+.elections-hub-page .elections-hub-past-item {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.elections-hub-page .elections-hub-past-item + .elections-hub-past-item {
+    margin-top: 0.75rem;
+}
+
+.elections-hub-page .elections-hub-phase-pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+}
+
+.elections-results-page .elections-results-winner {
+    border: 1px solid #c3e6cb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8fff8 0%, #eef8ee 100%);
+    height: 100%;
+}
+
+.elections-results-page .elections-results-winner__avatar {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.elections-results-page .elections-results-winner__avatar--placeholder {
+    background: #e9ecef;
+}
+
+.elections-results-page .elections-results-candidate {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: #fff;
+}
+
+.elections-results-page .elections-results-candidate--winner {
+    border-color: #c3e6cb;
+    background: #f8fff8;
+}
+
+.elections-results-page .elections-results-candidate__avatar {
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.elections-results-page .elections-results-candidate__avatar--placeholder {
+    background: #e9ecef;
+}
+
+.elections-results-page .elections-results-progress {
+    height: 1rem;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.elections-results-page .elections-results-progress .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.elections-results-page .elections-results-office + .elections-results-office {
+    padding-top: 0.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.elections-vote-page .elections-ballot-office,
+.elections-accreditation-page .elections-ballot-office {
+    border-top: 1px solid #e9ecef;
+    padding-top: 1rem;
+}
+
+.elections-vote-page .elections-ballot-option {
+    cursor: pointer;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.elections-vote-page .elections-ballot-option__avatar,
+.elections-vote-page .elections-ballot-option__avatar--placeholder {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.elections-vote-page .elections-ballot-option__avatar--placeholder,
+.elections-accreditation-page .elections-ballot-option__avatar--placeholder {
+    background: #e9ecef;
+}
+
+.elections-vote-page .elections-vote-preview-card,
+.elections-vote-page .elections-ballot-option {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    background: #fff;
+}
+
+.elections-vote-page .elections-vote-preview-card {
+    padding: 1rem;
+}
+
+.elections-manifesto-content {
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.elections-eoi-status-page .elections-eoi-panel {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: #fff;
+}
+
+.elections-eoi-status-page .elections-eoi-passport {
+    max-height: 160px;
+    object-fit: cover;
+}
+
+.elections-eoi-status-page .elections-eoi-manifesto {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: #f8f9fa;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-line;
+}
+
+.elections-eoi-form-page .elections-eoi-panel,
+.elections-eoi-preview-page .elections-eoi-panel,
+.elections-published-candidates-page .elections-published-candidate {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: #fff;
+}
+
+.elections-eoi-preview-page .elections-eoi-passport--preview {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+}
+
+.elections-published-candidates-page .elections-published-candidate__avatar {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.elections-published-candidates-page .elections-published-candidate__avatar--placeholder {
+    background: #e9ecef;
+}

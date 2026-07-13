@@ -24,7 +24,7 @@ class AlumniDuesService
 
     public function getDuesPhase(Alumni $alumni): string
     {
-        if ($alumni->year_of_graduation >= 2025 && !$this->hasCompletedOnboardingFees($alumni)) {
+        if (! $this->hasCompletedDefaultFees($alumni)) {
             return self::PHASE_ONBOARDING;
         }
 
@@ -37,7 +37,7 @@ class AlumniDuesService
     }
 
     /**
-     * Fees the alumni must pay right now (onboarding bundle OR current year's annual due).
+     * Fees the alumni must pay right now (default graduation fees, then current year's annual due).
      */
     public function getActiveFees(Alumni $alumni, $paymentYear = null): Collection
     {
@@ -48,8 +48,8 @@ class AlumniDuesService
             return collect();
         }
 
-        if ($alumni->year_of_graduation >= 2025 && !$this->hasCompletedOnboardingFees($alumni)) {
-            return $this->getOnboardingFeeTemplates($alumni);
+        if (! $this->hasCompletedDefaultFees($alumni)) {
+            return $this->getDefaultFeeTemplates($alumni);
         }
 
         $annualTemplate = $activeYear->annualDueTemplate();
@@ -64,12 +64,34 @@ class AlumniDuesService
         return collect([$annualTemplate]);
     }
 
-    public function hasCompletedOnboardingFees(Alumni $alumni): bool
+    /**
+     * Whether cohort default fees are satisfied (2025+ onboarding bundle or pre-2025 subscription).
+     */
+    public function hasCompletedDefaultFees(Alumni $alumni): bool
     {
-        if ($alumni->year_of_graduation < 2025) {
-            return true;
+        if ($alumni->year_of_graduation >= 2025) {
+            return $this->hasCompletedOnboardingFeesForCohort($alumni);
         }
 
+        return $this->hasCompletedLegacySubscription($alumni);
+    }
+
+    public function hasCompletedOnboardingFees(Alumni $alumni): bool
+    {
+        return $this->hasCompletedDefaultFees($alumni);
+    }
+
+    public function getDefaultFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
+    {
+        if ($alumni->year_of_graduation >= 2025) {
+            return $this->getOnboardingFeeTemplates($alumni, $includeInactive);
+        }
+
+        return $this->getLegacySubscriptionFeeTemplates($alumni, $includeInactive);
+    }
+
+    private function hasCompletedOnboardingFeesForCohort(Alumni $alumni): bool
+    {
         $templates = $this->getOnboardingFeeTemplates($alumni, includeInactive: true);
 
         if ($templates->isEmpty()) {
@@ -77,6 +99,51 @@ class AlumniDuesService
         }
 
         return $templates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
+    }
+
+    private function hasCompletedLegacySubscription(Alumni $alumni): bool
+    {
+        $templates = $this->getLegacySubscriptionFeeTemplates($alumni, includeInactive: true);
+
+        if ($templates->isNotEmpty()) {
+            return $templates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
+        }
+
+        $subscriptionType = FeeType::where('code', 'subscription')->where('is_active', true)->first();
+        if (! $subscriptionType) {
+            return true;
+        }
+
+        return Transaction::where('alumni_id', $alumni->id)
+            ->where('status', 'paid')
+            ->whereHas('feeTemplate', fn ($query) => $query->where('fee_type_id', $subscriptionType->id))
+            ->exists();
+    }
+
+    private function getLegacySubscriptionFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
+    {
+        $subscriptionType = FeeType::where('code', 'subscription')->where('is_active', true)->first();
+        if (! $subscriptionType) {
+            return collect();
+        }
+
+        $query = FeeTemplate::query()
+            ->with('feeType')
+            ->where('fee_type_id', $subscriptionType->id)
+            ->whereNull('category_id')
+            ->where(function ($q) use ($alumni) {
+                $q->where('graduation_year', $alumni->year_of_graduation)
+                    ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
+            });
+
+        if (! $includeInactive) {
+            $query->active();
+        }
+
+        return $query->orderByRaw(
+            'CASE WHEN graduation_year = ? THEN 0 ELSE 1 END',
+            [$alumni->year_of_graduation]
+        )->orderByDesc('id')->get();
     }
 
     public function getOnboardingFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
@@ -147,7 +214,7 @@ class AlumniDuesService
             ->orderBy('id')
             ->chunkById(100, function ($alumniRows) use ($paymentYear, $template, &$assigned) {
                 foreach ($alumniRows as $alumni) {
-                    if ($alumni->year_of_graduation >= 2025 && !$this->hasCompletedOnboardingFees($alumni)) {
+                    if (! $this->hasCompletedDefaultFees($alumni)) {
                         continue;
                     }
 
