@@ -168,4 +168,39 @@ class PostServiceTest extends TestCase
         $this->assertSame('video', $media->first()->getMediaType());
         Storage::disk('public')->assertExists($media->first()->getMediaPath());
     }
+
+    public function test_author_can_delete_own_post_and_media_files(): void
+    {
+        Storage::fake('public');
+
+        $author = User::factory()->create();
+        $image = UploadedFile::fake()->image('shot.jpg', 800, 600);
+        $post = $this->postService->createPost($author, 'Remove me', images: [$image]);
+
+        $media = $post->media->first();
+        $mediaPath = $media->getMediaPath();
+        $thumbPath = $media->getThumbPath();
+
+        Storage::disk('public')->assertExists($mediaPath);
+        Storage::disk('public')->assertExists($thumbPath);
+
+        $this->postService->deletePost($post, $author);
+
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+        $this->assertDatabaseMissing('post_media', ['post_id' => $post->id]);
+        Storage::disk('public')->assertMissing($mediaPath);
+        Storage::disk('public')->assertMissing($thumbPath);
+    }
+
+    public function test_non_author_cannot_delete_post(): void
+    {
+        $author = User::factory()->create();
+        $other = User::factory()->create();
+        $post = Post::factory()->create(['user_id' => $author->id]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('You can only delete your own posts.');
+
+        $this->postService->deletePost($post, $other);
+    }
 }

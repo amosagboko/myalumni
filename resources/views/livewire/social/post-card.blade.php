@@ -12,6 +12,18 @@
                 <span class="badge bg-secondary font-xsssss mt-1">Connections</span>
             @endif
         </h4>
+        @if($canDelete ?? false)
+            <button type="button"
+                    wire:click.prevent="deletePost"
+                    wire:confirm="Delete this post? This cannot be undone."
+                    wire:loading.attr="disabled"
+                    wire:target="deletePost"
+                    class="ms-auto border-0 bg-transparent text-grey-500 font-xssss fw-600 align-self-start"
+                    title="Delete post"
+                    aria-label="Delete post">
+                <i class="feather-trash-2 font-xs"></i>
+            </button>
+        @endif
     </div>
 
     @if($post->isEventShare() && $post->event)

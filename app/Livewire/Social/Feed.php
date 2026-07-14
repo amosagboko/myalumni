@@ -56,7 +56,7 @@ class Feed extends Component
 
         $type = is_array($payload) ? ($payload['type'] ?? null) : null;
 
-        if ($type === 'post.created') {
+        if ($type === 'post.created' || $type === 'post.deleted') {
             $this->resetPage();
         }
     }
@@ -82,6 +82,24 @@ class Feed extends Component
     public function toggleComments(int $postId): void
     {
         $this->openCommentsPostId = $this->openCommentsPostId === $postId ? null : $postId;
+    }
+
+    public function deletePost(int $postId, PostService $postService): void
+    {
+        $post = Post::findOrFail($postId);
+
+        try {
+            $postService->deletePost($post, Auth::user());
+
+            if ($this->openCommentsPostId === $postId) {
+                $this->openCommentsPostId = null;
+            }
+
+            $this->dispatch('post-deleted', postId: $postId);
+            session()->flash('success', 'Post deleted.');
+        } catch (\Throwable $e) {
+            session()->flash('error', $e->getMessage());
+        }
     }
 
     public function render(FeedService $feedService, PostService $postService)

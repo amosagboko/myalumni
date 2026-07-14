@@ -10,6 +10,7 @@ use App\Models\PostMedia;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 
@@ -194,5 +195,43 @@ class PostService
     public function userHasLiked(Post $post, User $user): bool
     {
         return $post->likes()->where('user_id', $user->id)->exists();
+    }
+
+    public function canDeletePost(Post $post, User $user): bool
+    {
+        return (int) $post->user_id === (int) $user->id;
+    }
+
+    public function deletePost(Post $post, User $user): void
+    {
+        if (! $this->canDeletePost($post, $user)) {
+            throw new \RuntimeException('You can only delete your own posts.');
+        }
+
+        $postId = $post->id;
+
+        DB::transaction(function () use ($post) {
+            $post->loadMissing('media');
+
+            foreach ($post->media as $media) {
+                $this->deleteStoredMediaFiles($media);
+            }
+
+            $post->delete();
+        });
+
+        $this->broadcastService->feedUpdated('post.deleted', $postId, $user->id);
+    }
+
+    protected function deleteStoredMediaFiles(PostMedia $media): void
+    {
+        $payload = is_array($media->file) ? $media->file : [];
+
+        foreach (['media_path', 'thumb_path'] as $key) {
+            $path = $payload[$key] ?? null;
+            if (is_string($path) && $path !== '') {
+                Storage::disk('public')->delete($path);
+            }
+        }
     }
 }

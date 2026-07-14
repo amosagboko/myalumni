@@ -144,4 +144,42 @@ class AlumniSocialInteractionsTest extends TestCase
             ->assertSee('Video for all alumni')
             ->assertSee('/storage/'.$media->getMediaPath(), false);
     }
+
+    public function test_author_can_delete_own_post_from_feed(): void
+    {
+        $author = User::factory()->create();
+        $post = Post::factory()->create([
+            'user_id' => $author->id,
+            'content' => 'Please delete me',
+        ]);
+
+        Livewire::actingAs($author)
+            ->test(Feed::class)
+            ->assertSee('Please delete me')
+            ->call('deletePost', $post->id)
+            ->assertHasNoErrors()
+            ->assertDispatched('post-deleted', postId: $post->id)
+            ->assertDontSee('Please delete me');
+
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+    }
+
+    public function test_non_author_cannot_delete_post_from_feed(): void
+    {
+        $author = User::factory()->create();
+        $viewer = User::factory()->create();
+        $this->connectUsers($viewer, $author);
+
+        $post = Post::factory()->create([
+            'user_id' => $author->id,
+            'content' => 'Stay visible',
+        ]);
+
+        Livewire::actingAs($viewer)
+            ->test(Feed::class)
+            ->call('deletePost', $post->id)
+            ->assertSee('Stay visible');
+
+        $this->assertDatabaseHas('posts', ['id' => $post->id]);
+    }
 }

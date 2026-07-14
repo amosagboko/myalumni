@@ -16,6 +16,7 @@ class PostCard extends Component
 
     public int $postId;
     public bool $showComments = false;
+    public bool $deleted = false;
 
     public function getListeners(): array
     {
@@ -68,15 +69,38 @@ class PostCard extends Component
         $this->showComments = !$this->showComments;
     }
 
+    public function deletePost(PostService $postService): void
+    {
+        $post = Post::findOrFail($this->postId);
+
+        try {
+            $postService->deletePost($post, Auth::user());
+            $this->deleted = true;
+            $this->showComments = false;
+            $this->dispatch('post-deleted', postId: $this->postId);
+            session()->flash('success', 'Post deleted.');
+        } catch (\Throwable $e) {
+            session()->flash('error', $e->getMessage());
+        }
+    }
+
     public function render(FeedService $feedService, PostService $postService)
     {
+        if ($this->deleted) {
+            return view('livewire.social.post-card-deleted');
+        }
+
         $query = Post::with(['user', 'media'])->withCount('comments');
 
         if (Schema::hasColumn('posts', 'event_id')) {
             $query->with('event');
         }
 
-        $post = $query->findOrFail($this->postId);
+        $post = $query->find($this->postId);
+
+        if (! $post) {
+            return view('livewire.social.post-card-deleted');
+        }
 
         if (!$feedService->canViewPost($post, Auth::user())) {
             return view('livewire.social.post-card-hidden');
@@ -85,6 +109,7 @@ class PostCard extends Component
         return view('livewire.social.post-card', [
             'post' => $post,
             'liked' => $postService->userHasLiked($post, Auth::user()),
+            'canDelete' => $postService->canDeletePost($post, Auth::user()),
         ]);
     }
 }
