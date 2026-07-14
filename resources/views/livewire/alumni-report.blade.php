@@ -28,9 +28,9 @@
 
             <div class="d-flex justify-content-between align-items-center mb-4 clearance-form-header">
                 <img src="{{ asset('images/fulafia-logo.jpg') }}" alt="FULAFIA Logo" class="img-fluid" style="width: 60px; height: 60px;">
-                <div class="text-center px-2">
-                    <h2 class="mb-0 h6">Federal University of Lafia</h2>
-                    <h3 class="mb-0 h6 text-grey-700">Alumni Personal Data Registration Form</h3>
+                <div class="text-center px-2 clearance-form-header__text">
+                    <h2 class="mb-1 fw-bold">Federal University of Lafia</h2>
+                    <h3 class="mb-0 fw-bold text-grey-700">Alumni Personal Data Registration Form</h3>
                 </div>
                 <img src="{{ asset('images/alumni-logo.jpg') }}" alt="ALUMNI Logo" class="img-fluid" style="width: 60px; height: 60px;">
             </div>
