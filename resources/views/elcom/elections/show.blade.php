@@ -245,7 +245,7 @@
                                                 <span class="badge bg-warning">Not Started</span>
                                             @endif
 
-                                            @if(auth()->user()->hasRole(['administrator', 'elcom-chair']))
+                                            @if(auth()->user()->hasAnyRole(['administrator', 'elcom-chairman', 'elcom', 'alumni-president']))
                                                 <div class="mt-2">
                                                     @if($election->canStartEoi())
                                                         <form action="{{ route('elcom.elections.start-eoi', $election) }}" method="POST" class="d-inline">
@@ -320,7 +320,7 @@
                                         <span class="badge bg-warning">Not Started</span>
                                     @endif
 
-                                    @if(auth()->user()->hasRole(['administrator', 'elcom-chair']))
+                                    @if(auth()->user()->hasAnyRole(['administrator', 'elcom-chairman', 'elcom', 'alumni-president']))
                                         <div class="mt-2">
                                             @if($election->canStartAccreditation())
                                                 <form action="{{ route('elcom.elections.start-accreditation', $election) }}" method="POST" class="d-inline">
@@ -375,7 +375,7 @@
                                         <span class="badge bg-warning">Not Started</span>
                                     @endif
 
-                                    @if(auth()->user()->hasRole(['administrator', 'elcom-chair']))
+                                    @if(auth()->user()->hasAnyRole(['administrator', 'elcom-chairman', 'elcom', 'alumni-president']))
                                         <div class="mt-2">
                                             @if(!$election->hasVotingStarted() && $election->canStartVoting())
                                                 <form action="{{ route('elcom.elections.start-voting', $election) }}" method="POST" class="d-inline">

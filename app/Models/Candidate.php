@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class Candidate extends Model
 {
@@ -196,9 +197,10 @@ class Candidate extends Model
 
         // Create notification in database
         $user->notifications()->create([
+            'id' => (string) Str::uuid(),
             'type' => 'candidate_screening',
             'data' => $data,
-            'read_at' => null
+            'read_at' => null,
         ]);
     }
 

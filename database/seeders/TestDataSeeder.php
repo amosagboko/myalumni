@@ -77,6 +77,35 @@ class TestDataSeeder extends Seeder
                 ]
             );
         }
+
+        // Normalize legacy test fee code so payment sync recognizes EOI transactions.
+        FeeType::where('code', 'screening')->update(['code' => 'screening_fee']);
+
+        $screeningType = FeeType::firstOrCreate(
+            ['code' => 'screening_fee'],
+            [
+                'name' => 'Election Screening Fee',
+                'description' => 'Election candidate screening fee',
+                'is_active' => true,
+                'is_system' => false,
+            ]
+        );
+
+        foreach ([2018, 2024] as $graduationYear) {
+            FeeTemplate::firstOrCreate(
+                [
+                    'fee_type_id' => $screeningType->id,
+                    'graduation_year' => $graduationYear,
+                ],
+                [
+                    'amount' => 5000,
+                    'description' => "Election screening fee {$graduationYear}",
+                    'is_active' => true,
+                    'valid_from' => now()->subYear(),
+                    'valid_until' => null,
+                ]
+            );
+        }
     }
 
     private function createTestUsers()
@@ -336,15 +365,7 @@ class TestDataSeeder extends Seeder
 
     private function createElectionOffices($election)
     {
-        $feeType = FeeType::firstOrCreate(
-            ['code' => 'screening'],
-            [
-                'name' => 'Screening Fee',
-                'description' => 'Election candidate screening fee',
-                'is_active' => true,
-                'is_system' => false,
-            ]
-        );
+        $feeType = FeeType::where('code', 'screening_fee')->firstOrFail();
 
         $offices = [
             [

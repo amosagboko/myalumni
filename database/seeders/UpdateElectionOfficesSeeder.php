@@ -11,7 +11,7 @@ class UpdateElectionOfficesSeeder extends Seeder
     public function run()
     {
         // Pick a valid fee type (for example, one with code 'screening' or 'EOI')
-        $validFeeType = FeeType::where('code', 'screening')->first();
+        $validFeeType = FeeType::where('code', 'screening_fee')->first();
         if (!$validFeeType) {
             $validFeeType = ( FeeType::where('is_active', true)->first() );
         }
