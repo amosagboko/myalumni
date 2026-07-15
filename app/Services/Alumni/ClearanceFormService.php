@@ -8,35 +8,18 @@ use Illuminate\Support\Str;
 
 class ClearanceFormService
 {
+    public function __construct(
+        private readonly AlumniMemberAccessService $memberAccess
+    ) {}
+
     public function accessStatus(?Alumni $alumni): array
     {
-        $needsBioData = ! $alumni
-            || ! $alumni->contact_address
-            || ! $alumni->phone_number
-            || ! $alumni->qualification_type;
-
-        $needsPayments = false;
-
-        if ($alumni) {
-            try {
-                $activeFees = $alumni->getActiveFees();
-                $unpaidFees = $activeFees->filter(fn ($fee) => ! $fee->isPaid());
-                $needsPayments = $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
-            } catch (\Throwable $e) {
-                report($e);
-            }
-        }
-
-        return [
-            'needsBioData' => $needsBioData,
-            'needsPayments' => $needsPayments,
-            'allOk' => ! $needsBioData && ! $needsPayments,
-        ];
+        return $this->memberAccess->status($alumni);
     }
 
     public function canAccess(?Alumni $alumni): bool
     {
-        return $this->accessStatus($alumni)['allOk'];
+        return $this->memberAccess->isFullMember($alumni);
     }
 
     public function context(User $user, Alumni $alumni): array

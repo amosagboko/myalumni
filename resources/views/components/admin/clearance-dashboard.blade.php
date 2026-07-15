@@ -11,7 +11,7 @@
 
 <x-admin.surface-styles />
 
-<div class="main-content right-chat-active admin-surface">
+<div class="main-content admin-surface" style="padding-right: 1.25rem;">
     <div class="middle-sidebar-bottom">
         <div class="middle-sidebar-left pe-0">
             <div class="row">
@@ -22,9 +22,15 @@
                             <h1 class="ads-page-title">{{ $title }}</h1>
                             <p class="ads-page-subtitle">{{ $subtitle }}</p>
                         </div>
-                        <div class="ads-page-actions">
-                            <a href="{{ $clearanceRoute }}" class="btn btn-sm ads-btn-primary text-white">Go to clearance</a>
-                            <a href="{{ $auditRoute }}" class="btn btn-sm btn-outline-secondary">Clearance audit</a>
+                        <div class="ads-page-actions d-flex flex-wrap gap-2">
+                            <a href="{{ $clearanceRoute }}" class="btn btn-sm ads-btn-primary text-white">
+                                <i data-feather="user-check" style="width: 14px; height: 14px;"></i>
+                                Clearance
+                            </a>
+                            <a href="{{ $auditRoute }}" class="btn btn-sm btn-outline-secondary">
+                                <i data-feather="clipboard" style="width: 14px; height: 14px;"></i>
+                                Audit
+                            </a>
                         </div>
                     </div>
 
@@ -121,12 +127,16 @@
                                         <tbody>
                                             @foreach($recentActivity as $log)
                                                 <tr>
-                                                    <td>{{ \Carbon\Carbon::parse($log->created_at)->format('M j, H:i') }}</td>
-                                                    <td>{{ $log->alumni_name }}</td>
+                                                    <td class="adt-muted">{{ \Carbon\Carbon::parse($log->created_at)->format('M j, H:i') }}</td>
+                                                    <td class="fw-medium">{{ $log->alumni_name }}</td>
                                                     <td>{{ $log->matric_number }}</td>
-                                                    <td>{{ $log->old_value ? '✔' : '✖' }} → {{ $log->new_value ? '✔' : '✖' }}</td>
+                                                    <td>
+                                                        <span class="text-muted small">{{ $log->old_value ? 'Cleared' : 'Pending' }}</span>
+                                                        <span class="mx-1">→</span>
+                                                        <span class="fw-medium">{{ $log->new_value ? 'Cleared' : 'Pending' }}</span>
+                                                    </td>
                                                     <td>{{ $log->actor_name }}</td>
-                                                    <td>{{ $log->reason ?? '—' }}</td>
+                                                    <td class="text-muted">{{ $log->reason ?? '—' }}</td>
                                                 </tr>
                                             @endforeach
                                         </tbody>

@@ -142,6 +142,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile', [ProfileController::class, 'avatar'])->name('profile.avatar');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::post('/portal/switch', [\App\Http\Controllers\PortalModeController::class, 'switch'])->name('portal.switch');
+
     // Friends routes
     Route::get('/friends', FriendRequestManager::class)->name('friends');
 
@@ -166,7 +168,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Alumni routes latest
-    Route::middleware(['auth', 'role:alumni'])->group(function () {
+    Route::middleware(['auth', 'role:alumni|alumni-president'])->group(function () {
         Route::get('/alumni/home', function () {
             return view('alumni.home');
         })->name('alumni.home');
@@ -212,7 +214,7 @@ Route::post('/payments/webhook', [AlumniPaymentController::class, 'handleWebhook
 Route::get('/payments/redirect', [AlumniPaymentController::class, 'handleRedirect'])->name('alumni.payments.redirect');
 
 // Alumni routes
-Route::middleware(['auth', 'role:alumni'])->group(function () {
+Route::middleware(['auth', 'role:alumni|alumni-president'])->group(function () {
     // Alumni Home Route
     Route::get('/alumni/home', function () {
         return view('alumni.home');
@@ -221,6 +223,13 @@ Route::middleware(['auth', 'role:alumni'])->group(function () {
     // Discover hub (highlights, news, events)
     Route::get('/alumni/discover', \App\Livewire\Social\Discover::class)->name('alumni.discover');
     Route::redirect('/alumni/events', '/alumni/discover');
+
+    Route::middleware('can:create,'.\App\Models\Event::class)->group(function () {
+        Route::get('/alumni/create-event', \App\Livewire\Alumni\CreateEvent::class)->name('alumni.events.create');
+        Route::get('/alumni/my-events', \App\Livewire\Alumni\MyEvents::class)->name('alumni.events.mine');
+        Route::get('/alumni/my-events/{event}/edit', \App\Livewire\Alumni\EditEvent::class)->name('alumni.events.edit');
+    });
+
     Route::get('/alumni/events/{event}', \App\Livewire\Social\EventShow::class)->name('alumni.events.show');
     Route::get('/alumni/members/{user}', \App\Livewire\Social\AlumniProfileShow::class)->name('alumni.members.show');
 
@@ -291,8 +300,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
         ->name('clearance-audit');
 });
 
-// Election Management Routes - accessible by elcom, elcom-chairman, and administrator
-Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator'])->prefix('elcom')->name('elcom.')->group(function () {
+// Election Management Routes - accessible by elcom, elcom-chairman, administrator, and alumni-president
+Route::middleware(['auth', 'role:elcom|elcom-chairman|administrator|alumni-president'])->prefix('elcom')->name('elcom.')->group(function () {
     // Election Management Routes
     Route::get('/elections', [ElectionController::class, 'index'])->name('elections.index');
     Route::get('/elections/create', [ElectionController::class, 'create'])->name('elections.create');
@@ -460,6 +469,26 @@ Route::middleware(['auth', 'role:elcom-chairman'])->prefix('elcom-chairman')->na
     Route::get('/dashboard', [App\Http\Controllers\ElcomChairman\DashboardController::class, 'index'])->name('dashboard');
     
     // Redirect election management to the shared elcom routes
+    Route::get('/elections', function () {
+        return redirect()->route('elcom.elections.index');
+    })->name('elections.index');
+    Route::get('/elections/{election}', function ($election) {
+        return redirect()->route('elcom.elections.show', $election);
+    })->name('elections.show');
+    Route::get('/elections/{election}/edit', function ($election) {
+        return redirect()->route('elcom.elections.edit', $election);
+    })->name('elections.edit');
+    Route::get('/elections/create', function () {
+        return redirect()->route('elcom.elections.create');
+    })->name('elections.create');
+});
+
+// Alumni President routes
+Route::middleware(['auth', 'role:alumni-president'])->prefix('alumni-president')->name('alumni-president.')->group(function () {
+    Route::get('/', [App\Http\Controllers\AlumniPresident\DashboardController::class, 'index'])->name('home');
+    Route::get('/dashboard', [App\Http\Controllers\AlumniPresident\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/duties', [App\Http\Controllers\AlumniPresident\DutiesController::class, 'index'])->name('duties');
+
     Route::get('/elections', function () {
         return redirect()->route('elcom.elections.index');
     })->name('elections.index');

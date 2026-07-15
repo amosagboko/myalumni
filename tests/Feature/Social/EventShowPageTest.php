@@ -17,12 +17,14 @@ class EventShowPageTest extends TestCase
         parent::setUp();
 
         Role::findOrCreate('alumni');
+        \Spatie\Permission\Models\Permission::findOrCreate('view events');
     }
 
     public function test_event_show_page_renders_contained_layout(): void
     {
         $alumni = User::factory()->create();
         $alumni->assignRole('alumni');
+        $alumni->givePermissionTo('view events');
 
         $admin = User::factory()->create();
 

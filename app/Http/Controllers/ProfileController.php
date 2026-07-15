@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Redirect;
 use Intervention\Image\Drivers\Gd\Driver;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\PortalModeService;
 
 class ProfileController extends Controller
 {
@@ -21,9 +22,48 @@ class ProfileController extends Controller
     public function edit(Request $request): View
     {
         $user = $request->user();
+        $portalMode = app(PortalModeService::class);
+
+        if ($portalMode->hasDualPortalAccess($user)
+            && $portalMode->getMode($user, $request) === PortalModeService::MODE_MEMBER) {
+            return view('profile.alumni-edit', [
+                'user' => $user,
+            ]);
+        }
+
+        if ($user->hasRole('alumni-president')
+            && $portalMode->getMode($user, $request) === PortalModeService::MODE_OPERATIONAL) {
+            return view('profile.alumni-president-edit', [
+                'user' => $user,
+            ]);
+        }
 
         if ($user->usesAdminProfileLayout()) {
             return view('profile.admin-edit', [
+                'user' => $user,
+            ]);
+        }
+
+        if ($user->hasRole('alumni-relations-officer')) {
+            return view('profile.aro-edit', [
+                'user' => $user,
+            ]);
+        }
+
+        if ($user->hasRole('elcom-chairman')) {
+            return view('profile.elcom-chairman-edit', [
+                'user' => $user,
+            ]);
+        }
+
+        if ($user->hasRole('student-affairs')) {
+            return view('profile.student-affairs-edit', [
+                'user' => $user,
+            ]);
+        }
+
+        if ($user->hasRole('academic-affairs')) {
+            return view('profile.academic-affairs-edit', [
                 'user' => $user,
             ]);
         }

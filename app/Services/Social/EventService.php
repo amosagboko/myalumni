@@ -123,13 +123,19 @@ class EventService
         };
     }
 
-    public function isVisibleToAlumni(Event $event): bool
+    public function isVisibleToAlumni(Event $event, ?\App\Models\User $viewer = null): bool
     {
         if (! Schema::hasColumn('events', 'is_published')) {
             return true;
         }
 
-        return (bool) $event->is_published;
+        if ($event->is_published) {
+            return true;
+        }
+
+        $viewer ??= auth()->user();
+
+        return $viewer && (int) $event->user_id === (int) $viewer->id;
     }
 
     public function shareCount(Event $event): int

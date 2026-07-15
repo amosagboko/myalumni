@@ -30,13 +30,13 @@ class ARODashboardController extends Controller
             ->where('read_at', null)
             ->count();
 
-        // Get upcoming events (next 5)
+        // Upcoming events (paginated)
         $upcomingEvents = Event::where('date', '>=', now())
             ->orderBy('date', 'asc')
-            ->take(5)
-            ->get();
+            ->paginate(5)
+            ->withQueryString();
 
-        return view('aro', compact(
+        return view('aro.dashboard', compact(
             'totalAlumni',
             'activeEvents',
             'pendingPosts',

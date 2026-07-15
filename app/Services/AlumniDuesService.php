@@ -41,15 +41,15 @@ class AlumniDuesService
      */
     public function getActiveFees(Alumni $alumni, $paymentYear = null): Collection
     {
+        if (! $this->hasCompletedDefaultFees($alumni)) {
+            return $this->getDefaultFeeTemplates($alumni);
+        }
+
         $activeYear = $this->resolvePaymentYear($paymentYear);
         if (!$activeYear) {
             Log::warning('No active payment year found for alumni dues', ['alumni_id' => $alumni->id]);
 
             return collect();
-        }
-
-        if (! $this->hasCompletedDefaultFees($alumni)) {
-            return $this->getDefaultFeeTemplates($alumni);
         }
 
         $annualTemplate = $activeYear->annualDueTemplate();

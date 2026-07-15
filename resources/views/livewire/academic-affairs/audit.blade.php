@@ -1,77 +1,154 @@
-<div class="middle-sidebar-bottom">
-    <div class="middle-sidebar-left" style="margin-left: 280px; margin-top: 100px;">
-        <div class="row">
-            <div class="col-12">
-            @if (session()->has('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
-            @if (session()->has('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
-            @endif
+<div>
+    <x-admin.surface-styles />
+    <x-admin.data-table-styles />
 
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Academic Affairs Clearance Audit</h6>
-                    <button wire:click="export" class="btn btn-sm btn-success">Export CSV</button>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3 p-3 bg-light rounded">
-                        <div class="row g-2">
-                            <div class="col-md-4">
-                                <input type="text" class="form-control" placeholder="Search alumni name" wire:model.debounce.500ms="alumniName">
+    <div class="main-content admin-surface admin-data-table" style="padding-right: 1.25rem;">
+        <div class="middle-sidebar-bottom">
+            <div class="middle-sidebar-left pe-0">
+                <div class="row">
+                    <div class="col-12">
+
+                        <div class="ads-page-header">
+                            <div>
+                                <h1 class="ads-page-title">Academic Affairs Clearance Audit</h1>
+                                <p class="ads-page-subtitle">Track academic affairs clearance status changes.</p>
                             </div>
-                            <div class="col-md-4">
-                                <input type="text" class="form-control" placeholder="Search actor name" wire:model.debounce.500ms="actorName">
-                            </div>
-                            <div class="col-md-2">
-                                <input type="date" class="form-control" placeholder="From date" wire:model="dateFrom">
-                            </div>
-                            <div class="col-md-2">
-                                <input type="date" class="form-control" placeholder="To date" wire:model="dateTo">
+                            <div class="ads-page-actions d-flex flex-wrap gap-2">
+                                <a href="{{ route('academic-affairs.home') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i data-feather="arrow-left" style="width: 14px; height: 14px;"></i>
+                                    Dashboard
+                                </a>
+                                <a href="{{ route('academic-affairs.clearance') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i data-feather="user-check" style="width: 14px; height: 14px;"></i>
+                                    Clearance
+                                </a>
+                                <button type="button" class="btn btn-sm ads-btn-primary text-white" wire:click="export">
+                                    <i data-feather="download" style="width: 14px; height: 14px;"></i>
+                                    Export CSV
+                                </button>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="table-responsive" style="overflow-x:auto;">
-                        <table class="table table-hover table-sm align-middle small">
-                            <thead>
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>Who (User + Role)</th>
-                                <th>Alumni</th>
-                                <th>Matric</th>
-                                <th>Old → New</th>
-                                <th>Reason</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            @forelse($logs as $log)
-                                <tr>
-                                    <td>{{ \Carbon\Carbon::parse($log->created_at)->format('Y-m-d H:i') }}</td>
-                                    <td>{{ $log->actor_name }} <small class="text-muted">({{ $log->actor_role }})</small></td>
-                                    <td>{{ $log->alumni_name }}</td>
-                                    <td>{{ $log->matric_number }}</td>
-                                    <td>
-                                        <span class="badge {{ $log->old_value ? 'bg-success' : 'bg-danger' }}">{{ $log->old_value ? '✔' : '✖' }}</span>
-                                        →
-                                        <span class="badge {{ $log->new_value ? 'bg-success' : 'bg-danger' }}">{{ $log->new_value ? '✔' : '✖' }}</span>
-                                    </td>
-                                    <td>{{ $log->reason ?? '-' }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">No audit logs found.</td>
-                                </tr>
-                            @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="adt-panel">
+                            <div class="adt-toolbar">
+                                <div class="adt-filters">
+                                    <div class="adt-search">
+                                        <i data-feather="search" class="adt-search-icon"></i>
+                                        <input
+                                            type="text"
+                                            wire:model.live.debounce.400ms="alumniName"
+                                            class="form-control form-control-sm"
+                                            placeholder="Alumni name…"
+                                        >
+                                    </div>
+                                    <div class="adt-search">
+                                        <i data-feather="user" class="adt-search-icon"></i>
+                                        <input
+                                            type="text"
+                                            wire:model.live.debounce.400ms="actorName"
+                                            class="form-control form-control-sm"
+                                            placeholder="Actor name…"
+                                        >
+                                    </div>
+                                    <input
+                                        type="date"
+                                        wire:model.live="dateFrom"
+                                        class="form-control form-control-sm adt-select adt-select-narrow"
+                                        aria-label="Date from"
+                                    >
+                                    <input
+                                        type="date"
+                                        wire:model.live="dateTo"
+                                        class="form-control form-control-sm adt-select adt-select-narrow"
+                                        aria-label="Date to"
+                                    >
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" wire:click="clearFilters">
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
 
-                    <div class="mt-3">{{ $logs->links() }}</div>
+                            @if ($logs->count() > 0)
+                                <div class="adt-table-wrap">
+                                    <table class="adt-table">
+                                        <thead>
+                                            <tr>
+                                                <th>When</th>
+                                                <th>Alumni</th>
+                                                <th>Matric</th>
+                                                <th>Status change</th>
+                                                <th>Actor</th>
+                                                <th>Reason</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($logs as $log)
+                                                <tr wire:key="aa-audit-log-{{ $log->id }}">
+                                                    <td class="adt-muted">{{ \Carbon\Carbon::parse($log->created_at)->format('M j, Y H:i') }}</td>
+                                                    <td class="fw-medium">{{ $log->alumni_name }}</td>
+                                                    <td>{{ $log->matric_number }}</td>
+                                                    <td>
+                                                        <span class="adt-status {{ $log->old_value ? 'adt-status-active' : 'adt-status-suspended' }}">
+                                                            <span class="adt-status-dot"></span>
+                                                            {{ $log->old_value ? 'Cleared' : 'Pending' }}
+                                                        </span>
+                                                        <span class="adt-muted mx-1">→</span>
+                                                        <span class="adt-status {{ $log->new_value ? 'adt-status-active' : 'adt-status-suspended' }}">
+                                                            <span class="adt-status-dot"></span>
+                                                            {{ $log->new_value ? 'Cleared' : 'Pending' }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="fw-medium">{{ $log->actor_name }}</div>
+                                                        <div class="adt-muted small">{{ $log->actor_role }}</div>
+                                                    </td>
+                                                    <td class="adt-muted">{{ $log->reason ?? '—' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                @if ($logs->hasPages())
+                                    <div class="adt-footer">
+                                        <span class="adt-footer-count">
+                                            {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }}
+                                        </span>
+                                        <div class="adt-pagination">
+                                            {{ $logs->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="adt-empty">
+                                    <div class="adt-empty-icon">
+                                        <i data-feather="clipboard" style="width: 28px; height: 28px;"></i>
+                                    </div>
+                                    <h3 class="adt-empty-title">No audit logs found</h3>
+                                    <p class="adt-empty-text">Try adjusting your filters to see clearance history.</p>
+                                </div>
+                            @endif
+                        </div>
+
+                    </div>
                 </div>
-            </div>
             </div>
         </div>
     </div>
-</div>
 
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof feather !== 'undefined') feather.replace();
+        });
+        document.addEventListener('livewire:navigated', function () {
+            if (typeof feather !== 'undefined') feather.replace();
+        });
+        document.addEventListener('livewire:init', function () {
+            Livewire.hook('morph.updated', () => {
+                if (typeof feather !== 'undefined') feather.replace();
+            });
+        });
+    </script>
+    @endpush
+</div>

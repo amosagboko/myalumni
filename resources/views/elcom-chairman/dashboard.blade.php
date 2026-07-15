@@ -1,7 +1,8 @@
-<x-layouts.elcom-chairman>
+<x-layouts.elcom-chairman title="Dashboard | ELCOM Chairman">
     <x-admin.surface-styles />
+    <x-admin.data-table-styles />
 
-    <div class="main-content right-chat-active admin-surface">
+    <div class="main-content admin-surface">
         <div class="middle-sidebar-bottom">
             <div class="middle-sidebar-left pe-0">
                 <div class="row">
@@ -12,14 +13,51 @@
                                 <h1 class="ads-page-title">ELCOM Chairman Dashboard</h1>
                                 <p class="ads-page-subtitle">Election overview and participation metrics.</p>
                             </div>
-                            <div class="ads-page-actions">
-                                <a href="{{ route('elcom-chairman.elections.index') }}" class="btn btn-sm ads-btn-primary text-white">All elections</a>
+                            <div class="ads-page-actions d-flex flex-wrap gap-2">
+                                <a href="{{ route('elcom-chairman.elections.index') }}" class="btn btn-sm ads-btn-primary text-white">
+                                    <i data-feather="award" style="width: 14px; height: 14px;"></i>
+                                    All elections
+                                </a>
+                                <a href="{{ route('elcom-chairman.elections.create') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i data-feather="plus" style="width: 14px; height: 14px;"></i>
+                                    Create election
+                                </a>
                             </div>
                         </div>
 
                         <div class="ads-section">
                             <div class="ads-section-card">
-                                <h2 class="ads-section-title">Current cycle</h2>
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                    <div>
+                                        <h2 class="ads-section-title mb-0 border-0 pb-0">Current cycle</h2>
+                                        <p class="ads-page-subtitle mb-0 mt-1">
+                                            @if ($selectedYear)
+                                                Showing {{ $selectedYear }}
+                                                @if (!empty($cycleLabel))
+                                                    — {{ $cycleLabel }}
+                                                @endif
+                                            @else
+                                                No election years found
+                                            @endif
+                                        </p>
+                                    </div>
+                                    @if ($availableYears->isNotEmpty())
+                                        <form method="GET" action="{{ url()->current() }}" class="d-flex align-items-center gap-2">
+                                            <label for="cycle-year" class="small text-muted mb-0">Election year</label>
+                                            <select
+                                                id="cycle-year"
+                                                name="year"
+                                                class="form-select form-select-sm ads-select"
+                                                style="width: auto; min-width: 110px;"
+                                                onchange="this.form.submit()"
+                                            >
+                                                @foreach ($availableYears as $year)
+                                                    <option value="{{ $year }}" @selected((int) $selectedYear === (int) $year)>{{ $year }}</option>
+                                                @endforeach
+                                            </select>
+                                        </form>
+                                    @endif
+                                </div>
                                 <div class="ads-stats mb-3">
                                     <div class="ads-stat">
                                         <div class="ads-stat-inner">
@@ -62,7 +100,7 @@
                                     <div class="ads-stat">
                                         <div class="ads-stat-inner">
                                             <div>
-                                                <span class="ads-stat-label">Total elections</span>
+                                                <span class="ads-stat-label">Elections in year</span>
                                                 <span class="ads-stat-value">{{ number_format($totalElections ?? 0) }}</span>
                                             </div>
                                             <span class="ads-stat-icon"><i data-feather="layers"></i></span>
@@ -96,14 +134,24 @@
                                         </div>
                                     </div>
                                 </div>
+                                @if (($archivedElections ?? 0) > 0)
+                                    <p class="small text-muted mb-0 mt-3">
+                                        {{ number_format($archivedElections) }} archived election(s) in {{ $selectedYear }} are included when you select that year.
+                                    </p>
+                                @endif
                             </div>
                         </div>
 
                         <div class="ads-section">
                             <div class="ads-section-card">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h2 class="ads-section-title mb-0 border-0 pb-0">Recent elections</h2>
-                                    <a href="{{ route('elcom-chairman.elections.create') }}" class="ads-stat-link">Create election</a>
+                                    <h2 class="ads-section-title mb-0 border-0 pb-0">
+                                        Recent elections
+                                        @if ($selectedYear)
+                                            <span class="fw-normal text-muted small">({{ $selectedYear }})</span>
+                                        @endif
+                                    </h2>
+                                    <a href="{{ route('elcom-chairman.elections.index') }}" class="ads-stat-link">View all</a>
                                 </div>
                                 @if(isset($recentElections) && $recentElections->count() > 0)
                                     <div class="ads-compact-table-wrap">
@@ -120,10 +168,15 @@
                                             <tbody>
                                                 @foreach($recentElections as $election)
                                                     <tr>
-                                                        <td>{{ $election->title }}</td>
-                                                        <td>{{ ucfirst($election->status) }}</td>
-                                                        <td>{{ $election->start_date?->format('M j, Y') ?? '—' }}</td>
-                                                        <td>{{ $election->end_date?->format('M j, Y') ?? '—' }}</td>
+                                                        <td class="fw-medium">{{ $election->title }}</td>
+                                                        <td>
+                                                            <span class="adt-status {{ $election->status === 'completed' ? 'adt-status-active' : ($election->status === 'draft' ? 'adt-status-suspended' : 'adt-status-active') }}">
+                                                                <span class="adt-status-dot"></span>
+                                                                {{ ucfirst($election->status) }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="adt-muted">{{ $election->start_date?->format('M j, Y') ?? '—' }}</td>
+                                                        <td class="adt-muted">{{ $election->end_date?->format('M j, Y') ?? '—' }}</td>
                                                         <td class="text-end">
                                                             <a href="{{ route('elcom-chairman.elections.show', $election) }}" class="btn btn-sm btn-outline-primary py-0">View</a>
                                                         </td>
@@ -146,7 +199,12 @@
 
     @push('scripts')
     <script>
-        if (typeof feather !== 'undefined') feather.replace();
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof feather !== 'undefined') feather.replace();
+        });
+        document.addEventListener('livewire:navigated', function () {
+            if (typeof feather !== 'undefined') feather.replace();
+        });
     </script>
     @endpush
 </x-layouts.elcom-chairman>

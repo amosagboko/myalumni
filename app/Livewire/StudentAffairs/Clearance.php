@@ -18,6 +18,7 @@ class Clearance extends Component
     public $faculty = '';
     public $department = '';
     public $year = '';
+    public $clearanceStatus = '';
     public $perPage = 20;
     public $selectedAlumni = [];
 
@@ -28,20 +29,31 @@ class Clearance extends Component
         'faculty' => ['except' => ''],
         'department' => ['except' => ''],
         'year' => ['except' => ''],
+        'clearanceStatus' => ['except' => ''],
         'perPage' => ['except' => 20],
     ];
 
-    public function mount($faculty = null, $year = null, $department = null)
+    public function mount($faculty = null, $year = null, $department = null, $clearanceStatus = null)
     {
-        if ($faculty !== null) { $this->faculty = $faculty; }
-        if ($year !== null) { $this->year = $year; }
-        if ($department !== null) { $this->department = $department; }
+        if ($faculty !== null) {
+            $this->faculty = $faculty;
+        }
+        if ($year !== null) {
+            $this->year = $year;
+        }
+        if ($department !== null) {
+            $this->department = $department;
+        }
+        if ($clearanceStatus !== null) {
+            $this->clearanceStatus = $clearanceStatus;
+        }
     }
 
     public function updatingSearch() { $this->resetPage(); }
     public function updatingFaculty() { $this->resetPage(); }
     public function updatingDepartment() { $this->resetPage(); }
     public function updatingYear() { $this->resetPage(); }
+    public function updatingClearanceStatus() { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
 
     public function applyFilters()
@@ -51,11 +63,11 @@ class Clearance extends Component
 
     public function clearFilters()
     {
-        // Skip updating hooks by directly setting properties
         $this->search = '';
         $this->faculty = '';
         $this->department = '';
         $this->year = '';
+        $this->clearanceStatus = '';
         $this->resetPage();
     }
 
@@ -278,9 +290,21 @@ class Clearance extends Component
                 })->orWhere('matric_number', 'like', "%{$this->search}%");
             });
         }
-        if ($this->faculty) { $q->where('faculty', $this->faculty); }
-        if ($this->department) { $q->where('department', $this->department); }
-        if ($this->year) { $q->where('year_of_graduation', $this->year); }
+        if ($this->faculty) {
+            $q->where('faculty', $this->faculty);
+        }
+        if ($this->department) {
+            $q->where('department', $this->department);
+        }
+        if ($this->year) {
+            $q->where('year_of_graduation', $this->year);
+        }
+        if ($this->clearanceStatus === 'cleared') {
+            $q->where('student_affairs_cleared', true);
+        } elseif ($this->clearanceStatus === 'pending') {
+            $q->where('student_affairs_cleared', false);
+        }
+
         return $q;
     }
 
@@ -331,6 +355,12 @@ class Clearance extends Component
             'faculties' => $faculties,
             'departments' => $departments,
             'years' => $years,
+            'stats' => [
+                'total' => Alumni::count(),
+                'pending' => Alumni::where('student_affairs_cleared', false)->count(),
+                'cleared' => Alumni::where('student_affairs_cleared', true)->count(),
+                'filtered' => $alumni->total(),
+            ],
         ])->layout('layouts.student-affairs', ['title' => 'Student Affairs Clearance']);
     }
 }

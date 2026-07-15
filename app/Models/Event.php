@@ -105,4 +105,14 @@ class Event extends Model
     {
         return $this->hasMany(Post::class);
     }
+
+    public function isCommunityEvent(): bool
+    {
+        return $this->type === 'opportunity';
+    }
+
+    public function scopeCreatedBy($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
 }

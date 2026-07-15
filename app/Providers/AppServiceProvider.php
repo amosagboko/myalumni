@@ -3,9 +3,12 @@
 namespace App\Providers;
 
 use App\Models\Election;
+use App\Models\Event;
 use App\Policies\ElectionPolicy;
+use App\Policies\EventPolicy;
 use App\Policies\CandidatePolicy;
 use App\View\Composers\AlumniLayoutComposer;
+use App\View\Composers\PortalModeComposer;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Gate;
@@ -39,7 +42,11 @@ class AppServiceProvider extends ServiceProvider
             'alumni.partials.feed-right-sidebar',
         ], AlumniLayoutComposer::class);
 
+        View::composer('components.user-avatar-dropdown', PortalModeComposer::class);
+        View::composer(['alumni-president.dashboard', 'alumni-president.duties', 'components.layouts.alumni-president'], PortalModeComposer::class);
+
         Gate::policy(Election::class, ElectionPolicy::class);
+        Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(\App\Models\Candidate::class, CandidatePolicy::class);
 
         // Register Livewire components
@@ -47,6 +54,9 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('admin.dashboard', \App\Livewire\Admin\Dashboard::class);
         Livewire::component('admin.assign-categories', \App\Livewire\Admin\AssignCategories::class);
         Livewire::component('alumni.clearance-status', \App\Livewire\Alumni\ClearanceStatus::class);
+        Livewire::component('alumni.create-event', \App\Livewire\Alumni\CreateEvent::class);
+        Livewire::component('alumni.edit-event', \App\Livewire\Alumni\EditEvent::class);
+        Livewire::component('alumni.my-events', \App\Livewire\Alumni\MyEvents::class);
         Livewire::component('student-affairs.clearance', \App\Livewire\StudentAffairs\Clearance::class);
         Livewire::component('academic-affairs.clearance', \App\Livewire\AcademicAffairs\Clearance::class);
         Livewire::component('admin.clearance-audit', \App\Livewire\Admin\ClearanceAudit::class);

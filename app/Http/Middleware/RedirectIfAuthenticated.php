@@ -16,22 +16,6 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                $user = Auth::guard($guard)->user();
-
-                // If user is an admin, redirect to admin dashboard
-                if ($user->hasRole('administrator')) {
-                    return redirect()->route('admin.dashboard');
-                }
-
-                // If user is an alumni (including those who are also agents), redirect to alumni home
-                if ($user->hasRole('alumni')) {
-                    return redirect()->route('alumni.home');
-                }
-
-                if ($user->alumni) {
-                    return redirect()->route('alumni.home');
-                }
-
                 return RouteServiceProvider::redirectToHome();
             }
         }

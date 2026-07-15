@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\PortalModeService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
@@ -24,50 +25,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     public static function getHomeRoute(): string
     {
-        if (!auth()->check()) {
-            return 'login';
-        }
-
-        $user = auth()->user();
-
-        if ($user->hasRole('administrator')) {
-            return 'admin.dashboard';
-        }
-
-        if ($user->hasRole('elcom-chairman')) {
-            return 'elcom-chairman.dashboard';
-        }
-
-        if ($user->hasRole('elcom')) {
-            return 'elcom.elections.index';
-        }
-
-        if ($user->hasRole('alumni-relations-officer')) {
-            return 'alumni-relations-officer.home';
-        }
-
-        if ($user->hasRole('student-affairs')) {
-            return 'student-affairs.home';
-        }
-
-        if ($user->hasRole('academic-affairs')) {
-            return 'academic-affairs.home';
-        }
-
-        if ($user->hasRole('alumni-agent')) {
-            return 'agent.dashboard';
-        }
-
-        if ($user->hasRole('alumni')) {
-            return 'alumni.home';
-        }
-
-        // Legacy accounts: linked alumni record but missing Spatie role assignment.
-        if ($user->alumni) {
-            return 'alumni.home';
-        }
-
-        return 'login';
+        return app(PortalModeService::class)->resolveHomeRoute(auth()->user(), request());
     }
 
     /**

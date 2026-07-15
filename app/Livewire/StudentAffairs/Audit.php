@@ -5,7 +5,6 @@ namespace App\Livewire\StudentAffairs;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Audit extends Component
@@ -30,6 +29,15 @@ class Audit extends Component
     public function updatingActorName() { $this->resetPage(); }
     public function updatingDateFrom() { $this->resetPage(); }
     public function updatingDateTo() { $this->resetPage(); }
+
+    public function clearFilters(): void
+    {
+        $this->alumniName = '';
+        $this->actorName = '';
+        $this->dateFrom = '';
+        $this->dateTo = '';
+        $this->resetPage();
+    }
 
     public function export(): StreamedResponse
     {

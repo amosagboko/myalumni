@@ -11,7 +11,7 @@
                     <div>
                         <h2 class="fw-700 mb-0 mt-0 font-md text-grey-900">Discover</h2>
                         <p class="fw-500 font-xssss text-grey-500 mt-1 mb-0">
-                            Browse university-published highlights, news, and events for alumni.
+                            Browse university-published highlights, news, and alumni community events.
                         </p>
                     </div>
                     @if($items->total() > 0)

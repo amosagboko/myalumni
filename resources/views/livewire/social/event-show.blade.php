@@ -10,6 +10,9 @@
             <div class="card-body p-4">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <span class="badge bg-primary font-xsssss">{{ $typeLabel }}</span>
+                    @if(!$event->is_published)
+                        <span class="badge bg-warning text-dark font-xsssss">Pending review</span>
+                    @endif
                     @if($isPast)
                         <span class="badge bg-greylight text-grey-700 font-xsssss">Past event</span>
                     @else
@@ -77,10 +80,12 @@
                             Learn more
                         </a>
                     @endif
-                    <a href="{{ route('alumni.home', ['share_event' => $event->id]) }}"
-                       class="btn btn-sm rounded-xl font-xssss fw-600 bg-primary-gradiant text-white text-decoration-none px-4">
-                        Share on feed
-                    </a>
+                    @if($event->is_published)
+                        <a href="{{ route('alumni.home', ['share_event' => $event->id]) }}"
+                           class="btn btn-sm rounded-xl font-xssss fw-600 bg-primary-gradiant text-white text-decoration-none px-4">
+                            Share on feed
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

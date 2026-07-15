@@ -1,6 +1,5 @@
-<x-layouts.alumni-relations-officer>
+<x-layouts.alumni-relations-officer title="Upload Alumni Search | Alumni Relations Officer">
     <x-admin.upload-alumni-search-results
-        embedded
         :alumni="$alumni"
         :programmes="$programmes"
         :departments="$departments"

@@ -113,6 +113,22 @@
              class="{{ $imgClass }}">
     </button>
     <ul class="user-avatar-menu__panel" aria-labelledby="{{ $dropdownId }}">
+        @if($hasDualPortalAccess ?? false)
+            <li>
+                <form method="POST" action="{{ route('portal.switch') }}">
+                    @csrf
+                    <input type="hidden" name="mode" value="{{ ($portalMode ?? 'operational') === 'operational' ? 'member' : 'operational' }}">
+                    <button type="submit" class="dropdown-item">
+                        @if(($portalMode ?? 'operational') === 'operational')
+                            <i class="feather-users me-1"></i> {{ $portalSwitchMemberLabel ?? 'Member Portal' }}
+                        @else
+                            <i class="feather-briefcase me-1"></i> {{ $portalSwitchOperationalLabel ?? 'Operations' }}
+                        @endif
+                    </button>
+                </form>
+            </li>
+            <li><hr class="dropdown-divider my-1 mx-3"></li>
+        @endif
         <li>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf

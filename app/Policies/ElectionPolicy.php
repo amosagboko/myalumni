@@ -9,7 +9,7 @@ class ElectionPolicy
 {
     public function view(User $user, Election $election): bool
     {
-        return $user->hasAnyRole(['elcom', 'elcom-chairman', 'administrator', 'alumni']);
+        return $user->hasAnyRole(['elcom', 'elcom-chairman', 'administrator', 'alumni', 'alumni-president']);
     }
 
     public function update(User $user, Election $election): bool
@@ -19,7 +19,7 @@ class ElectionPolicy
 
     public function manage(User $user): bool
     {
-        return $user->hasAnyRole(['elcom', 'elcom-chairman', 'administrator']);
+        return $user->hasAnyRole(['elcom', 'elcom-chairman', 'administrator', 'alumni-president']);
     }
 
     public function archive(User $user, Election $election): bool

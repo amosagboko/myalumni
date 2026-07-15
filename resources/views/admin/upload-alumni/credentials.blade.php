@@ -1,5 +1,6 @@
 <x-alumniadmin-dashboard>
     <x-admin.retrieve-credentials-page
+        :dashboard-route="route('admin.dashboard')"
         :alumni="$alumni"
         :name="$name"
         :matriculation-id="$matriculation_id"

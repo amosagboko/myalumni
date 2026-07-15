@@ -5,7 +5,6 @@ namespace App\Livewire\AcademicAffairs;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Audit extends Component
@@ -30,6 +29,15 @@ class Audit extends Component
     public function updatingActorName() { $this->resetPage(); }
     public function updatingDateFrom() { $this->resetPage(); }
     public function updatingDateTo() { $this->resetPage(); }
+
+    public function clearFilters(): void
+    {
+        $this->alumniName = '';
+        $this->actorName = '';
+        $this->dateFrom = '';
+        $this->dateTo = '';
+        $this->resetPage();
+    }
 
     public function export(): StreamedResponse
     {
@@ -78,17 +86,17 @@ class Audit extends Component
             ->where('clearance_logs.division', 'academic_affairs')
             ->orderByDesc('clearance_logs.created_at');
 
-        if ($this->alumniName) { 
-            $q->where('alumni_users.name', 'like', "%{$this->alumniName}%"); 
+        if ($this->alumniName) {
+            $q->where('alumni_users.name', 'like', "%{$this->alumniName}%");
         }
-        if ($this->actorName) { 
-            $q->where('actors.name', 'like', "%{$this->actorName}%"); 
+        if ($this->actorName) {
+            $q->where('actors.name', 'like', "%{$this->actorName}%");
         }
-        if ($this->dateFrom) { 
-            $q->whereDate('clearance_logs.created_at', '>=', $this->dateFrom); 
+        if ($this->dateFrom) {
+            $q->whereDate('clearance_logs.created_at', '>=', $this->dateFrom);
         }
-        if ($this->dateTo) { 
-            $q->whereDate('clearance_logs.created_at', '<=', $this->dateTo); 
+        if ($this->dateTo) {
+            $q->whereDate('clearance_logs.created_at', '<=', $this->dateTo);
         }
 
         return $q;
@@ -97,9 +105,9 @@ class Audit extends Component
     public function render()
     {
         $logs = $this->getQuery()->paginate(20);
+
         return view('livewire.academic-affairs.audit', [
             'logs' => $logs,
         ])->layout('layouts.academic-affairs', ['title' => 'Academic Affairs Audit']);
     }
 }
-

@@ -12,7 +12,8 @@ use App\Models\Vote;
 use App\Models\ElectionResult;
 use App\Models\Alumni;
 use App\Models\AlumniCategory;
-use App\Models\CategoryTransactionFee;
+use App\Models\FeeTemplate;
+use App\Models\FeeType;
 use App\Models\Transaction;
 use Spatie\Permission\Models\Role;
 use Carbon\Carbon;
@@ -34,60 +35,47 @@ class TestDataSeeder extends Seeder
 
     private function createTestCategoriesAndFees()
     {
-        // Create alumni categories
         $categories = [
             'Regular Member' => 'regular',
             'Life Member' => 'life',
-            'Honorary Member' => 'honorary'
+            'Honorary Member' => 'honorary',
         ];
 
         foreach ($categories as $name => $slug) {
-            \App\Models\AlumniCategory::firstOrCreate(
+            AlumniCategory::firstOrCreate(
                 ['slug' => $slug],
                 [
                     'name' => $name,
                     'description' => "Test category for $name",
-                    'is_active' => true
+                    'is_active' => true,
                 ]
             );
         }
 
-        // Get the current active alumni year
-        $currentYear = \App\Models\AlumniYear::where('is_active', true)->first();
-        if (!$currentYear) {
-            throw new \Exception('No active alumni year found. Please run AlumniYearSeeder first.');
-        }
+        $subscriptionType = FeeType::firstOrCreate(
+            ['code' => 'subscription'],
+            [
+                'name' => 'Subscription Registration Fee',
+                'description' => 'Initial alumni subscription',
+                'is_active' => true,
+                'is_system' => true,
+            ]
+        );
 
-        // Get fee types
-        $feeTypes = \App\Models\FeeType::where('is_active', true)->get();
-        if ($feeTypes->isEmpty()) {
-            throw new \Exception('No fee types found. Please run FeeTypeSeeder first.');
-        }
-
-        // Create fee templates for each category
-        $feeAmounts = [
-            'registration' => 1000.00,
-            'development_levy' => 500.00,
-            'data_processing' => 200.00
-        ];
-
-        foreach (\App\Models\AlumniCategory::all() as $category) {
-            foreach ($feeTypes as $feeType) {
-                if (isset($feeAmounts[$feeType->code])) {
-                    \App\Models\CategoryTransactionFee::firstOrCreate(
-                        [
-                            'category_id' => $category->id,
-                            'alumni_year_id' => $currentYear->id,
-                            'fee_type_id' => $feeType->id
-                        ],
-                        [
-                            'amount' => $feeAmounts[$feeType->code],
-                            'description' => "Test {$feeType->name} fee for {$category->name}",
-                            'is_active' => true
-                        ]
-                    );
-                }
-            }
+        foreach ([2018, 2024] as $graduationYear) {
+            FeeTemplate::firstOrCreate(
+                [
+                    'fee_type_id' => $subscriptionType->id,
+                    'graduation_year' => $graduationYear,
+                ],
+                [
+                    'amount' => 2000,
+                    'description' => "Alumni subscription fee {$graduationYear}",
+                    'is_active' => true,
+                    'valid_from' => now()->subYear(),
+                    'valid_until' => null,
+                ]
+            );
         }
     }
 
@@ -128,6 +116,43 @@ class TestDataSeeder extends Seeder
             ]
         );
         $aro->assignRole('alumni-relations-officer');
+
+        // Alumni President (dual portal: president office + member portal)
+        $president = User::firstOrCreate(
+            ['email' => 'president@test.com'],
+            [
+                'uuid' => Str::uuid(),
+                'name' => 'Test Alumni President',
+                'password' => bcrypt('password123'),
+                'status' => 'active',
+            ]
+        );
+        $president->assignRole('alumni-president');
+
+        $presidentAlumni = Alumni::firstOrCreate(
+            ['user_id' => $president->id],
+            [
+                'matric_number' => 'MAT/PRES/1',
+                'programme' => 'B.Sc Political Science',
+                'department' => 'Political Science',
+                'faculty' => 'Social Sciences',
+                'year_of_graduation' => 2018,
+                'category_id' => AlumniCategory::query()->value('id'),
+                'created_by' => $admin->id,
+                'date_of_birth' => '1990-05-15',
+                'state' => 'Nasarawa',
+                'lga' => 'Lafia',
+                'year_of_entry' => 2014,
+                'gender' => 'male',
+                'title' => 'Mr.',
+                'nationality' => 'Nigerian',
+                'contact_address' => '1 President Avenue, Lafia',
+                'phone_number' => '08030000001',
+                'qualification_type' => 'B.Sc',
+                'qualification_details' => 'B.Sc Political Science',
+            ]
+        );
+        $this->createFeePayments($presidentAlumni);
 
         // Create test alumni with different statuses
         $alumniStatuses = ['active', 'suspended', 'pending'];
@@ -192,19 +217,41 @@ class TestDataSeeder extends Seeder
 
     private function createFeePayments($alumni)
     {
-        $fees = CategoryTransactionFee::where('category_id', $alumni->category_id)->get();
-        
-        foreach ($fees as $fee) {
-            Transaction::create([
-                'alumni_id' => $alumni->id,
-                'category_transaction_fee_id' => $fee->id,
-                'amount' => $fee->amount,
-                'status' => 'paid',
-                'payment_reference' => "TEST-PAY-" . uniqid(),
-                'paid_at' => now(),
-                'is_test_mode' => true
-            ]);
+        $subscriptionType = FeeType::where('code', 'subscription')->first();
+
+        if (! $subscriptionType) {
+            return;
         }
+
+        $template = FeeTemplate::query()
+            ->where('fee_type_id', $subscriptionType->id)
+            ->where('graduation_year', $alumni->year_of_graduation)
+            ->first();
+
+        if (! $template) {
+            return;
+        }
+
+        $alreadyPaid = Transaction::query()
+            ->where('alumni_id', $alumni->id)
+            ->where('fee_template_id', $template->id)
+            ->where('status', 'paid')
+            ->exists();
+
+        if ($alreadyPaid) {
+            return;
+        }
+
+        Transaction::create([
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => $template->id,
+            'amount' => $template->amount,
+            'status' => 'paid',
+            'payment_reference' => 'TEST-PAY-'.uniqid(),
+            'payment_provider' => 'credocentral',
+            'paid_at' => now(),
+            'is_test_mode' => true,
+        ]);
     }
 
     private function createTestElections()
@@ -289,25 +336,35 @@ class TestDataSeeder extends Seeder
 
     private function createElectionOffices($election)
     {
+        $feeType = FeeType::firstOrCreate(
+            ['code' => 'screening'],
+            [
+                'name' => 'Screening Fee',
+                'description' => 'Election candidate screening fee',
+                'is_active' => true,
+                'is_system' => false,
+            ]
+        );
+
         $offices = [
             [
                 'title' => 'President',
                 'description' => 'Head of the alumni association',
                 'max_candidates' => 3,
-                'max_terms' => 2
+                'max_terms' => 2,
             ],
             [
                 'title' => 'Vice President',
                 'description' => 'Deputy head of the alumni association',
                 'max_candidates' => 3,
-                'max_terms' => 2
+                'max_terms' => 2,
             ],
             [
                 'title' => 'Secretary',
                 'description' => 'Handles association documentation',
                 'max_candidates' => 2,
-                'max_terms' => 2
-            ]
+                'max_terms' => 2,
+            ],
         ];
 
         foreach ($offices as $office) {
@@ -317,7 +374,8 @@ class TestDataSeeder extends Seeder
                 'description' => $office['description'],
                 'max_candidates' => $office['max_candidates'],
                 'max_terms' => $office['max_terms'],
-                'is_active' => true
+                'fee_type_id' => $feeType->id,
+                'is_active' => true,
             ]);
         }
     }

@@ -128,7 +128,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function usesAlumniProfileLayout(): bool
     {
-        return $this->hasRole('alumni');
+        return $this->hasAnyRole(['alumni', 'alumni-president']);
     }
 
     public function isAlumniRelationsOfficer(): bool

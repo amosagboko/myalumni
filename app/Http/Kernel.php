@@ -24,8 +24,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\EnsureBioDataComplete::class,
-            \App\Http\Middleware\EnsurePaymentsComplete::class,
+            \App\Http\Middleware\EnsureAlumniMemberAccess::class,
         ],
 
         'api' => [

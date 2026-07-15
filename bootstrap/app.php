@@ -23,10 +23,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('backup:monitor')->daily()->at('03:00');
     })
     ->withMiddleware(function (Middleware $middleware) {
-        
+        $middleware->web(append: [
+            \App\Http\Middleware\SyncPortalMode::class,
+            \App\Http\Middleware\EnsureAlumniMemberAccess::class,
+        ]);
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\Admin::class,
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'check.status' => \App\Http\Middleware\CheckUserStatus::class,
+            'alumni.member' => \App\Http\Middleware\EnsureAlumniMemberAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

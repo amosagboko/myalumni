@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use Spatie\Activitylog\Facades\Activity;
+use App\Services\Alumni\AlumniMemberAccessService;
 use App\Services\Alumni\AlumniElectionAccreditationService;
 use App\Services\Alumni\AlumniElectionEoiFormService;
 use App\Services\Alumni\AlumniElectionEoiStatusService;
@@ -30,6 +31,7 @@ class AlumniElectionController extends Controller
         private AlumniElectionParticipationService $participationService,
         private AlumniElectionHubService $hubService,
         private PaymentCompletionService $paymentCompletion,
+        private AlumniMemberAccessService $memberAccess,
     ) {}
 
     private function redirectIfArchived(Election $election)
@@ -54,12 +56,14 @@ class AlumniElectionController extends Controller
         return null;
     }
 
-    private function redirectIfUnpaidDues($alumni)
+    private function redirectIfNotFullMember($alumni)
     {
-            if (!$alumni->hasPaidAllActiveFees()) {
+        $status = $this->memberAccess->status($alumni);
+
+        if (! $status['isFullMember']) {
             return redirect()
-                ->route('alumni.payments.index')
-                ->with('error', 'You must complete all pending annual dues before voting.');
+                ->route($this->memberAccess->redirectRoute($status))
+                ->with('warning', $this->memberAccess->restrictionMessage($status));
         }
 
         return null;
@@ -150,7 +154,7 @@ class AlumniElectionController extends Controller
 
         $alumni = Auth::user()->alumni;
 
-        if ($redirect = $this->redirectIfUnpaidDues($alumni)) {
+        if ($redirect = $this->redirectIfNotFullMember($alumni)) {
             return $redirect;
         }
 
@@ -233,16 +237,8 @@ class AlumniElectionController extends Controller
                     ->with('error', 'You have already expressed interest for ' . $currentInterest->office->title . '. You can only express interest in one position at a time.');
             }
 
-            if (!$alumni->hasPaidAllActiveFees()) {
-                return redirect()
-                    ->route('alumni.payments.index')
-                    ->with('error', 'You must complete all pending payments before expressing interest in a position.');
-            }
-
-            if (!$alumni->contact_address || !$alumni->phone_number || !$alumni->qualification_type) {
-                return redirect()
-                    ->route('alumni.bio-data')
-                    ->with('error', 'Please complete your bio data before expressing interest in a position.');
+            if ($redirect = $this->redirectIfNotFullMember($alumni)) {
+                return $redirect;
             }
         }
 
@@ -397,19 +393,9 @@ class AlumniElectionController extends Controller
             return $redirect;
         }
 
-        // Then check other eligibility criteria
-        if (!$alumni->hasPaidAllActiveFees()) {
+        if ($redirect = $this->redirectIfNotFullMember($alumni)) {
             session()->forget('eoi_preview');
-            return redirect()
-                ->route('alumni.payments.index')
-                ->with('error', 'You must complete all pending payments before expressing interest in a position.');
-        }
-
-        if (!$alumni->contact_address || !$alumni->phone_number || !$alumni->qualification_type) {
-            session()->forget('eoi_preview');
-            return redirect()
-                ->route('alumni.bio-data')
-                ->with('error', 'Please complete your bio data before expressing interest in a position.');
+            return $redirect;
         }
 
         if ($redirect = $this->redirectIfOfficeApplicantSlotsFull($office)) {
@@ -677,7 +663,7 @@ class AlumniElectionController extends Controller
 
         $alumni = Auth::user()->alumni;
 
-        if ($redirect = $this->redirectIfUnpaidDues($alumni)) {
+        if ($redirect = $this->redirectIfNotFullMember($alumni)) {
             return $redirect;
         }
 
@@ -754,7 +740,7 @@ class AlumniElectionController extends Controller
 
         $alumni = Auth::user()->alumni;
 
-        if ($redirect = $this->redirectIfUnpaidDues($alumni)) {
+        if ($redirect = $this->redirectIfNotFullMember($alumni)) {
             return $redirect;
         }
 

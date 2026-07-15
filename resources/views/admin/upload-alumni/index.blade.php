@@ -5,5 +5,6 @@
         :faculties="$faculties"
         :years="$years"
         :categories="$categories"
+        :dashboard-route="route('admin.dashboard')"
     />
 </x-alumniadmin-dashboard>

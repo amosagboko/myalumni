@@ -4,17 +4,20 @@ namespace App\Livewire\Social;
 
 use App\Models\Event;
 use App\Services\Social\EventService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 
 #[Layout('layouts.alumni')]
 class EventShow extends Component
 {
+    use AuthorizesRequests;
+
     public Event $event;
 
     public function mount(Event $event, EventService $eventService): void
     {
-        abort_unless($eventService->isVisibleToAlumni($event), 404);
+        $this->authorize('view', $event);
 
         $this->event = $event;
     }

@@ -63,6 +63,7 @@ class RolePermissionSeeder extends Seeder
         // New roles
         $studentAffairs = Role::firstOrCreate(['name' => 'student-affairs']);
         $academicAffairs = Role::firstOrCreate(['name' => 'academic-affairs']);
+        $alumniPresident = Role::firstOrCreate(['name' => 'alumni-president']);
 
         // Assign permissions to roles
         $superAdmin->givePermissionTo($permissions);
@@ -78,21 +79,24 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         $alumni->givePermissionTo([
-            'request transcript',
-            'activate alumni',
-            'membership',
-            'message',
-            'my transactions',
-            'my donations',
-            'job post',
-            'create election',
             'view events',
             'update profile',
             'view alumni',
             'create post',
             'comment on post',
-            'chat',
+            'my transactions',
+            'create event',
+        ]);
+
+        $alumniPresident->givePermissionTo([
             'view events',
+            'update profile',
+            'view alumni',
+            'create post',
+            'comment on post',
+            'my transactions',
+            'create event',
+            'create election',
         ]);
 
         $administrator->givePermissionTo([

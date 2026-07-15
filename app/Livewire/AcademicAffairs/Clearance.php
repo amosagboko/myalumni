@@ -18,8 +18,13 @@ class Clearance extends Component
     public $faculty = '';
     public $department = '';
     public $year = '';
+    public $clearanceStatus = '';
     public $perPage = 20;
     public $selectedAlumni = [];
+    public $message = '';
+    public $messageType = '';
+    public $selectedAlumniId = null;
+    public $selectedAlumniValue = null;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -28,27 +33,48 @@ class Clearance extends Component
         'faculty' => ['except' => ''],
         'department' => ['except' => ''],
         'year' => ['except' => ''],
+        'clearanceStatus' => ['except' => ''],
         'perPage' => ['except' => 20],
     ];
 
-    public function mount($faculty = null, $year = null, $department = null)
+    public function mount($faculty = null, $year = null, $department = null, $clearanceStatus = null)
     {
-        if ($faculty !== null) { $this->faculty = $faculty; }
-        if ($year !== null) { $this->year = $year; }
-        if ($department !== null) { $this->department = $department; }
+        if ($faculty !== null) {
+            $this->faculty = $faculty;
+        }
+        if ($year !== null) {
+            $this->year = $year;
+        }
+        if ($department !== null) {
+            $this->department = $department;
+        }
+        if ($clearanceStatus !== null) {
+            $this->clearanceStatus = $clearanceStatus;
+        }
     }
 
     public function updatingSearch() { $this->resetPage(); }
     public function updatingFaculty() { $this->resetPage(); }
     public function updatingDepartment() { $this->resetPage(); }
     public function updatingYear() { $this->resetPage(); }
+    public function updatingClearanceStatus() { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
+
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->faculty = '';
+        $this->department = '';
+        $this->year = '';
+        $this->clearanceStatus = '';
+        $this->resetPage();
+    }
 
     public function toggleSelectAll()
     {
         $currentPageAlumni = $this->getQuery()->paginate($this->perPage)->pluck('id')->toArray();
         $allSelected = !empty($currentPageAlumni) && count(array_intersect($this->selectedAlumni, $currentPageAlumni)) === count($currentPageAlumni);
-        
+
         if ($allSelected) {
             $this->selectedAlumni = array_diff($this->selectedAlumni, $currentPageAlumni);
         } else {
@@ -76,7 +102,7 @@ class Clearance extends Component
             foreach ($alumniRecords as $alumni) {
                 $onboardingComplete = $alumni->biodata_completed ?? true;
                 $paymentsComplete = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
-                
+
                 if (!$onboardingComplete || !$paymentsComplete) {
                     $skippedCount++;
                     continue;
@@ -158,37 +184,58 @@ class Clearance extends Component
         }
     }
 
-    public $message = '';
-    public $messageType = '';
-
-    public function toggleClearance($alumniId, $newValue)
+    public function markCleared($alumniId)
     {
-        $user = Auth::user();
-        
-        if (!$user || !$user->can('toggle academic affairs clearance')) {
-            $this->message = 'Unauthorized.';
-            $this->messageType = 'error';
+        $this->selectedAlumniId = (int) $alumniId;
+        $this->selectedAlumniValue = true;
+        $this->toggleClearance();
+    }
+
+    public function markUncleared($alumniId)
+    {
+        $this->selectedAlumniId = (int) $alumniId;
+        $this->selectedAlumniValue = false;
+        $this->toggleClearance();
+    }
+
+    public function toggleClearance()
+    {
+        if ($this->selectedAlumniId === null) {
             return;
         }
 
-        $alumni = Alumni::find($alumniId);
+        $user = Auth::user();
+
+        if (!$user || !$user->can('toggle academic affairs clearance')) {
+            $this->message = 'Unauthorized.';
+            $this->messageType = 'error';
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
+            return;
+        }
+
+        $alumni = Alumni::find($this->selectedAlumniId);
         if (!$alumni) {
             $this->message = 'Alumni not found.';
             $this->messageType = 'error';
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
             return;
         }
 
         $onboard = $alumni->biodata_completed ?? true;
         $paid = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
-        
+
         if (!$onboard || !$paid) {
             $this->message = 'Alumni must complete onboarding and payments first.';
             $this->messageType = 'error';
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
             return;
         }
 
         $old = (bool) $alumni->academic_affairs_cleared;
-        $alumni->academic_affairs_cleared = (bool) $newValue;
+        $alumni->academic_affairs_cleared = $this->selectedAlumniValue;
         $alumni->save();
 
         DB::table('clearance_logs')->insert([
@@ -197,7 +244,7 @@ class Clearance extends Component
             'actor_user_id' => $user->id,
             'actor_role' => $user->getRoleNames()->first() ?? 'academic-affairs',
             'old_value' => $old,
-            'new_value' => (bool) $newValue,
+            'new_value' => $this->selectedAlumniValue,
             'reason' => 'Manual toggle',
             'created_at' => now(),
             'updated_at' => now(),
@@ -205,6 +252,8 @@ class Clearance extends Component
 
         $this->message = 'Clearance updated successfully.';
         $this->messageType = 'success';
+        $this->selectedAlumniId = null;
+        $this->selectedAlumniValue = null;
     }
 
     public function clearMessage()
@@ -216,16 +265,29 @@ class Clearance extends Component
     public function getQuery()
     {
         $q = Alumni::with(['user', 'category'])->orderBy('created_at', 'desc');
+
         if ($this->search) {
-            $q->where(function($sub){
-                $sub->whereHas('user', function($uq){
+            $q->where(function ($sub) {
+                $sub->whereHas('user', function ($uq) {
                     $uq->where('name', 'like', "%{$this->search}%");
                 })->orWhere('matric_number', 'like', "%{$this->search}%");
             });
         }
-        if ($this->faculty) { $q->where('faculty', $this->faculty); }
-        if ($this->department) { $q->where('department', $this->department); }
-        if ($this->year) { $q->where('year_of_graduation', $this->year); }
+        if ($this->faculty) {
+            $q->where('faculty', $this->faculty);
+        }
+        if ($this->department) {
+            $q->where('department', $this->department);
+        }
+        if ($this->year) {
+            $q->where('year_of_graduation', $this->year);
+        }
+        if ($this->clearanceStatus === 'cleared') {
+            $q->where('academic_affairs_cleared', true);
+        } elseif ($this->clearanceStatus === 'pending') {
+            $q->where('academic_affairs_cleared', false);
+        }
+
         return $q;
     }
 
@@ -276,6 +338,12 @@ class Clearance extends Component
             'faculties' => $faculties,
             'departments' => $departments,
             'years' => $years,
+            'stats' => [
+                'total' => Alumni::count(),
+                'pending' => Alumni::where('academic_affairs_cleared', false)->count(),
+                'cleared' => Alumni::where('academic_affairs_cleared', true)->count(),
+                'filtered' => $alumni->total(),
+            ],
         ])->layout('layouts.academic-affairs', ['title' => 'Academic Affairs Clearance']);
     }
 }

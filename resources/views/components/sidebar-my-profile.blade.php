@@ -8,7 +8,7 @@
     <div class="nav-caption fw-600 font-xssss text-grey-500 mb-2">Account</div>
     <ul class="mb-1 pt-0">
         <li class="nav-item">
-            <a href="{{ auth()->user()?->usesAdminProfileLayout() ? route('admin.profile') : route('profile.edit') }}"
+            <a href="{{ route('profile.edit') }}"
                class="{{ $linkClass }} {{ request()->routeIs('profile.*') || request()->routeIs('admin.profile') ? 'active' : '' }}">
                 @if($icon === 'data-feather')
                     <i data-feather="user" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
