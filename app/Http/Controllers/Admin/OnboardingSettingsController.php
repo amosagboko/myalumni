@@ -13,7 +13,13 @@ class OnboardingSettingsController extends Controller
     public function index()
     {
         $setting = OnboardingSetting::getCurrent();
-        $setting->load(['closedBy', 'reopenedBy', 'selfEnrollmentUpdatedBy']);
+        $setting->load([
+            'closedBy',
+            'reopenedBy',
+            'selfEnrollmentUpdatedBy',
+            'studentAffairsClearanceUpdatedBy',
+            'academicAffairsClearanceUpdatedBy',
+        ]);
 
         return view('admin.onboarding-settings.index', compact('setting'));
     }
@@ -118,6 +124,59 @@ class OnboardingSettingsController extends Controller
 
             return redirect()->back()
                 ->with('error', 'Failed to disable self-enrollment. Please try again.');
+        }
+    }
+
+    public function enableStudentAffairsClearance()
+    {
+        return $this->setDivisionClearance(true, OnboardingSetting::DIVISION_STUDENT_AFFAIRS);
+    }
+
+    public function disableStudentAffairsClearance()
+    {
+        return $this->setDivisionClearance(false, OnboardingSetting::DIVISION_STUDENT_AFFAIRS);
+    }
+
+    public function enableAcademicAffairsClearance()
+    {
+        return $this->setDivisionClearance(true, OnboardingSetting::DIVISION_ACADEMIC_AFFAIRS);
+    }
+
+    public function disableAcademicAffairsClearance()
+    {
+        return $this->setDivisionClearance(false, OnboardingSetting::DIVISION_ACADEMIC_AFFAIRS);
+    }
+
+    private function setDivisionClearance(bool $enabled, string $division)
+    {
+        $label = $division === OnboardingSetting::DIVISION_STUDENT_AFFAIRS
+            ? 'Student Affairs'
+            : 'Academic Affairs';
+
+        try {
+            if ($division === OnboardingSetting::DIVISION_STUDENT_AFFAIRS) {
+                OnboardingSetting::setStudentAffairsClearanceEnabled($enabled, Auth::id());
+            } else {
+                OnboardingSetting::setAcademicAffairsClearanceEnabled($enabled, Auth::id());
+            }
+
+            Log::info(($enabled ? 'Enabled' : 'Disabled')." {$label} clearance by admin", [
+                'admin_id' => Auth::id(),
+                'admin_name' => Auth::user()->name,
+                'division' => $division,
+            ]);
+
+            return redirect()->route('admin.onboarding-settings.index')
+                ->with('success', $label.' clearance has been '.($enabled ? 'enabled' : 'disabled').'.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update division clearance setting', [
+                'error' => $e->getMessage(),
+                'admin_id' => Auth::id(),
+                'division' => $division,
+            ]);
+
+            return redirect()->back()
+                ->with('error', "Failed to update {$label} clearance. Please try again.");
         }
     }
 }

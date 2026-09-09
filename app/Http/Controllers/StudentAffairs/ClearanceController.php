@@ -4,6 +4,7 @@ namespace App\Http\Controllers\StudentAffairs;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alumni;
+use App\Models\OnboardingSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,11 @@ class ClearanceController extends Controller
         if (!$user || !$user->can('toggle student affairs clearance')) {
             return redirect()->route('student-affairs.clearance')
                 ->with('error', 'Unauthorized.');
+        }
+
+        if (! OnboardingSetting::isStudentAffairsClearanceEnabled()) {
+            return redirect()->route('student-affairs.clearance')
+                ->with('error', 'Clearance for this office is currently disabled by admin.');
         }
 
         $alumni = Alumni::findOrFail($alumniId);
@@ -43,7 +49,7 @@ class ClearanceController extends Controller
             'actor_role' => $user->getRoleNames()->first() ?? 'student-affairs',
             'old_value' => $old,
             'new_value' => $newValue,
-            'reason' => 'Manual toggle',
+            'reason' => 'To collect result statement',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

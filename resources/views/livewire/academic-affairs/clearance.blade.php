@@ -36,6 +36,12 @@
                             </div>
                         @endif
 
+                        @unless ($officeEnabled)
+                            <div class="ads-alert ads-alert-error mb-3">
+                                Clearance for this office is currently disabled by admin.
+                            </div>
+                        @endunless
+
                         <div class="ads-stats mb-3">
                             <div class="ads-stat">
                                 <span class="ads-stat-label">Total alumni</span>

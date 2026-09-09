@@ -56,6 +56,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('academic-affairs.clearance-report') }}" class="nav-content-bttn open-font {{ request()->routeIs('academic-affairs.clearance-report') ? 'active' : '' }}">
+                                    <i data-feather="file-text" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Clearance Report</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('academic-affairs.audit') }}" class="nav-content-bttn open-font {{ request()->routeIs('academic-affairs.audit') ? 'active' : '' }}">
                                     <i data-feather="clipboard" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Clearance Audit</span>

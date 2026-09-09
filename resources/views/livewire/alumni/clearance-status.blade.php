@@ -79,28 +79,30 @@
                 @if ($requiresDivisionClearance)
                     <h6 class="fw-600 font-xssss text-grey-900 mb-3">University division clearance</h6>
                     <ul class="list-group mb-4">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Student Affairs Division</span>
-                            @if ($studentAffairsCleared)
-                                <span class="badge bg-success">Cleared</span>
-                            @else
-                                <span class="badge bg-danger">Not cleared</span>
-                            @endif
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Academic Affairs Division</span>
-                            @if ($academicAffairsCleared)
-                                <span class="badge bg-success">Cleared</span>
-                            @else
-                                <span class="badge bg-danger">Not cleared</span>
-                            @endif
-                        </li>
+                        @if ($studentAffairsEnabled)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Student Affairs Division</span>
+                                @if ($studentAffairsCleared)
+                                    <span class="badge bg-success">Cleared</span>
+                                @else
+                                    <span class="badge bg-danger">Not cleared</span>
+                                @endif
+                            </li>
+                        @endif
+                        @if ($academicAffairsEnabled)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Academic Affairs Division</span>
+                                @if ($academicAffairsCleared)
+                                    <span class="badge bg-success">Cleared</span>
+                                @else
+                                    <span class="badge bg-danger">Not cleared</span>
+                                @endif
+                            </li>
+                        @endif
                     </ul>
                 @else
                     <div class="alert alert-info font-xssss mb-4">
-                        Division clearance is not required for your graduation year
-                        ({{ $alumni->year_of_graduation ?? 'N/A' }}).
-                        It applies to alumni graduating in {{ $divisionClearanceFromYear }} or later.
+                        {{ $overall['message'] }}
                     </div>
                 @endif
 

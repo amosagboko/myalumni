@@ -235,12 +235,108 @@
 
                         <div class="ads-section">
                             <div class="ads-section-card">
+                                <h2 class="ads-section-title">Division clearance offices</h2>
+                                <p class="text-muted small mb-3">
+                                    Choose which offices must clear alumni graduating in <strong>2025 or later</strong>.
+                                    Enabled offices are the only ones required for “fully cleared” status.
+                                    If both are off, division clearance is not required. Print access stays based on bio-data and payments only.
+                                </p>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 h-100">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <div class="fw-semibold">Student Affairs</div>
+                                                    <div class="small text-muted">
+                                                        {{ $setting->is_student_affairs_clearance_enabled ? 'Enabled' : 'Disabled' }}
+                                                    </div>
+                                                </div>
+                                                <span class="badge {{ $setting->is_student_affairs_clearance_enabled ? 'bg-success' : 'bg-secondary' }}">
+                                                    {{ $setting->is_student_affairs_clearance_enabled ? 'ON' : 'OFF' }}
+                                                </span>
+                                            </div>
+                                            @if ($setting->student_affairs_clearance_updated_at)
+                                                <p class="small text-muted mb-3">
+                                                    Last changed {{ $setting->student_affairs_clearance_updated_at->format('M d, Y \a\t g:i A') }}
+                                                    @if ($setting->studentAffairsClearanceUpdatedBy)
+                                                        by {{ $setting->studentAffairsClearanceUpdatedBy->name }}
+                                                    @endif
+                                                </p>
+                                            @endif
+                                            @if ($setting->is_student_affairs_clearance_enabled)
+                                                <form action="{{ route('admin.onboarding-settings.student-affairs-clearance.disable') }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                        onclick="return confirm('Disable Student Affairs clearance? This office will no longer be required to clear alumni.')">
+                                                        Disable Student Affairs
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('admin.onboarding-settings.student-affairs-clearance.enable') }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm ads-btn-primary"
+                                                        onclick="return confirm('Enable Student Affairs clearance? This office will be required to clear alumni (2025+).')">
+                                                        Enable Student Affairs
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 h-100">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <div class="fw-semibold">Academic Affairs</div>
+                                                    <div class="small text-muted">
+                                                        {{ $setting->is_academic_affairs_clearance_enabled ? 'Enabled' : 'Disabled' }}
+                                                    </div>
+                                                </div>
+                                                <span class="badge {{ $setting->is_academic_affairs_clearance_enabled ? 'bg-success' : 'bg-secondary' }}">
+                                                    {{ $setting->is_academic_affairs_clearance_enabled ? 'ON' : 'OFF' }}
+                                                </span>
+                                            </div>
+                                            @if ($setting->academic_affairs_clearance_updated_at)
+                                                <p class="small text-muted mb-3">
+                                                    Last changed {{ $setting->academic_affairs_clearance_updated_at->format('M d, Y \a\t g:i A') }}
+                                                    @if ($setting->academicAffairsClearanceUpdatedBy)
+                                                        by {{ $setting->academicAffairsClearanceUpdatedBy->name }}
+                                                    @endif
+                                                </p>
+                                            @endif
+                                            @if ($setting->is_academic_affairs_clearance_enabled)
+                                                <form action="{{ route('admin.onboarding-settings.academic-affairs-clearance.disable') }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                        onclick="return confirm('Disable Academic Affairs clearance? This office will no longer be required to clear alumni.')">
+                                                        Disable Academic Affairs
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('admin.onboarding-settings.academic-affairs-clearance.enable') }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm ads-btn-primary"
+                                                        onclick="return confirm('Enable Academic Affairs clearance? This office will be required to clear alumni (2025+).')">
+                                                        Enable Academic Affairs
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ads-section">
+                            <div class="ads-section-card">
                                 <h2 class="ads-section-title">Important information</h2>
                                 <ul class="small text-muted mb-0 ps-3">
                                     <li class="mb-1">Uploaded-alumni onboarding and 2026+ self-enrollment are <strong>independent</strong> toggles.</li>
+                                    <li class="mb-1">Student Affairs / Academic Affairs clearance toggles apply only to alumni graduating in <strong>2025 or later</strong>.</li>
+                                    <li class="mb-1">Only enabled offices are required for “fully cleared” status. Both may be turned off.</li>
+                                    <li class="mb-1">A disabled office cannot toggle clearance flags; their Clearance page shows an admin-disabled notice.</li>
+                                    <li class="mb-1">Clearance Form printing remains based on bio-data and payments only.</li>
                                     <li class="mb-1">Self-enrollment only applies when a matric is <strong>not already uploaded</strong> and is found in the student directory.</li>
-                                    <li class="mb-1">Self-enrolled alumni are assigned year of graduation <strong>2026</strong> and category <strong>Undergraduate (Full-time)</strong>.</li>
-                                    <li class="mb-1">Users who already completed onboarding can still access the platform.</li>
                                     <li>All actions are logged for audit purposes.</li>
                                 </ul>
                             </div>

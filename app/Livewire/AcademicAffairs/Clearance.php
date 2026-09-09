@@ -5,6 +5,7 @@ namespace App\Livewire\AcademicAffairs;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Alumni;
+use App\Models\OnboardingSetting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -84,6 +85,10 @@ class Clearance extends Component
 
     public function bulkClear()
     {
+        if (! $this->officeClearanceEnabled()) {
+            return session()->flash('error', 'Clearance for this office is currently disabled by admin.');
+        }
+
         if (empty($this->selectedAlumni)) {
             return session()->flash('error', 'Please select at least one alumni.');
         }
@@ -119,7 +124,7 @@ class Clearance extends Component
                     'actor_role' => $user->getRoleNames()->first(),
                     'old_value' => $old,
                     'new_value' => true,
-                    'reason' => 'Bulk cleared',
+                    'reason' => 'To collect result statement',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -143,6 +148,10 @@ class Clearance extends Component
 
     public function bulkUnclear()
     {
+        if (! $this->officeClearanceEnabled()) {
+            return session()->flash('error', 'Clearance for this office is currently disabled by admin.');
+        }
+
         if (empty($this->selectedAlumni)) {
             return session()->flash('error', 'Please select at least one alumni.');
         }
@@ -168,7 +177,7 @@ class Clearance extends Component
                     'actor_role' => $user->getRoleNames()->first(),
                     'old_value' => $old,
                     'new_value' => false,
-                    'reason' => 'Bulk uncleared',
+                    'reason' => 'To collect result statement',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -201,6 +210,14 @@ class Clearance extends Component
     public function toggleClearance()
     {
         if ($this->selectedAlumniId === null) {
+            return;
+        }
+
+        if (! $this->officeClearanceEnabled()) {
+            $this->message = 'Clearance for this office is currently disabled by admin.';
+            $this->messageType = 'error';
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
             return;
         }
 
@@ -245,7 +262,7 @@ class Clearance extends Component
             'actor_role' => $user->getRoleNames()->first() ?? 'academic-affairs',
             'old_value' => $old,
             'new_value' => $this->selectedAlumniValue,
-            'reason' => 'Manual toggle',
+            'reason' => 'To collect result statement',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -254,6 +271,11 @@ class Clearance extends Component
         $this->messageType = 'success';
         $this->selectedAlumniId = null;
         $this->selectedAlumniValue = null;
+    }
+
+    protected function officeClearanceEnabled(): bool
+    {
+        return OnboardingSetting::isAcademicAffairsClearanceEnabled();
     }
 
     public function clearMessage()
@@ -328,6 +350,7 @@ class Clearance extends Component
 
     public function render()
     {
+        $officeEnabled = $this->officeClearanceEnabled();
         $alumni = $this->getQuery()->paginate($this->perPage)->withQueryString();
         $faculties = Alumni::distinct()->pluck('faculty')->filter()->sort()->values();
         $departments = Alumni::distinct()->pluck('department')->filter()->sort()->values();
@@ -338,6 +361,7 @@ class Clearance extends Component
             'faculties' => $faculties,
             'departments' => $departments,
             'years' => $years,
+            'officeEnabled' => $officeEnabled,
             'stats' => [
                 'total' => Alumni::count(),
                 'pending' => Alumni::where('academic_affairs_cleared', false)->count(),

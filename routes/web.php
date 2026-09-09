@@ -91,6 +91,10 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::post('/onboarding-settings/reopen', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'reopen'])->name('onboarding-settings.reopen');
     Route::post('/onboarding-settings/self-enrollment/enable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'enableSelfEnrollment'])->name('onboarding-settings.self-enrollment.enable');
     Route::post('/onboarding-settings/self-enrollment/disable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'disableSelfEnrollment'])->name('onboarding-settings.self-enrollment.disable');
+    Route::post('/onboarding-settings/student-affairs-clearance/enable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'enableStudentAffairsClearance'])->name('onboarding-settings.student-affairs-clearance.enable');
+    Route::post('/onboarding-settings/student-affairs-clearance/disable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'disableStudentAffairsClearance'])->name('onboarding-settings.student-affairs-clearance.disable');
+    Route::post('/onboarding-settings/academic-affairs-clearance/enable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'enableAcademicAffairsClearance'])->name('onboarding-settings.academic-affairs-clearance.enable');
+    Route::post('/onboarding-settings/academic-affairs-clearance/disable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'disableAcademicAffairsClearance'])->name('onboarding-settings.academic-affairs-clearance.disable');
 
     // Payment year & annual dues management
     Route::get('/payment-years', [\App\Http\Controllers\Admin\PaymentYearController::class, 'index'])->name('payment-years.index');
@@ -284,6 +288,7 @@ Route::middleware(['auth', 'role:student-affairs'])->prefix('student-affairs')->
     Route::get('/', \App\Livewire\StudentAffairs\Dashboard::class)->name('home');
     Route::get('/clearance', \App\Livewire\StudentAffairs\Clearance::class)->name('clearance');
     Route::post('/clearance/{alumni}/toggle', [\App\Http\Controllers\StudentAffairs\ClearanceController::class, 'toggle'])->name('clearance.toggle');
+    Route::get('/clearance-report', \App\Livewire\StudentAffairs\ClearanceReport::class)->name('clearance-report');
     Route::get('/audit', \App\Livewire\StudentAffairs\Audit::class)->name('audit');
 });
 
@@ -292,6 +297,7 @@ Route::middleware(['auth', 'role:academic-affairs'])->prefix('academic-affairs')
     Route::get('/', \App\Livewire\AcademicAffairs\Dashboard::class)->name('home');
     Route::get('/clearance', \App\Livewire\AcademicAffairs\Clearance::class)->name('clearance');
     Route::post('/clearance/{alumni}/toggle', [\App\Http\Controllers\AcademicAffairs\ClearanceController::class, 'toggle'])->name('clearance.toggle');
+    Route::get('/clearance-report', \App\Livewire\AcademicAffairs\ClearanceReport::class)->name('clearance-report');
     Route::get('/audit', \App\Livewire\AcademicAffairs\Audit::class)->name('audit');
 });
 
