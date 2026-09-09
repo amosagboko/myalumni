@@ -33,20 +33,40 @@
                                 <div class="ads-stat ads-stat-highlight">
                                     <div class="ads-stat-inner">
                                         <div>
-                                            <span class="ads-stat-label">Current status</span>
+                                            <span class="ads-stat-label">Uploaded alumni onboarding</span>
                                             <span class="ads-stat-value ads-stat-value-sm">
                                                 {{ $setting->is_onboarding_enabled ? 'Open' : 'Closed' }}
                                             </span>
                                             <span class="small text-muted d-block mt-1">
                                                 @if ($setting->is_onboarding_enabled)
-                                                    Alumni can register and complete onboarding
+                                                    Uploaded alumni can retrieve credentials and complete onboarding
                                                 @else
-                                                    Registration and onboarding are blocked
+                                                    Uploaded alumni credential retrieval is blocked
                                                 @endif
                                             </span>
                                         </div>
                                         <span class="ads-stat-icon">
                                             <i data-feather="{{ $setting->is_onboarding_enabled ? 'unlock' : 'lock' }}"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ads-stat">
+                                    <div class="ads-stat-inner">
+                                        <div>
+                                            <span class="ads-stat-label">2026+ self-enrollment</span>
+                                            <span class="ads-stat-value ads-stat-value-sm">
+                                                {{ $setting->is_self_enrollment_enabled ? 'Open' : 'Closed' }}
+                                            </span>
+                                            <span class="small text-muted d-block mt-1">
+                                                @if ($setting->is_self_enrollment_enabled)
+                                                    Unuploaded graduates can self-enroll via matric + directory API
+                                                @else
+                                                    Self-enrollment is disabled
+                                                @endif
+                                            </span>
+                                        </div>
+                                        <span class="ads-stat-icon">
+                                            <i data-feather="{{ $setting->is_self_enrollment_enabled ? 'user-plus' : 'user-x' }}"></i>
                                         </span>
                                     </div>
                                 </div>
@@ -69,7 +89,7 @@
                                                 @elseif (!$setting->is_onboarding_enabled && $setting->closedBy)
                                                     Closed by {{ $setting->closedBy->name }}
                                                 @else
-                                                    No changes recorded yet
+                                                    No onboarding changes recorded yet
                                                 @endif
                                             </span>
                                         </div>
@@ -118,8 +138,8 @@
                                 @if ($setting->is_onboarding_enabled)
                                     <h2 class="ads-section-title">Close onboarding</h2>
                                     <p class="text-muted small mb-3">
-                                        Closing onboarding prevents new alumni from registering and blocks in-progress onboarding.
-                                        This is typically used during elections or maintenance.
+                                        Closing onboarding prevents uploaded alumni from retrieving credentials and completing onboarding.
+                                        This is typically used during elections or maintenance. It does <strong>not</strong> affect the 2026+ self-enrollment toggle.
                                     </p>
                                     <form action="{{ route('admin.onboarding-settings.close') }}" method="POST">
                                         @csrf
@@ -142,7 +162,7 @@
                                         <button
                                             type="submit"
                                             class="btn btn-sm btn-outline-secondary"
-                                            onclick="return confirm('Are you sure you want to close onboarding? This will prevent alumni from registering and completing their profiles.')"
+                                            onclick="return confirm('Are you sure you want to close onboarding? This will prevent uploaded alumni from registering and completing their profiles.')"
                                         >
                                             <i data-feather="lock" style="width: 14px; height: 14px;"></i>
                                             Close onboarding
@@ -151,7 +171,7 @@
                                 @else
                                     <h2 class="ads-section-title">Reopen onboarding</h2>
                                     <p class="text-muted small mb-3">
-                                        Reopening allows alumni to register and complete onboarding again.
+                                        Reopening allows uploaded alumni to retrieve credentials and complete onboarding again.
                                     </p>
                                     <form action="{{ route('admin.onboarding-settings.reopen') }}" method="POST">
                                         @csrf
@@ -170,12 +190,57 @@
 
                         <div class="ads-section">
                             <div class="ads-section-card">
+                                <h2 class="ads-section-title">2026+ self-enrollment</h2>
+                                <p class="text-muted small mb-3">
+                                    When enabled, alumni who are <strong>not already uploaded</strong> can enroll by matriculation number
+                                    via the university student directory. Year of graduation is fixed as <strong>2026</strong>,
+                                    category defaults to <strong>Undergraduate (Full-time)</strong>.
+                                    This toggle works independently of uploaded-alumni onboarding.
+                                </p>
+                                @if ($setting->self_enrollment_updated_at)
+                                    <p class="small text-muted mb-3">
+                                        Last changed {{ $setting->self_enrollment_updated_at->format('M d, Y \a\t g:i A') }}
+                                        @if ($setting->selfEnrollmentUpdatedBy)
+                                            by {{ $setting->selfEnrollmentUpdatedBy->name }}
+                                        @endif
+                                    </p>
+                                @endif
+                                @if ($setting->is_self_enrollment_enabled)
+                                    <form action="{{ route('admin.onboarding-settings.self-enrollment.disable') }}" method="POST">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            onclick="return confirm('Disable 2026+ self-enrollment? New unuploaded alumni will no longer be able to enroll via the directory API.')"
+                                        >
+                                            <i data-feather="user-x" style="width: 14px; height: 14px;"></i>
+                                            Disable self-enrollment
+                                        </button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('admin.onboarding-settings.self-enrollment.enable') }}" method="POST">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm ads-btn-primary"
+                                            onclick="return confirm('Enable 2026+ self-enrollment? Unuploaded alumni found in the student directory will be able to create accounts.')"
+                                        >
+                                            <i data-feather="user-plus" style="width: 14px; height: 14px;"></i>
+                                            Enable self-enrollment
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="ads-section">
+                            <div class="ads-section-card">
                                 <h2 class="ads-section-title">Important information</h2>
                                 <ul class="small text-muted mb-0 ps-3">
-                                    <li class="mb-1">Closing onboarding affects <strong>all alumni categories</strong> regardless of graduation year.</li>
+                                    <li class="mb-1">Uploaded-alumni onboarding and 2026+ self-enrollment are <strong>independent</strong> toggles.</li>
+                                    <li class="mb-1">Self-enrollment only applies when a matric is <strong>not already uploaded</strong> and is found in the student directory.</li>
+                                    <li class="mb-1">Self-enrolled alumni are assigned year of graduation <strong>2026</strong> and category <strong>Undergraduate (Full-time)</strong>.</li>
                                     <li class="mb-1">Users who already completed onboarding can still access the platform.</li>
-                                    <li class="mb-1">Users mid-onboarding will be blocked from finishing their profiles.</li>
-                                    <li class="mb-1">This setting is typically used during elections or system maintenance.</li>
                                     <li>All actions are logged for audit purposes.</li>
                                 </ul>
                             </div>

@@ -151,7 +151,7 @@
         <div class="container">
             
             <h1 class="display-4 mb-4">Welcome to FuLafia Alumni Portal</h1>
-            <p class="lead mb-5">Connect with fellow alumni, stay updated with university news, and access exclusive alumni benefits. If you graduated in 2024 or earlier, please begin your onboarding process by entering your matriculation number to search.</p>
+            <p class="lead mb-5">Connect with fellow alumni, stay updated with university news, and access exclusive alumni benefits.</p>
         </div>
     </section>
 
@@ -160,25 +160,20 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="search-section">
-                    <h2 class="text-center mb-4">Retrieve Your Alumni Credentials</h2>
-                    
-                    <!-- Onboarding Status Notice -->
-                    @if(\App\Models\OnboardingSetting::isEnabled())
-                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <h2 class="text-center mb-4">Begin Your Onboarding</h2>
+
+                    @if(!empty($onboardingOpen) || !empty($selfEnrollmentOpen))
+                        <div class="alert alert-info" role="alert">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Onboarding Status:</strong> Alumni registration is currently open. 
-                            Please complete your registration to access the alumni portal.
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            Enter your matriculation number below to begin your onboarding journey.
                         </div>
                     @else
-                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <div class="alert alert-warning" role="alert">
                             <i class="bi bi-exclamation-triangle me-2"></i>
-                            <strong>Onboarding Status:</strong> Alumni registration is currently closed. 
-                            Please check back later or contact the administrator for more information.
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            Onboarding is currently closed. Please try again later.
                         </div>
                     @endif
-                    
+
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             {{ session('error') }}
@@ -197,10 +192,10 @@
                         <div class="mb-3">
                             <label for="matriculation_id" class="form-label">Matriculation Number</label>
                             <input type="text" class="form-control form-control-lg" id="matriculation_id" name="matriculation_id" required>
-                            <div class="form-text">Enter your matriculation number to retrieve your alumni credentials</div>
+                            <div class="form-text">Enter your matriculation number to begin onboarding</div>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">Search</button>
+                            <button type="submit" class="btn btn-primary btn-lg">Continue</button>
                         </div>
                     </form>
                 </div>

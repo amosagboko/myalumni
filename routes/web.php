@@ -89,6 +89,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::get('/onboarding-settings', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'index'])->name('onboarding-settings.index');
     Route::post('/onboarding-settings/close', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'close'])->name('onboarding-settings.close');
     Route::post('/onboarding-settings/reopen', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'reopen'])->name('onboarding-settings.reopen');
+    Route::post('/onboarding-settings/self-enrollment/enable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'enableSelfEnrollment'])->name('onboarding-settings.self-enrollment.enable');
+    Route::post('/onboarding-settings/self-enrollment/disable', [\App\Http\Controllers\Admin\OnboardingSettingsController::class, 'disableSelfEnrollment'])->name('onboarding-settings.self-enrollment.disable');
 
     // Payment year & annual dues management
     Route::get('/payment-years', [\App\Http\Controllers\Admin\PaymentYearController::class, 'index'])->name('payment-years.index');
@@ -460,6 +462,8 @@ Route::get('/alumni/{id}/print', function ($id) {
 // Landing Page Routes
 Route::get('/', [LandingPageController::class, 'index'])->name('landing');
 Route::get('/search-credentials', [LandingPageController::class, 'searchCredentials'])->name('landing.search-credentials');
+Route::get('/self-enroll/confirm', [LandingPageController::class, 'showSelfEnrollConfirm'])->name('landing.self-enroll.confirm');
+Route::post('/self-enroll/confirm', [LandingPageController::class, 'submitSelfEnrollConfirm'])->name('landing.self-enroll.submit');
 Route::post('/update-email', [LandingPageController::class, 'updateEmail'])->name('landing.update-email');
 Route::post('/resend-credentials', [LandingPageController::class, 'resendCredentials'])->name('landing.resend-credentials');
 
