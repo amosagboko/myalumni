@@ -22,6 +22,7 @@ class AlumniMemberAccessService
     public function status(?Alumni $alumni): array
     {
         $needsBioData = ! $alumni
+            || ! $alumni->date_of_birth
             || ! $alumni->contact_address
             || ! $alumni->phone_number
             || ! $alumni->qualification_type;

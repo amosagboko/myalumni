@@ -21,7 +21,8 @@ class EnsureBioDataComplete
             $alumni = Auth::user()->alumni;
             
             // Enforce bio data completion for all alumni (2023 and earlier, 2024, and 2025+)
-            $hasCompleteBioData = $alumni->contact_address && 
+            $hasCompleteBioData = $alumni->date_of_birth &&
+                $alumni->contact_address && 
                 $alumni->phone_number && 
                 $alumni->qualification_type;
 

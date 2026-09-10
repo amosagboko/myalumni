@@ -42,6 +42,23 @@
                             @enderror
                         </div>
 
+                        <!-- Date of Birth -->
+                        <div class="mb-3">
+                            <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                            <input
+                                type="date"
+                                class="form-control @error('date_of_birth') is-invalid @enderror"
+                                id="date_of_birth"
+                                name="date_of_birth"
+                                value="{{ old('date_of_birth', $alumni->date_of_birth ? \Illuminate\Support\Carbon::parse($alumni->date_of_birth)->format('Y-m-d') : '') }}"
+                                required
+                                max="{{ now()->subYears(15)->format('Y-m-d') }}"
+                            >
+                            @error('date_of_birth')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Contact Address -->
                         <div class="mb-3">
                             <label for="contact_address" class="form-label">Contact Address</label>

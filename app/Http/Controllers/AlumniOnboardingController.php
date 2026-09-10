@@ -53,7 +53,7 @@ class AlumniOnboardingController extends Controller
             }
 
             // Check if bio data needs to be completed
-            if (!$user->alumni || !$user->alumni->contact_address || !$user->alumni->phone_number || !$user->alumni->qualification_type) {
+            if (!$user->alumni || !$user->alumni->date_of_birth || !$user->alumni->contact_address || !$user->alumni->phone_number || !$user->alumni->qualification_type) {
                 return redirect()->route('alumni.bio-data')
                     ->with('warning', 'Please complete your bio data to continue.');
             }
@@ -90,6 +90,7 @@ class AlumniOnboardingController extends Controller
         
         return [
             'bio_data_completed' => $alumni && 
+                $alumni->date_of_birth &&
                 $alumni->contact_address && 
                 $alumni->phone_number && 
                 $alumni->qualification_type,

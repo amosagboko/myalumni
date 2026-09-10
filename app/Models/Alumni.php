@@ -43,6 +43,7 @@ class Alumni extends Model
     ];
 
     protected $casts = [
+        'date_of_birth' => 'date',
         'student_affairs_cleared' => 'boolean',
         'academic_affairs_cleared' => 'boolean',
     ];
@@ -226,7 +227,8 @@ class Alumni extends Model
         $hasNotExpressedInterest = !$this->hasExpressedInterest();
 
         // Check if bio data is complete
-        $hasCompleteBioData = $this->contact_address && 
+        $hasCompleteBioData = $this->date_of_birth &&
+            $this->contact_address && 
             $this->phone_number && 
             $this->qualification_type;
 

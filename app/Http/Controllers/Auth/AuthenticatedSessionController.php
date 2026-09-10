@@ -52,6 +52,7 @@ class AuthenticatedSessionController extends Controller
         
         return [
             'bio_data_completed' => $alumni && 
+                $alumni->date_of_birth &&
                 $alumni->contact_address && 
                 $alumni->phone_number && 
                 $alumni->qualification_type,

@@ -75,6 +75,7 @@ class AlumniBioDataController extends Controller
         $request->validate([
             'title' => 'required|string|in:Prof,Dr,Mr,Mrs,Miss,Alh,Hajj,Chief,Mal',
             'nationality' => 'required|string|max:255',
+            'date_of_birth' => 'required|date|before:today',
             'contact_address' => 'required|string',
             'phone_number' => 'required|string|max:20',
             'qualification_type' => $qualificationTypeRule,
