@@ -4,7 +4,7 @@
             <div>
                 <h4 class="fw-600 mb-1">Clearance Status</h4>
                 <p class="text-grey-500 font-xssss mb-0">
-                    Track your portal requirements and university division clearance.
+                    Track your portal requirements for clearance.
                 </p>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -75,36 +75,6 @@
                         @endif
                     </li>
                 </ul>
-
-                @if ($requiresDivisionClearance)
-                    <h6 class="fw-600 font-xssss text-grey-900 mb-3">University division clearance</h6>
-                    <ul class="list-group mb-4">
-                        @if ($studentAffairsEnabled)
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Student Affairs Division</span>
-                                @if ($studentAffairsCleared)
-                                    <span class="badge bg-success">Cleared</span>
-                                @else
-                                    <span class="badge bg-danger">Not cleared</span>
-                                @endif
-                            </li>
-                        @endif
-                        @if ($academicAffairsEnabled)
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Academic Affairs Division</span>
-                                @if ($academicAffairsCleared)
-                                    <span class="badge bg-success">Cleared</span>
-                                @else
-                                    <span class="badge bg-danger">Not cleared</span>
-                                @endif
-                            </li>
-                        @endif
-                    </ul>
-                @else
-                    <div class="alert alert-info font-xssss mb-4">
-                        {{ $overall['message'] }}
-                    </div>
-                @endif
 
                 <div class="d-flex flex-wrap gap-2">
                     @if ($portal['needsBioData'])
