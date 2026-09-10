@@ -50,6 +50,7 @@ class AlumniYear extends Model
     {
         return FeeTemplate::query()
             ->annualRenewal()
+            ->active()
             ->where('graduation_year', $this->year)
             ->whereNull('category_id')
             ->orderByDesc('id')
@@ -63,6 +64,7 @@ class AlumniYear extends Model
     {
         $allYears = FeeTemplate::query()
             ->annualRenewal()
+            ->active()
             ->where('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL)
             ->whereNull('category_id')
             ->orderByDesc('id')
@@ -88,7 +90,7 @@ class AlumniYear extends Model
                 $q->where('graduation_year', $this->year)
                     ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
             })
-            ->where('is_active', true)
+            ->active()
             ->orderByRaw('CASE WHEN graduation_year = ? THEN 0 ELSE 1 END', [$this->year])
             ->orderByDesc('id')
             ->first();

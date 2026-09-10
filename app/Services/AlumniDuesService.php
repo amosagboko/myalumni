@@ -53,7 +53,7 @@ class AlumniDuesService
         }
 
         $annualTemplate = $activeYear->annualDueTemplate();
-        if (!$annualTemplate) {
+        if (!$annualTemplate || ! $annualTemplate->isValid()) {
             return collect();
         }
 
@@ -97,13 +97,18 @@ class AlumniDuesService
 
     private function hasCompletedCohortSubscription(Alumni $alumni): bool
     {
-        $templates = $this->getSubscriptionFeeTemplatesForAlumni($alumni, includeInactive: true);
+        $activeTemplates = $this->getSubscriptionFeeTemplatesForAlumni($alumni, includeInactive: false);
 
-        if ($templates->isNotEmpty()) {
-            return $templates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
+        if ($activeTemplates->isNotEmpty()) {
+            return $activeTemplates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
         }
 
-        return $this->hasPaidSubscriptionTransaction($alumni);
+        // No active subscription templates remain — either historically paid, or all deactivated.
+        if ($this->hasPaidSubscriptionTransaction($alumni)) {
+            return true;
+        }
+
+        return $this->getSubscriptionFeeTemplatesForAlumni($alumni, includeInactive: true)->isNotEmpty();
     }
 
     private function hasCompletedLegacySubscription(Alumni $alumni): bool
@@ -113,18 +118,7 @@ class AlumniDuesService
 
     private function unpaidSubscriptionFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
     {
-        $templates = $this->getSubscriptionFeeTemplatesForAlumni($alumni, $includeInactive)
-            ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni));
-
-        if ($templates->isNotEmpty()) {
-            return $templates->values();
-        }
-
-        if ($includeInactive || $this->hasCompletedCohortSubscription($alumni)) {
-            return collect();
-        }
-
-        return $this->getSubscriptionFeeTemplatesForAlumni($alumni, includeInactive: true)
+        return $this->getSubscriptionFeeTemplatesForAlumni($alumni, $includeInactive)
             ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
             ->values();
     }
@@ -169,13 +163,16 @@ class AlumniDuesService
 
     private function hasCompletedOnboardingFeesForCohort(Alumni $alumni): bool
     {
-        $templates = $this->getOnboardingFeeTemplates($alumni, includeInactive: true);
+        $activeTemplates = $this->getOnboardingFeeTemplates($alumni, includeInactive: false);
 
-        if ($templates->isEmpty()) {
-            return false;
+        if ($activeTemplates->isNotEmpty()) {
+            return $activeTemplates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
         }
 
-        return $templates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
+        // No active onboarding templates left to pay.
+        $configuredTemplates = $this->getOnboardingFeeTemplates($alumni, includeInactive: true);
+
+        return $configuredTemplates->isNotEmpty();
     }
 
     public function getOnboardingFeeTemplates(Alumni $alumni, bool $includeInactive = false): Collection
@@ -223,7 +220,7 @@ class AlumniDuesService
         }
 
         $template = $year->annualDueTemplate();
-        if (!$template || $template->isPaidByAlumni($alumni)) {
+        if (!$template || ! $template->isValid() || $template->isPaidByAlumni($alumni)) {
             return null;
         }
 
@@ -236,7 +233,7 @@ class AlumniDuesService
     public function assignAnnualDuesForPaymentYear(AlumniYear $paymentYear): int
     {
         $template = $paymentYear->annualDueTemplate();
-        if (!$template) {
+        if (!$template || ! $template->isValid()) {
             return 0;
         }
 

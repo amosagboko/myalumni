@@ -106,9 +106,9 @@ class AlumniPaymentController extends Controller
                 'service_code' => config('services.credocentral.service_code')
             ]);
 
-            // Check if fee is active
-            if (!$fee->is_active) {
-                Log::warning('Attempted to pay inactive fee', [
+            // Check if fee is currently valid/active
+            if (!$fee->isValid()) {
+                Log::warning('Attempted to pay inactive or expired fee', [
                     'fee_id' => $fee->id,
                     'fee_type' => $fee->feeType->code,
                     'alumni_id' => $alumni->id
