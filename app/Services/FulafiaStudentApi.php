@@ -27,7 +27,7 @@ class FulafiaStudentApi
     }
 
     /**
-     * @return array{userId: string, email?: string, name?: string, gsm?: string, department?: string}
+     * @return array<string, mixed>
      */
     public function fetchStudentByMatric(string $matric): array
     {

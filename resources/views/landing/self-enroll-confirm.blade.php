@@ -26,8 +26,11 @@
 <body>
     @php
         $apiPhone = trim((string) ($pending['phone_number'] ?? ''));
-        $oldState = old('state');
-        $oldLga = old('lga');
+        $oldState = old('state', $pending['state'] ?? '');
+        $oldLga = old('lga', $pending['lga'] ?? '');
+        $oldGender = old('gender', $pending['gender'] ?? '');
+        $oldProgramme = old('programme', $pending['programme'] ?? '');
+        $oldFaculty = old('faculty', $pending['faculty'] ?? '');
     @endphp
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
@@ -45,8 +48,9 @@
                     <h2 class="mb-2">Confirm your details</h2>
                     <p class="text-muted mb-4">
                         Your matriculation number was verified with the university directory.
-                        Please complete the missing fields to create your alumni account
+                        Please complete any missing fields to create your alumni account
                         (Class of {{ $pending['year_of_graduation'] ?? date('Y') }}).
+                        Date of birth can be added later in bio-data.
                     </p>
 
                     @if(session('error'))
@@ -71,28 +75,22 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="programme" class="form-label">Programme <span class="text-danger">*</span></label>
-                                <input type="text" name="programme" id="programme" value="{{ old('programme') }}"
+                                <input type="text" name="programme" id="programme" value="{{ $oldProgramme }}"
                                        class="form-control @error('programme') is-invalid @enderror" required>
                                 @error('programme')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-6">
                                 <label for="faculty" class="form-label">Faculty <span class="text-danger">*</span></label>
-                                <input type="text" name="faculty" id="faculty" value="{{ old('faculty') }}"
+                                <input type="text" name="faculty" id="faculty" value="{{ $oldFaculty }}"
                                        class="form-control @error('faculty') is-invalid @enderror" required>
                                 @error('faculty')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-md-6">
-                                <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                                <input type="date" name="date_of_birth" id="date_of_birth" value="{{ old('date_of_birth') }}"
-                                       class="form-control @error('date_of_birth') is-invalid @enderror" required>
-                                @error('date_of_birth')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-6">
                                 <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
                                 <select name="gender" id="gender" class="form-select @error('gender') is-invalid @enderror" required>
                                     <option value="">Select</option>
-                                    <option value="male" @selected(old('gender') === 'male')>Male</option>
-                                    <option value="female" @selected(old('gender') === 'female')>Female</option>
+                                    <option value="male" @selected($oldGender === 'male')>Male</option>
+                                    <option value="female" @selected($oldGender === 'female')>Female</option>
                                 </select>
                                 @error('gender')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
@@ -174,7 +172,7 @@
             }
 
             stateSelect.addEventListener('change', function () {
-                populateLgas(this.value, null);
+                populateLgas(stateSelect.value, null);
             });
 
             populateLgas(stateSelect.value, selectedLga);

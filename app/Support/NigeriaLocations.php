@@ -72,4 +72,56 @@ class NigeriaLocations
     {
         return in_array($lga, self::lgasFor($state), true);
     }
+
+    /**
+     * Resolve an API/state string to a canonical state name from our list.
+     */
+    public static function matchState(?string $value): ?string
+    {
+        $needle = self::normalizeLabel($value);
+
+        if ($needle === '') {
+            return null;
+        }
+
+        foreach (self::states() as $state) {
+            if (self::normalizeLabel($state) === $needle) {
+                return $state;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve an API LGA string to a canonical LGA for the given state.
+     */
+    public static function matchLga(?string $state, ?string $value): ?string
+    {
+        if ($state === null || $state === '') {
+            return null;
+        }
+
+        $needle = self::normalizeLabel($value);
+
+        if ($needle === '') {
+            return null;
+        }
+
+        foreach (self::lgasFor($state) as $lga) {
+            if (self::normalizeLabel($lga) === $needle) {
+                return $lga;
+            }
+        }
+
+        return null;
+    }
+
+    private static function normalizeLabel(?string $value): string
+    {
+        $value = strtolower(trim((string) $value));
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+
+        return $value;
+    }
 }

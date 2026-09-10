@@ -58,6 +58,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('alumni-relations-officer.academic-affairs.clearance-report') }}" class="nav-content-bttn open-font {{ request()->routeIs('alumni-relations-officer.academic-affairs.clearance-report') ? 'active' : '' }}">
+                                    <i data-feather="file-text" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Clearance Report</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('upload.alumni') }}" class="nav-content-bttn open-font {{ request()->routeIs('upload.alumni*') ? 'active' : '' }}">
                                     <i data-feather="upload" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Upload Alumni</span>

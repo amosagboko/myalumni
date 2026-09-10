@@ -119,16 +119,47 @@ class LandingPageController extends Controller
             return $this->credentialsView($existing);
         }
 
-        $pending = [
-            'matric_number' => $apiMatric,
-            'name' => (string) ($student['name'] ?? ''),
-            'department' => (string) ($student['department'] ?? ''),
-            'phone_number' => (string) ($student['gsm'] ?? ''),
-            'student_email' => (string) ($student['email'] ?? ''),
-            'year_of_entry' => $this->selfEnrollment->guessYearOfEntry($apiMatric),
-            'year_of_graduation' => (int) config('fulafia.self_enrollment_graduation_year', date('Y')),
-            'category_label' => 'Undergraduate (Full-time)',
-        ];
+        $pending = $this->selfEnrollment->buildPendingFromDirectory($student, $matric);
+
+        if ($this->selfEnrollment->isPendingCompleteEnough($pending)) {
+            try {
+                $alumni = $this->selfEnrollment->enroll([
+                    'matric_number' => $pending['matric_number'],
+                    'name' => $pending['name'],
+                    'department' => $pending['department'],
+                    'programme' => $pending['programme'],
+                    'faculty' => $pending['faculty'],
+                    'date_of_birth' => null,
+                    'state' => $pending['state'],
+                    'lga' => $pending['lga'],
+                    'year_of_entry' => (int) $pending['year_of_entry'],
+                    'year_of_graduation' => (int) $pending['year_of_graduation'],
+                    'gender' => $pending['gender'],
+                    'phone_number' => $pending['phone_number'] !== '' ? $pending['phone_number'] : null,
+                    'student_email' => $pending['student_email'] !== '' ? $pending['student_email'] : null,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Self-enrollment auto-create failed', [
+                    'matric' => $pending['matric_number'] ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+
+                session(['self_enroll_pending' => $pending]);
+
+                return redirect()->route('landing.self-enroll.confirm')
+                    ->with('error', $e->getMessage());
+            }
+
+            Log::info('Alumni self-enrolled automatically from directory', [
+                'alumni_id' => $alumni->id,
+                'matric' => $alumni->matric_number,
+            ]);
+
+            return $this->credentialsView(
+                $alumni->fresh(['user', 'category']),
+                'Your account has been created from the university directory. Update your email below to set your password and continue onboarding.'
+            );
+        }
 
         session(['self_enroll_pending' => $pending]);
 
@@ -172,7 +203,6 @@ class LandingPageController extends Controller
         $validated = $request->validate([
             'programme' => 'required|string|max:255',
             'faculty' => 'required|string|max:255',
-            'date_of_birth' => 'required|date|before:today',
             'state' => ['required', 'string', Rule::in(NigeriaLocations::states())],
             'lga' => 'required|string|max:100',
             'gender' => ['required', Rule::in(['male', 'female'])],
@@ -205,7 +235,7 @@ class LandingPageController extends Controller
                 'department' => $pending['department'] ?: 'To be updated',
                 'programme' => $validated['programme'],
                 'faculty' => $validated['faculty'],
-                'date_of_birth' => $validated['date_of_birth'],
+                'date_of_birth' => null,
                 'state' => $validated['state'],
                 'lga' => $validated['lga'],
                 'year_of_entry' => (int) $yearOfEntry,

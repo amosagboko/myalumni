@@ -165,6 +165,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:alumni-relations-officer'])->group(function () {
         Route::get('/alumni-relations-officer/home', [App\Http\Controllers\ARODashboardController::class, 'index'])->name('alumni-relations-officer.home');
         Route::get('/alumni-relations-officer/users', App\Livewire\Admin\ManageAlumni::class)->name('alumni-relations-officer.users');
+        Route::get('/alumni-relations-officer/academic-affairs/clearance-report', \App\Livewire\AlumniRelationsOfficer\AcademicAffairsClearanceReport::class)
+            ->name('alumni-relations-officer.academic-affairs.clearance-report');
     });
 
     // Alumni onboarding route (outside role middleware to avoid circular dependency)
