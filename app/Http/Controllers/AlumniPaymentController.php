@@ -711,6 +711,12 @@ class AlumniPaymentController extends Controller
             abort(403, 'You are not authorized to process this payment.');
         }
 
+        $transaction->loadMissing('feeTemplate');
+        if (! $transaction->feeTemplate || ! $transaction->feeTemplate->isValid()) {
+            return redirect()->route('alumni.payments.history')
+                ->with('error', 'This fee is currently inactive and can no longer be paid.');
+        }
+
         try {
             // Initialize payment with Credo Central and get the payment link
             $paymentLink = $this->credocentral->initializePayment($transaction);

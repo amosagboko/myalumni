@@ -7,6 +7,7 @@ use App\Models\FeeTemplate;
 use App\Models\FeeType;
 use App\Models\AlumniCategory;
 use App\Models\AlumniYear;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -302,9 +303,25 @@ class FeeTemplateController extends Controller
         try {
             $feeTemplate->update(['is_active' => false]);
 
+            // Stop alumni from paying already-created pending transactions for this template.
+            Transaction::query()
+                ->where('fee_template_id', $feeTemplate->id)
+                ->where('status', 'pending')
+                ->get()
+                ->each(function (Transaction $transaction) {
+                    $details = is_array($transaction->payment_details) ? $transaction->payment_details : [];
+                    $details['cancelled_reason'] = 'fee_template_deactivated';
+                    $details['cancelled_at'] = now()->toIso8601String();
+
+                    $transaction->update([
+                        'status' => 'failed',
+                        'payment_details' => $details,
+                    ]);
+                });
+
             return redirect()
                 ->route('admin.fee-templates.index')
-                ->with('success', 'Fee template deactivated successfully.');
+                ->with('success', 'Fee template deactivated successfully. Pending payments for this fee were cancelled.');
 
         } catch (\Exception $e) {
             Log::error('Fee template deactivation failed', [

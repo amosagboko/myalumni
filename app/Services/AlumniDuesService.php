@@ -42,7 +42,9 @@ class AlumniDuesService
     public function getActiveFees(Alumni $alumni, $paymentYear = null): Collection
     {
         if (! $this->hasCompletedDefaultFees($alumni)) {
-            return $this->getDefaultFeeTemplates($alumni);
+            return $this->getDefaultFeeTemplates($alumni)
+                ->filter(fn (FeeTemplate $fee) => $fee->isValid())
+                ->values();
         }
 
         $activeYear = $this->resolvePaymentYear($paymentYear);
