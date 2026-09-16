@@ -12,6 +12,7 @@ use App\Models\TransactionItem;
 use App\Models\User;
 use App\Services\AlumniDuesService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -160,6 +161,111 @@ class CombinedPaymentTest extends TestCase
         ]);
     }
 
+    public function test_credo_redirect_marks_combined_items_paid_once_and_shows_receipt(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUgFullTimeOnboardingPair();
+        $structure = $this->createCombinedStructure([$registration, $levy], $alumni->category_id, $alumni->year_of_graduation);
+        $transaction = $this->createPendingCombinedTransaction($alumni, $structure, $registration, $levy);
+        $transRef = 'CREDO-COMBINED-REF';
+
+        $this->fakeSuccessfulCredoVerify($transaction, $transRef);
+
+        $this->get(route('alumni.payments.redirect', [
+            'reference' => $transaction->payment_reference,
+            'transRef' => $transRef,
+            'status' => 'success',
+        ]))->assertRedirect(route('alumni.payments.success', $transaction));
+
+        $transaction->refresh();
+        $this->assertTrue($transaction->isPaid());
+        $this->assertSame($transRef, $transaction->payment_provider_reference);
+        $this->assertTrue($registration->isPaidByAlumni($alumni));
+        $this->assertTrue($levy->isPaidByAlumni($alumni));
+        $this->assertSame(1, Transaction::where('alumni_id', $alumni->id)->paid()->count());
+        $this->assertSame(12700.0, (float) Transaction::where('alumni_id', $alumni->id)->paid()->sum('amount'));
+
+        $this->get(route('alumni.payments.redirect', [
+            'reference' => $transaction->payment_reference,
+            'transRef' => $transRef,
+            'status' => 'success',
+        ]))->assertRedirect(route('alumni.payments.success', $transaction));
+
+        $this->assertSame(1, Transaction::where('alumni_id', $alumni->id)->paid()->count());
+        $this->assertSame(2, $transaction->items()->count());
+
+        $this->actingAs($alumni->user)
+            ->get(route('alumni.payments.success', $transaction))
+            ->assertOk()
+            ->assertSee('Combined payment successful')
+            ->assertSee('Undergraduate Full-Time Combined Fees')
+            ->assertSee('Registration UG FT')
+            ->assertSee('Development levy UG FT')
+            ->assertSee($transaction->payment_reference)
+            ->assertSee($transRef)
+            ->assertSee('12,700.00');
+    }
+
+    public function test_credo_redirect_for_separate_payment_still_marks_only_that_fee(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUgFullTimeOnboardingPair();
+        $transaction = Transaction::create([
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => $registration->id,
+            'amount' => $registration->amount,
+            'status' => 'pending',
+            'payment_reference' => 'ALUMNI-SEP-'.uniqid(),
+            'payment_provider' => 'credocentral',
+        ]);
+        $transRef = 'CREDO-SEPARATE-REF';
+
+        $this->fakeSuccessfulCredoVerify($transaction, $transRef);
+
+        $this->get(route('alumni.payments.redirect', [
+            'reference' => $transaction->payment_reference,
+            'transRef' => $transRef,
+            'status' => 'success',
+        ]))->assertRedirect(route('alumni.payments.success', $transaction));
+
+        $this->assertTrue($registration->fresh()->isPaidByAlumni($alumni));
+        $this->assertFalse($levy->fresh()->isPaidByAlumni($alumni));
+
+        $this->actingAs($alumni->user)
+            ->get(route('alumni.payments.success', $transaction))
+            ->assertOk()
+            ->assertSee('Payment Successful')
+            ->assertSee('Registration UG FT')
+            ->assertDontSee('Development levy UG FT');
+    }
+
+    public function test_unpaid_success_url_redirects_to_pending_and_is_owner_only(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUgFullTimeOnboardingPair();
+        $structure = $this->createCombinedStructure([$registration, $levy], $alumni->category_id, $alumni->year_of_graduation);
+        $transaction = $this->createPendingCombinedTransaction($alumni, $structure, $registration, $levy);
+
+        $this->actingAs($alumni->user)
+            ->get(route('alumni.payments.success', $transaction))
+            ->assertRedirect(route('alumni.payments.pending', $transaction));
+
+        $this->actingAs($alumni->user)
+            ->get(route('alumni.payments.pending', $transaction))
+            ->assertOk()
+            ->assertSee('Registration UG FT')
+            ->assertSee('Development levy UG FT');
+
+        $other = $this->createAlumni(
+            AlumniCategory::firstOrCreate(
+                ['slug' => 'undergraduate-full-time'],
+                ['name' => 'Undergraduate Full Time', 'description' => 'Undergraduate full time alumni', 'is_active' => true]
+            ),
+            2035
+        );
+
+        $this->actingAs($other->user)
+            ->get(route('alumni.payments.success', $transaction))
+            ->assertForbidden();
+    }
+
     /**
      * @return array{0: Alumni, 1: FeeTemplate, 2: FeeTemplate}
      */
@@ -249,5 +355,56 @@ class CombinedPaymentTest extends TestCase
         $structure->feeTemplates()->sync(collect($templates)->pluck('id')->all());
 
         return $structure;
+    }
+
+    private function createPendingCombinedTransaction(
+        Alumni $alumni,
+        PaymentStructure $structure,
+        FeeTemplate $registration,
+        FeeTemplate $levy
+    ): Transaction {
+        $transaction = Transaction::create([
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => null,
+            'payment_structure_id' => $structure->id,
+            'amount' => 12700,
+            'status' => 'pending',
+            'payment_reference' => 'ALUMNI-COMBINED-'.uniqid(),
+            'payment_provider' => 'credocentral',
+        ]);
+
+        foreach ([$registration, $levy] as $fee) {
+            TransactionItem::create([
+                'transaction_id' => $transaction->id,
+                'fee_template_id' => $fee->id,
+                'fee_type_id' => $fee->fee_type_id,
+                'category_id' => $fee->category_id,
+                'description' => $fee->description,
+                'amount' => $fee->amount,
+            ]);
+        }
+
+        return $transaction;
+    }
+
+    private function fakeSuccessfulCredoVerify(Transaction $transaction, string $transRef): void
+    {
+        $amount = (float) $transaction->amount;
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($transaction, $transRef, $amount) {
+            if (! str_contains($request->url(), '/verify')) {
+                return Http::response(['message' => 'Unexpected Credo URL: '.$request->url()], 500);
+            }
+
+            return Http::response([
+                'data' => [
+                    'status' => 'successful',
+                    'transAmount' => (int) round($amount * 100),
+                    'businessRef' => $transaction->payment_reference,
+                    'transRef' => $transRef,
+                    'transactionDate' => now()->toIso8601String(),
+                ],
+            ], 200);
+        });
     }
 }

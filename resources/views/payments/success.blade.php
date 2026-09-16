@@ -6,7 +6,7 @@
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="card-title">Payment Successful</h3>
+                    <h3 class="card-title">{{ $transaction->isCombined() ? 'Combined payment successful' : 'Payment Successful' }}</h3>
                 </div>
                 <div class="card-body text-center">
                     <div class="mb-4">
@@ -16,7 +16,11 @@
                     <h4 class="mb-3">Thank you for your payment!</h4>
                     
                     <div class="alert alert-success">
-                        Your payment has been processed successfully.
+                        @if ($transaction->isCombined())
+                            Your combined payment has been processed successfully. Each item below is now marked as paid.
+                        @else
+                            Your payment has been processed successfully.
+                        @endif
                     </div>
 
                     @if($eoiApplication)
@@ -44,53 +48,12 @@
                         </div>
                     @endif
 
-                    <div class="table-responsive mb-4">
-                        <table class="table table-bordered">
-                            <tr>
-                                <th>Payment Reference</th>
-                                <td>{{ $transaction->payment_reference }}</td>
-                            </tr>
-                            <tr>
-                                <th>Payment</th>
-                                <td>{{ $transaction->display_description }}</td>
-                            </tr>
-                            <tr>
-                                <th>Amount</th>
-                                <td>₦{{ number_format($transaction->amount, 2) }}</td>
-                            </tr>
-                            <tr>
-                                <th>Date</th>
-                                <td>{{ $transaction->paid_at?->format('M d, Y H:i A') ?? now()->format('M d, Y H:i A') }}</td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    @if($transaction->isCombined() && $transaction->items->isNotEmpty())
-                        <div class="table-responsive mb-4 text-start">
-                            <table class="table table-sm table-bordered mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th class="text-end">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($transaction->items as $item)
-                                        <tr>
-                                            <td>{{ $item->description }}</td>
-                                            <td class="text-end">₦{{ number_format($item->amount, 2) }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th>Total</th>
-                                        <th class="text-end">₦{{ number_format($transaction->amount, 2) }}</th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    @endif
+                    @include('payments.partials.transaction-summary', [
+                        'transaction' => $transaction,
+                        'dateLabel' => 'Date paid',
+                        'dateValue' => $transaction->paid_at ?? now(),
+                        'showStatus' => true,
+                    ])
 
                     <div class="d-grid gap-2">
                         @if($eoiApplication)

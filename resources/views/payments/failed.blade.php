@@ -24,26 +24,12 @@
                         </ul>
                     </div>
 
-                    <div class="table-responsive mb-4">
-                        <table class="table table-bordered">
-                            <tr>
-                                <th>Payment Reference</th>
-                                <td>{{ $transaction->payment_reference }}</td>
-                            </tr>
-                            <tr>
-                                <th>Amount</th>
-                                <td>₦{{ number_format($transaction->amount, 2) }}</td>
-                            </tr>
-                            <tr>
-                                <th>Date</th>
-                                <td>{{ $transaction->created_at->format('M d, Y H:i A') }}</td>
-                            </tr>
-                            <tr>
-                                <th>Status</th>
-                                <td><span class="badge bg-danger">{{ ucfirst($transaction->status) }}</span></td>
-                            </tr>
-                        </table>
-                    </div>
+                    @include('payments.partials.transaction-summary', [
+                        'transaction' => $transaction,
+                        'dateLabel' => 'Date initiated',
+                        'dateValue' => $transaction->created_at,
+                        'showStatus' => true,
+                    ])
 
                     <div class="d-grid gap-2">
                         <a href="{{ route('alumni.payments.index') }}" class="btn btn-primary">

@@ -665,6 +665,16 @@ class AlumniPaymentController extends Controller
      */
     public function paymentSuccess(Transaction $transaction)
     {
+        $this->ensureAlumniOwnsTransaction($transaction);
+
+        if ($transaction->status === 'failed') {
+            return redirect()->route('alumni.payments.failed', $transaction);
+        }
+
+        if (! $transaction->isPaid()) {
+            return redirect()->route('alumni.payments.pending', $transaction);
+        }
+
         $transaction->loadMissing(['feeTemplate.feeType', 'items.feeType', 'paymentStructure']);
 
         $eoiApplication = null;
@@ -712,9 +722,17 @@ class AlumniPaymentController extends Controller
      */
     public function paymentFailed(Transaction $transaction)
     {
+        $this->ensureAlumniOwnsTransaction($transaction);
+
         if ($transaction->isPaid()) {
             return redirect()->route('alumni.payments.success', $transaction);
         }
+
+        if ($transaction->isPending()) {
+            return redirect()->route('alumni.payments.pending', $transaction);
+        }
+
+        $transaction->loadMissing(['feeTemplate.feeType', 'items.feeType', 'paymentStructure']);
 
         return view('payments.failed', compact('transaction'));
     }

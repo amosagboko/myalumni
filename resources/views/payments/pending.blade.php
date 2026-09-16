@@ -47,28 +47,12 @@
                         </ol>
                     </div>
 
-                    <div class="table-responsive mb-4">
-                        <table class="table table-bordered align-middle mb-0">
-                            <tbody>
-                                <tr>
-                                    <th class="bg-light text-nowrap" style="width: 40%;">Payment</th>
-                                    <td>{{ $transaction->display_description }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light">Payment reference</th>
-                                    <td><code class="small">{{ $transaction->payment_reference }}</code></td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light">Amount</th>
-                                    <td class="fw-semibold">₦{{ number_format($transaction->amount, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light">Date initiated</th>
-                                    <td>{{ $transaction->created_at->format('M d, Y H:i A') }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    @include('payments.partials.transaction-summary', [
+                        'transaction' => $transaction,
+                        'dateLabel' => 'Date initiated',
+                        'dateValue' => $transaction->created_at,
+                        'showStatus' => true,
+                    ])
 
                     <div class="d-grid gap-2 d-sm-flex">
                         <form
