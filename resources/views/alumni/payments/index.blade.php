@@ -17,7 +17,7 @@
 
                     <div class="mb-3 mb-md-4 text-muted">
                         @if($combinedCheckout)
-                            Pay the items below as a single combined payment. Individual items cannot be paid separately while this combined option is active.
+                            Kindly make your payment to complete your onboarding process.
                         @elseif($duesPhase === 'onboarding')
                             Please complete all required onboarding payments for your graduation cohort before you can access full alumni services.
                         @elseif($duesPhase === 'annual')
@@ -41,41 +41,14 @@
 
                     @if($combinedCheckout)
                         <div class="border rounded-3 p-3 p-md-4 mb-4">
-                            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-                                <div>
-                                    <h4 class="h6 mb-1">{{ $combinedCheckout['structure']->payerTitle() }}</h4>
-                                    <div class="text-muted small">Combined payment — {{ $combinedCheckout['fees']->count() }} items</div>
-                                </div>
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                <h4 class="h5 mb-0">{{ $combinedCheckout['structure']->payerTitle() }}</h4>
                                 <div class="fw-semibold fs-5">₦{{ number_format($combinedCheckout['total'], 2) }}</div>
-                            </div>
-                            <div class="table-responsive mb-3">
-                                <table class="table table-sm mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Item</th>
-                                            <th class="text-end">Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($combinedCheckout['fees'] as $fee)
-                                            <tr>
-                                                <td>{{ $fee->description ?: $fee->feeType?->name }}</td>
-                                                <td class="text-end">₦{{ number_format($fee->amount, 2) }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th>Total</th>
-                                            <th class="text-end">₦{{ number_format($combinedCheckout['total'], 2) }}</th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
                             </div>
                             <form action="{{ route('alumni.payments.initiate-combined') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="payment_structure_id" value="{{ $combinedCheckout['structure']->id }}">
-                                <button type="submit" class="btn btn-primary">Pay Combined Total</button>
+                                <button type="submit" class="btn btn-primary">Pay Now</button>
                             </form>
                         </div>
                     @endif
