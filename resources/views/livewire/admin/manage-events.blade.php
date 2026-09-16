@@ -8,10 +8,12 @@
                 <div class="row">
                     <div class="col-12">
 
+                        @livewire('admin.manage-landing-page')
+
                         <div class="ads-page-header">
                             <div>
-                                <h1 class="ads-page-title">Homepage content</h1>
-                                <p class="ads-page-subtitle">Manage connect cards, news, and events shown on the public homepage.</p>
+                                <h1 class="ads-page-title">Highlights, News &amp; Events</h1>
+                                <p class="ads-page-subtitle">Manage the cards shown in each homepage column.</p>
                             </div>
                             <button type="button" class="btn btn-sm ads-btn-primary" wire:click="openCreateModal">
                                 <i data-feather="plus" style="width: 14px; height: 14px;"></i>
@@ -29,15 +31,15 @@
                                 <span class="ads-stat-value">{{ number_format($stats['published']) }}</span>
                             </div>
                             <div class="ads-stat">
-                                <span class="ads-stat-label">Highlights</span>
+                                <span class="ads-stat-label">{{ $this->typeLabel('connect') }}</span>
                                 <span class="ads-stat-value">{{ number_format($stats['connect']) }}</span>
                             </div>
                             <div class="ads-stat">
-                                <span class="ads-stat-label">News</span>
+                                <span class="ads-stat-label">{{ $this->typeLabel('event') }}</span>
                                 <span class="ads-stat-value">{{ number_format($stats['news']) }}</span>
                             </div>
                             <div class="ads-stat">
-                                <span class="ads-stat-label">Events</span>
+                                <span class="ads-stat-label">{{ $this->typeLabel('opportunity') }}</span>
                                 <span class="ads-stat-value">{{ number_format($stats['events']) }}</span>
                             </div>
                         </div>
@@ -53,9 +55,9 @@
                                 <div class="adt-filters">
                                     <select wire:model.live="filterType" class="form-select form-select-sm adt-select">
                                         <option value="all">All types</option>
-                                        <option value="connect">Highlights</option>
-                                        <option value="event">News</option>
-                                        <option value="opportunity">Events</option>
+                                        <option value="connect">{{ $this->typeLabel('connect') }}</option>
+                                        <option value="event">{{ $this->typeLabel('event') }}</option>
+                                        <option value="opportunity">{{ $this->typeLabel('opportunity') }}</option>
                                     </select>
                                 </div>
                             </div>
@@ -79,13 +81,7 @@
                                                 <tr wire:key="homepage-content-{{ $content->id }}">
                                                     <td>
                                                         <span class="adt-tag">
-                                                            @if ($content->type === 'connect')
-                                                                Highlights
-                                                            @elseif ($content->type === 'event')
-                                                                News
-                                                            @else
-                                                                Events
-                                                            @endif
+                                                            {{ $this->typeLabel($content->type) }}
                                                         </span>
                                                     </td>
                                                     <td class="fw-medium">{{ Str::limit($content->eventname, 40) }}</td>
@@ -183,7 +179,7 @@
                                     type="text"
                                     class="form-control form-control-sm"
                                     readonly
-                                    value="{{ $selectedEvent->type === 'connect' ? 'Highlights' : ($selectedEvent->type === 'event' ? 'News' : 'Events') }}"
+                                    value="{{ $this->typeLabel($selectedEvent->type) }}"
                                 >
                             </div>
 
@@ -256,9 +252,9 @@
                                 <div class="mb-3">
                                     <label class="form-label small text-muted mb-1">Content type <span class="text-danger">*</span></label>
                                     <select wire:model="type" class="form-select form-select-sm">
-                                        <option value="connect">Highlights</option>
-                                        <option value="event">News</option>
-                                        <option value="opportunity">Events</option>
+                                        <option value="connect">{{ $this->typeLabel('connect') }}</option>
+                                        <option value="event">{{ $this->typeLabel('event') }}</option>
+                                        <option value="opportunity">{{ $this->typeLabel('opportunity') }}</option>
                                     </select>
                                     @error('type') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>

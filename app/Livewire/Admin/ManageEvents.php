@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Event;
+use App\Models\LandingPageSetting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
@@ -39,6 +40,8 @@ class ManageEvents extends Component
     public ?int $selectedEventId = null;
 
     public ?string $existingImagePath = null;
+
+    protected ?LandingPageSetting $landingSettings = null;
 
     protected $listeners = ['refreshEvents' => 'render'];
 
@@ -220,10 +223,12 @@ class ManageEvents extends Component
 
     public function typeLabel(?string $type = null): string
     {
+        $landing = $this->landingSettings ??= LandingPageSetting::current();
+
         return match ($type ?? $this->type) {
-            'connect' => 'Highlights',
-            'event' => 'News',
-            'opportunity' => 'Events',
+            'connect' => $landing->highlights_title ?: 'Highlights',
+            'event' => $landing->news_title ?: 'News',
+            'opportunity' => $landing->events_title ?: 'Events',
             default => 'Unknown',
         };
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FuLafia Alumni Portal</title>
+    <title>{{ $landing->page_title }}</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -16,7 +16,7 @@
             background-color: #f8f9fa;
         }
         .hero-section {
-            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/fulafia-campus.jpg');
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('{{ $landing->heroBackgroundUrl() }}');
             background-size: cover;
             background-position: center;
             color: white;
@@ -129,9 +129,9 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="#">
-                <img src="{{ asset('images/alumni-logo1.jpg') }}" alt="FuLafia Logo" class="navbar-logo">
-                FuLafia Alumni Portal
+            <a class="navbar-brand d-flex align-items-center" href="{{ route('landing') }}">
+                <img src="{{ $landing->navbarLogoUrl() }}" alt="{{ $landing->brand_name }}" class="navbar-logo">
+                {{ $landing->brand_name }}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -139,7 +139,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('login') }}">Login</a>
+                        <a class="nav-link" href="{{ route('login') }}">{{ $landing->login_text }}</a>
                     </li>
                 </ul>
             </div>
@@ -150,8 +150,10 @@
     <section class="hero-section text-center">
         <div class="container">
             
-            <h1 class="display-4 mb-4">Welcome to FuLafia Alumni Portal</h1>
-            <p class="lead mb-5">Connect with fellow alumni, stay updated with university news, and access exclusive alumni benefits.</p>
+            <h1 class="display-4 mb-4">{{ $landing->hero_heading }}</h1>
+            @if ($landing->hero_subtitle)
+                <p class="lead mb-5">{{ $landing->hero_subtitle }}</p>
+            @endif
         </div>
     </section>
 
@@ -160,17 +162,17 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="search-section">
-                    <h2 class="text-center mb-4">Begin Your Onboarding</h2>
+                    <h2 class="text-center mb-4">{{ $landing->onboarding_heading }}</h2>
 
                     @if(!empty($onboardingOpen) || !empty($selfEnrollmentOpen))
                         <div class="alert alert-info" role="alert">
                             <i class="bi bi-info-circle me-2"></i>
-                            Enter your matriculation number below to begin your onboarding journey.
+                            {{ $landing->onboarding_open_message }}
                         </div>
                     @else
                         <div class="alert alert-warning" role="alert">
                             <i class="bi bi-exclamation-triangle me-2"></i>
-                            Onboarding is currently closed. Please try again later.
+                            {{ $landing->onboarding_closed_message }}
                         </div>
                     @endif
 
@@ -190,12 +192,14 @@
 
                     <form action="{{ route('landing.search-credentials') }}" method="GET" class="needs-validation" novalidate>
                         <div class="mb-3">
-                            <label for="matriculation_id" class="form-label">Matriculation Number</label>
+                            <label for="matriculation_id" class="form-label">{{ $landing->matric_label }}</label>
                             <input type="text" class="form-control form-control-lg" id="matriculation_id" name="matriculation_id" required>
-                            <div class="form-text">Enter your matriculation number to begin onboarding</div>
+                            @if ($landing->matric_help)
+                                <div class="form-text">{{ $landing->matric_help }}</div>
+                            @endif
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">Continue</button>
+                            <button type="submit" class="btn btn-primary btn-lg">{{ $landing->continue_button }}</button>
                         </div>
                     </form>
                 </div>
@@ -209,13 +213,13 @@
             <!-- Highlights Section -->
             <div class="col-md-4">
                 <div class="feature-card text-center">
-                    <i class="bi bi-stars feature-icon"></i>
-                    <h3>Highlights</h3>
+                    <i class="{{ $landing->bootstrapIcon($landing->highlights_icon, 'bi-stars') }} feature-icon"></i>
+                    <h3>{{ $landing->highlights_title }}</h3>
                     @include('landing.partials.content-carousel', [
                         'items' => $connectItems,
                         'carouselId' => 'landingHighlightsCarousel',
                         'lightboxGroup' => 'landing-highlights',
-                        'emptyMessage' => 'Discover highlights and featured stories from the alumni community.',
+                        'emptyMessage' => $landing->highlights_empty,
                     ])
                 </div>
             </div>
@@ -223,15 +227,15 @@
             <!-- Events Section -->
             <div class="col-md-4">
                 <div class="feature-card text-center">
-                    <i class="bi bi-calendar-event feature-icon"></i>
-                    <h3>News</h3>
+                    <i class="{{ $landing->bootstrapIcon($landing->news_icon, 'bi-calendar-event') }} feature-icon"></i>
+                    <h3>{{ $landing->news_title }}</h3>
                     @include('landing.partials.content-carousel', [
                         'items' => $eventItems,
                         'carouselId' => 'landingNewsCarousel',
                         'lightboxGroup' => 'landing-news',
                         'showDate' => true,
                         'showVenue' => true,
-                        'emptyMessage' => 'Stay updated with the latest news and updates from the alumni community.',
+                        'emptyMessage' => $landing->news_empty,
                     ])
                 </div>
             </div>
@@ -239,15 +243,15 @@
             <!-- Opportunities Section -->
             <div class="col-md-4">
                 <div class="feature-card text-center">
-                    <i class="bi bi-briefcase feature-icon"></i>
-                    <h3>Events</h3>
+                    <i class="{{ $landing->bootstrapIcon($landing->events_icon, 'bi-briefcase') }} feature-icon"></i>
+                    <h3>{{ $landing->events_title }}</h3>
                     @include('landing.partials.content-carousel', [
                         'items' => $opportunityItems,
                         'carouselId' => 'landingEventsCarousel',
                         'lightboxGroup' => 'landing-events',
                         'showDate' => true,
                         'showVenue' => true,
-                        'emptyMessage' => 'Stay updated with our latest events and happenings as they unfold.',
+                        'emptyMessage' => $landing->events_empty,
                     ])
                 </div>
             </div>
@@ -259,11 +263,13 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5>FuLafia Alumni Portal</h5>
-                    <p>Stay connected with your alma mater and fellow alumni.</p>
+                    <h5>{{ $landing->footer_heading }}</h5>
+                    @if ($landing->footer_tagline)
+                        <p>{{ $landing->footer_tagline }}</p>
+                    @endif
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p>&copy; {{ date('Y') }} Federal University of Lafia. All rights reserved.</p>
+                    <p>{{ $landing->copyrightText() }}</p>
                 </div>
             </div>
         </div>

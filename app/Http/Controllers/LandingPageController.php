@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumni;
 use App\Models\Event;
+use App\Models\LandingPageSetting;
 use App\Models\OnboardingSetting;
 use App\Services\AlumniSelfEnrollmentService;
 use App\Support\NigeriaLocations;
@@ -66,13 +67,15 @@ class LandingPageController extends Controller
 
         $selfEnrollmentOpen = $this->isSelfEnrollmentAllowed();
         $onboardingOpen = $this->isOnboardingAllowed();
+        $landing = LandingPageSetting::current();
 
         return view('landing', compact(
             'connectItems',
             'eventItems',
             'opportunityItems',
             'selfEnrollmentOpen',
-            'onboardingOpen'
+            'onboardingOpen',
+            'landing'
         ));
     }
 
