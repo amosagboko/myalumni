@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,6 +15,7 @@ class Transaction extends Model
     protected $fillable = [
         'alumni_id',
         'fee_template_id',
+        'payment_structure_id',
         'amount',
         'status',
         'payment_reference',
@@ -61,6 +63,21 @@ class Transaction extends Model
         return $this->belongsTo(FeeTemplate::class, 'fee_template_id');
     }
 
+    public function paymentStructure(): BelongsTo
+    {
+        return $this->belongsTo(PaymentStructure::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(TransactionItem::class);
+    }
+
+    public function isCombined(): bool
+    {
+        return $this->payment_structure_id !== null;
+    }
+
     /**
      * Get the office contest application associated with this transaction.
      */
@@ -74,6 +91,10 @@ class Transaction extends Model
      */
     public function getDisplayDescriptionAttribute(): string
     {
+        if ($this->isCombined()) {
+            return $this->paymentStructure?->payerTitle() ?: 'Combined payment';
+        }
+
         return $this->feeTemplate?->description
             ?? $this->feeTemplate?->feeType?->name
             ?? 'Payment';
@@ -84,6 +105,10 @@ class Transaction extends Model
      */
     public function getFeeCategoryLabelAttribute(): string
     {
+        if ($this->isCombined()) {
+            return 'Combined';
+        }
+
         $feeType = $this->feeTemplate?->feeType;
         if ($feeType?->isEoiFee()) {
             return 'Election (EOI)';

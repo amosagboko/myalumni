@@ -47,6 +47,9 @@
                             <x-nav-link :href="route('admin.fee-templates.index')" :active="request()->routeIs('admin.fee-templates*')">
                                 {{ __('Fee Templates') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('admin.payment-structures.index')" :active="request()->routeIs('admin.payment-structures*')">
+                                {{ __('Payment Structures') }}
+                            </x-nav-link>
                             <x-nav-link :href="route('admin.alumni-categories.index')" :active="request()->routeIs('admin.alumni-categories*')">
                                 {{ __('Categories') }}
                             </x-nav-link>
@@ -97,6 +100,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.fee-templates.index')" :active="request()->routeIs('admin.fee-templates*')">
                         {{ __('Fee Templates') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.payment-structures.index')" :active="request()->routeIs('admin.payment-structures*')">
+                        {{ __('Payment Structures') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.alumni-categories.index')" :active="request()->routeIs('admin.alumni-categories*')">
                         {{ __('Categories') }}

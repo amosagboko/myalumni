@@ -20,7 +20,7 @@ class TransactionController extends Controller
     }
     public function index(Request $request)
     {
-        $query = Transaction::with(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category']);
+        $query = Transaction::with(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category', 'items.feeType', 'paymentStructure']);
 
         // Apply search filter
         if ($request->filled('search')) {
@@ -44,8 +44,12 @@ class TransactionController extends Controller
 
         // Apply fee type filter
         if ($request->filled('fee_type')) {
-            $query->whereHas('feeTemplate', function ($q) use ($request) {
-                $q->where('fee_type_id', $request->fee_type);
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('feeTemplate', function ($feeQuery) use ($request) {
+                    $feeQuery->where('fee_type_id', $request->fee_type);
+                })->orWhereHas('items', function ($itemQuery) use ($request) {
+                    $itemQuery->where('fee_type_id', $request->fee_type);
+                });
             });
         }
 
@@ -90,7 +94,7 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction)
     {
-        $transaction->load(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category']);
+        $transaction->load(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category', 'items.feeType', 'paymentStructure']);
         
         return view('admin.transactions.show', compact('transaction'));
     }
@@ -256,7 +260,7 @@ class TransactionController extends Controller
 
     public function export(Request $request)
     {
-        $query = Transaction::with(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category']);
+        $query = Transaction::with(['alumni.user', 'feeTemplate.feeType', 'feeTemplate.category', 'items.feeType', 'paymentStructure']);
 
         // Apply the same filters as index
         if ($request->filled('search')) {
@@ -278,8 +282,12 @@ class TransactionController extends Controller
         }
 
         if ($request->filled('fee_type')) {
-            $query->whereHas('feeTemplate', function ($q) use ($request) {
-                $q->where('fee_type_id', $request->fee_type);
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('feeTemplate', function ($feeQuery) use ($request) {
+                    $feeQuery->where('fee_type_id', $request->fee_type);
+                })->orWhereHas('items', function ($itemQuery) use ($request) {
+                    $itemQuery->where('fee_type_id', $request->fee_type);
+                });
             });
         }
 
@@ -323,7 +331,9 @@ class TransactionController extends Controller
                 'Alumni Name',
                 'Email',
                 'Matric Number',
+                'Combined',
                 'Fee Type',
+                'Line Items',
                 'Category',
                 'Amount',
                 'Status',
@@ -334,13 +344,21 @@ class TransactionController extends Controller
 
             // Add data
             foreach ($transactions as $transaction) {
+                $lineItems = $transaction->isCombined()
+                    ? $transaction->items->map(fn ($item) => ($item->description ?: $item->feeType?->name).' ('.$item->amount.')')->implode('; ')
+                    : '';
+
                 fputcsv($file, [
                     $transaction->payment_reference,
                     $transaction->alumni->user->name,
                     $transaction->alumni->user->email,
                     $transaction->alumni->matric_number,
-                    $transaction->feeTemplate->feeType->name,
-                    $transaction->feeTemplate->category ? $transaction->feeTemplate->category->name : 'N/A',
+                    $transaction->isCombined() ? 'Yes' : 'No',
+                    $transaction->display_description,
+                    $lineItems,
+                    $transaction->feeTemplate?->category?->name
+                        ?? $transaction->alumni?->category?->name
+                        ?? 'N/A',
                     $transaction->amount,
                     $transaction->status,
                     $transaction->created_at->format('Y-m-d H:i:s'),

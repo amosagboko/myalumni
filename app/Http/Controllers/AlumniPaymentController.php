@@ -33,11 +33,12 @@ class AlumniPaymentController extends Controller
 
         $this->duesService->ensureAnnualDueAssigned($alumni);
 
+        $combinedCheckout = $this->duesService->resolveCombinedCheckout($alumni);
         $fees = $alumni->getActiveFees();
         $duesPhase = $alumni->getDuesPhase();
         $activePaymentYear = \App\Models\AlumniYear::where('is_active', true)->first();
 
-        return view('alumni.payments.index', compact('fees', 'duesPhase', 'activePaymentYear'));
+        return view('alumni.payments.index', compact('fees', 'duesPhase', 'activePaymentYear', 'combinedCheckout'));
     }
 
     /**
@@ -124,7 +125,7 @@ class AlumniPaymentController extends Controller
             }
 
             if (!$this->duesService->feeIsPayableByAlumni($fee, $alumni)) {
-                return redirect()->back()->with('error', 'This fee is not applicable to your account at this time.');
+                return redirect()->back()->with('error', 'This fee is not applicable to your account at this time. If it is part of a combined payment, use Pay Combined Total.');
             }
 
             // Check for existing pending transaction
@@ -298,8 +299,129 @@ class AlumniPaymentController extends Controller
                 'service_code' => config('services.credocentral.service_code')
             ]);
 
-            return redirect()->back()->with('error', 'Failed to initiate payment. Please try again.');
+        return redirect()->back()->with('error', 'Failed to initiate payment. Please try again.');
         }
+    }
+
+    public function initiateCombinedPayment(Request $request)
+    {
+        $request->validate([
+            'payment_structure_id' => 'required|exists:payment_structures,id',
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+        $alumni = $user->alumni;
+
+        if (!$alumni->phone_number) {
+            return redirect()->back()->with('error', 'Please update your phone number in your profile before making a payment.');
+        }
+
+        if (!$user->email) {
+            return redirect()->back()->with('error', 'Please update your email address in your profile before making a payment.');
+        }
+
+        $checkout = $this->duesService->resolveCombinedCheckout($alumni);
+        if (!$checkout || (int) $checkout['structure']->id !== (int) $request->payment_structure_id) {
+            return redirect()->back()->with('error', 'This combined payment is not available for your account at this time.');
+        }
+
+        $structure = $checkout['structure'];
+        $fees = $checkout['fees'];
+        $total = (float) $checkout['total'];
+
+        if ($fees->count() < 2 || $total <= 0) {
+            return redirect()->back()->with('error', 'This combined payment is no longer valid. Please pay remaining items separately.');
+        }
+
+        try {
+            $existingTransaction = Transaction::query()
+                ->where('alumni_id', $alumni->id)
+                ->where('payment_structure_id', $structure->id)
+                ->where('status', 'pending')
+                ->latest('id')
+                ->first();
+
+            if ($existingTransaction) {
+                $this->syncCombinedTransactionItems($existingTransaction, $fees, $total);
+
+                if ($existingTransaction->payment_link) {
+                    return redirect($existingTransaction->payment_link);
+                }
+
+                $paymentLink = $this->credocentral->initializePayment($existingTransaction->fresh(['items.feeType', 'paymentStructure', 'alumni.user', 'alumni.category']));
+
+                return redirect($paymentLink);
+            }
+
+            DB::beginTransaction();
+            try {
+                $transaction = Transaction::create([
+                    'alumni_id' => $alumni->id,
+                    'fee_template_id' => null,
+                    'payment_structure_id' => $structure->id,
+                    'amount' => $total,
+                    'payment_reference' => 'ALUMNI-'.strtoupper(Str::random(10)),
+                    'status' => 'pending',
+                    'payment_provider' => 'credocentral',
+                    'payment_details' => [
+                        'payment_mode' => 'combined',
+                        'fee_description' => $structure->payerTitle(),
+                        'item_count' => $fees->count(),
+                        'alumni_name' => $alumni->user->name,
+                        'alumni_email' => $alumni->user->email,
+                        'alumni_phone' => $alumni->phone_number,
+                    ],
+                    'metadata' => [
+                        'payment_mode' => 'combined',
+                        'payment_structure_id' => $structure->id,
+                    ],
+                ]);
+
+                $this->syncCombinedTransactionItems($transaction, $fees, $total);
+
+                $paymentLink = $this->credocentral->initializePayment(
+                    $transaction->fresh(['items.feeType', 'paymentStructure', 'alumni.user', 'alumni.category'])
+                );
+
+                DB::commit();
+
+                return redirect($paymentLink);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            Log::error('Combined payment initiation failed', [
+                'error' => $e->getMessage(),
+                'alumni_id' => $alumni->id,
+                'payment_structure_id' => $structure->id,
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to initiate combined payment. Please try again.');
+        }
+    }
+
+    protected function syncCombinedTransactionItems(Transaction $transaction, $fees, float $total): void
+    {
+        $transaction->items()->delete();
+
+        foreach ($fees as $fee) {
+            $fee->loadMissing('feeType');
+            $transaction->items()->create([
+                'fee_template_id' => $fee->id,
+                'fee_type_id' => $fee->fee_type_id,
+                'category_id' => $fee->category_id,
+                'description' => $fee->description ?: ($fee->feeType?->name ?: 'Fee'),
+                'amount' => $fee->amount,
+            ]);
+        }
+
+        $transaction->update([
+            'amount' => $total,
+            'fee_template_id' => null,
+            'payment_structure_id' => $transaction->payment_structure_id,
+        ]);
     }
 
     /**
@@ -543,7 +665,7 @@ class AlumniPaymentController extends Controller
      */
     public function paymentSuccess(Transaction $transaction)
     {
-        $transaction->loadMissing('feeTemplate.feeType');
+        $transaction->loadMissing(['feeTemplate.feeType', 'items.feeType', 'paymentStructure']);
 
         $eoiApplication = null;
         if ($this->paymentCompletion->isEoiTransaction($transaction)) {
@@ -580,7 +702,7 @@ class AlumniPaymentController extends Controller
             return redirect()->route('alumni.payments.failed', $transaction);
         }
 
-        $transaction->loadMissing('feeTemplate.feeType');
+        $transaction->loadMissing(['feeTemplate.feeType', 'items.feeType', 'paymentStructure']);
 
         return view('payments.pending', compact('transaction'));
     }
@@ -608,6 +730,8 @@ class AlumniPaymentController extends Controller
             ]);
             abort(403, 'You are not authorized to view this transaction.');
         }
+
+        $transaction->loadMissing(['feeTemplate.feeType', 'items.feeType', 'paymentStructure']);
 
         return view('alumni.payments.show', compact('transaction'));
     }
@@ -686,7 +810,7 @@ class AlumniPaymentController extends Controller
         $baseQuery = Transaction::query()->where('alumni_id', $alumni->id);
 
         $transactions = (clone $baseQuery)
-            ->with(['feeTemplate.feeType'])
+            ->with(['feeTemplate.feeType', 'items.feeType', 'paymentStructure'])
             ->latest()
             ->paginate(10);
 
@@ -711,8 +835,18 @@ class AlumniPaymentController extends Controller
             abort(403, 'You are not authorized to process this payment.');
         }
 
-        $transaction->loadMissing('feeTemplate');
-        if (! $transaction->feeTemplate || ! $transaction->feeTemplate->isValid()) {
+        $transaction->loadMissing(['feeTemplate', 'items', 'paymentStructure']);
+        if ($transaction->isCombined()) {
+            $checkout = $this->duesService->resolveCombinedCheckout(Auth::user()->alumni);
+            $stillValid = $checkout
+                && (int) $checkout['structure']->id === (int) $transaction->payment_structure_id
+                && $checkout['fees']->count() >= 2;
+
+            if (! $stillValid && ! $transaction->items()->exists()) {
+                return redirect()->route('alumni.payments.history')
+                    ->with('error', 'This combined payment is no longer available.');
+            }
+        } elseif (! $transaction->feeTemplate || ! $transaction->feeTemplate->isValid()) {
             return redirect()->route('alumni.payments.history')
                 ->with('error', 'This fee is currently inactive and can no longer be paid.');
         }

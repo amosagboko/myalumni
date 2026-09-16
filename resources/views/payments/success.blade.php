@@ -51,6 +51,10 @@
                                 <td>{{ $transaction->payment_reference }}</td>
                             </tr>
                             <tr>
+                                <th>Payment</th>
+                                <td>{{ $transaction->display_description }}</td>
+                            </tr>
+                            <tr>
                                 <th>Amount</th>
                                 <td>₦{{ number_format($transaction->amount, 2) }}</td>
                             </tr>
@@ -60,6 +64,33 @@
                             </tr>
                         </table>
                     </div>
+
+                    @if($transaction->isCombined() && $transaction->items->isNotEmpty())
+                        <div class="table-responsive mb-4 text-start">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($transaction->items as $item)
+                                        <tr>
+                                            <td>{{ $item->description }}</td>
+                                            <td class="text-end">₦{{ number_format($item->amount, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th>Total</th>
+                                        <th class="text-end">₦{{ number_format($transaction->amount, 2) }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    @endif
 
                     <div class="d-grid gap-2">
                         @if($eoiApplication)

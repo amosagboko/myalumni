@@ -96,6 +96,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('admin.payment-structures.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.payment-structures*') ? 'active' : '' }}">
+                                    <i data-feather="layers" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Payment Structures</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('admin.alumni-categories.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.alumni-categories*') ? 'active' : '' }}">
                                     <i data-feather="tag" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Categories</span>

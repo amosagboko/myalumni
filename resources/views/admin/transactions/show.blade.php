@@ -111,6 +111,24 @@
                             <div class="col-lg-4">
                                 <div class="ads-section-card h-100">
                                     <h2 class="ads-section-title">Fee information</h2>
+                                    @if ($transaction->isCombined())
+                                        <div class="mb-3">
+                                            <div class="small text-muted mb-1">Payment</div>
+                                            <div class="fw-medium">{{ $transaction->display_description }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="small text-muted mb-1">Mode</div>
+                                            <span class="adt-tag">Combined</span>
+                                        </div>
+                                        <div>
+                                            <div class="small text-muted mb-1">Items</div>
+                                            <ul class="small mb-0 ps-3">
+                                                @foreach ($transaction->items as $item)
+                                                    <li>{{ $item->description }} — ₦{{ number_format($item->amount, 2) }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @else
                                     <div class="mb-3">
                                         <div class="small text-muted mb-1">Fee type</div>
                                         <div class="fw-medium">{{ $transaction->feeTemplate->feeType->name ?? 'N/A' }}</div>
@@ -121,7 +139,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <div class="small text-muted mb-1">Category</div>
-                                        @if ($transaction->feeTemplate->category)
+                                        @if ($transaction->feeTemplate?->category)
                                             <span class="adt-tag">{{ $transaction->feeTemplate->category->name }}</span>
                                         @else
                                             <span class="adt-muted">N/A</span>
@@ -131,6 +149,7 @@
                                         <div class="small text-muted mb-1">Graduation year</div>
                                         <div>{{ $transaction->feeTemplate->graduation_year ?? 'N/A' }}</div>
                                     </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

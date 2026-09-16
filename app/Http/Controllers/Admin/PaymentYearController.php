@@ -27,7 +27,10 @@ class PaymentYearController extends Controller
             $year->annual_due_template = $year->annualDueTemplate();
             $year->onboarding_template_count = $year->onboardingTemplates()->count();
             $year->annual_paid_count = $year->annual_due_template
-                ? Transaction::where('fee_template_id', $year->annual_due_template->id)->where('status', 'paid')->count()
+                ? Transaction::where('status', 'paid')->where(function ($query) use ($year) {
+                    $query->where('fee_template_id', $year->annual_due_template->id)
+                        ->orWhereHas('items', fn ($items) => $items->where('fee_template_id', $year->annual_due_template->id));
+                })->count()
                 : 0;
 
             return $year;
@@ -40,7 +43,10 @@ class PaymentYearController extends Controller
             'active' => AlumniYear::where('is_active', true)->count(),
             'configured' => AlumniYear::all()->filter(fn (AlumniYear $year) => (bool) $year->annualDueTemplate())->count(),
             'paid' => Transaction::where('status', 'paid')
-                ->whereHas('feeTemplate', fn ($query) => $query->where('fee_purpose', FeeTemplate::PURPOSE_ANNUAL_RENEWAL))
+                ->where(function ($query) {
+                    $query->whereHas('feeTemplate', fn ($feeQuery) => $feeQuery->where('fee_purpose', FeeTemplate::PURPOSE_ANNUAL_RENEWAL))
+                        ->orWhereHas('items.feeTemplate', fn ($feeQuery) => $feeQuery->where('fee_purpose', FeeTemplate::PURPOSE_ANNUAL_RENEWAL));
+                })
                 ->count(),
         ];
 
@@ -120,10 +126,14 @@ class PaymentYearController extends Controller
 
         $statsTemplate = $resolvedAnnualDue;
         if ($statsTemplate) {
-            $annualStats['paid'] = Transaction::where('fee_template_id', $statsTemplate->id)
-                ->where('status', 'paid')->count();
-            $annualStats['pending'] = Transaction::where('fee_template_id', $statsTemplate->id)
-                ->where('status', 'pending')->count();
+            $annualStats['paid'] = Transaction::where('status', 'paid')->where(function ($query) use ($statsTemplate) {
+                $query->where('fee_template_id', $statsTemplate->id)
+                    ->orWhereHas('items', fn ($items) => $items->where('fee_template_id', $statsTemplate->id));
+            })->count();
+            $annualStats['pending'] = Transaction::where('status', 'pending')->where(function ($query) use ($statsTemplate) {
+                $query->where('fee_template_id', $statsTemplate->id)
+                    ->orWhereHas('items', fn ($items) => $items->where('fee_template_id', $statsTemplate->id));
+            })->count();
         }
 
         return view('admin.payment-years.show', compact(

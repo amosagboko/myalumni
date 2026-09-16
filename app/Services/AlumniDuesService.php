@@ -7,6 +7,7 @@ use App\Models\AlumniCategory;
 use App\Models\AlumniYear;
 use App\Models\FeeTemplate;
 use App\Models\FeeType;
+use App\Models\PaymentStructure;
 use App\Models\Transaction;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -38,8 +39,23 @@ class AlumniDuesService
 
     /**
      * Fees the alumni must pay right now (default graduation fees, then current year's annual due).
+     * Combined structures can surface every unpaid member that currently applies, including later-phase items.
      */
     public function getActiveFees(Alumni $alumni, $paymentYear = null): Collection
+    {
+        $phaseFees = $this->phaseActiveFees($alumni, $paymentYear);
+        $combined = $this->resolveCombinedCheckout($alumni, $paymentYear);
+        if (! $combined) {
+            return $phaseFees;
+        }
+
+        $combinedIds = $combined['fees']->pluck('id');
+        $extras = $phaseFees->reject(fn (FeeTemplate $fee) => $combinedIds->contains($fee->id))->values();
+
+        return $combined['fees']->concat($extras)->values();
+    }
+
+    protected function phaseActiveFees(Alumni $alumni, $paymentYear = null): Collection
     {
         if (! $this->hasCompletedDefaultFees($alumni)) {
             return $this->getDefaultFeeTemplates($alumni)
@@ -64,6 +80,131 @@ class AlumniDuesService
         }
 
         return collect([$annualTemplate]);
+    }
+
+    /**
+     * Active combined checkout for this alumni, or null to keep separate per-item payment.
+     *
+     * @return array{structure: PaymentStructure, fees: Collection<int, FeeTemplate>, total: float}|null
+     */
+    public function resolveCombinedCheckout(Alumni $alumni, $paymentYear = null): ?array
+    {
+        if (! $this->combinedServiceCodeFor($alumni)) {
+            return null;
+        }
+
+        $activeYear = $this->resolvePaymentYear($paymentYear);
+        $effectiveCategoryId = $this->resolveEffectiveCategoryId($alumni);
+
+        $structures = PaymentStructure::query()
+            ->combined()
+            ->active()
+            ->with(['items.feeTemplate.feeType', 'items.feeTemplate.category'])
+            ->get();
+
+        $candidates = [];
+
+        foreach ($structures as $structure) {
+            if ($structure->category_id && (int) $structure->category_id !== (int) $effectiveCategoryId) {
+                continue;
+            }
+
+            if ($structure->graduation_year !== null
+                && (int) $structure->graduation_year !== (int) $alumni->year_of_graduation) {
+                continue;
+            }
+
+            $unpaid = $structure->items
+                ->map(fn ($item) => $item->feeTemplate)
+                ->filter()
+                ->filter(fn (FeeTemplate $fee) => $this->templateAppliesToAlumni($fee, $alumni, $activeYear))
+                ->filter(fn (FeeTemplate $fee) => $fee->isValid())
+                ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
+                ->values();
+
+            if ($unpaid->count() < 2) {
+                continue;
+            }
+
+            $specificity = 0;
+            if ($structure->category_id) {
+                $specificity += 2;
+            }
+            if ($structure->graduation_year !== null) {
+                $specificity += 1;
+            }
+
+            $candidates[] = [
+                'structure' => $structure,
+                'fees' => $unpaid,
+                'total' => (float) $unpaid->sum('amount'),
+                'specificity' => $specificity,
+            ];
+        }
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        usort($candidates, fn (array $a, array $b) => $b['specificity'] <=> $a['specificity']);
+
+        $best = $candidates[0];
+        unset($best['specificity']);
+
+        return $best;
+    }
+
+    public function combinedServiceCodeFor(Alumni $alumni, string $mapKey = 'combined'): ?string
+    {
+        $codes = config('services.credocentral.service_codes.'.$mapKey);
+        if (is_string($codes) && $codes !== '') {
+            return $codes;
+        }
+
+        if (! is_array($codes)) {
+            return null;
+        }
+
+        $slug = $this->resolveEffectiveCategorySlug($alumni);
+        if (! $slug) {
+            return null;
+        }
+
+        $code = $codes[$slug] ?? null;
+
+        return is_string($code) && $code !== '' ? $code : null;
+    }
+
+    public function resolveEffectiveCategorySlug(Alumni $alumni): ?string
+    {
+        $alumni->loadMissing('category');
+        $categoryId = $this->resolveEffectiveCategoryId($alumni);
+        if ($categoryId) {
+            $category = $alumni->category_id === $categoryId
+                ? $alumni->category
+                : AlumniCategory::find($categoryId);
+
+            if ($category?->slug) {
+                return $category->slug;
+            }
+        }
+
+        $qualificationKey = $this->normalizedPostgraduateQualificationKey($alumni);
+        if ($qualificationKey) {
+            return 'postgraduate-'.$qualificationKey;
+        }
+
+        return $alumni->category?->slug;
+    }
+
+    public function feeIsPayableByAlumni(FeeTemplate $fee, Alumni $alumni, $paymentYear = null): bool
+    {
+        $combined = $this->resolveCombinedCheckout($alumni, $paymentYear);
+        if ($combined && $combined['fees']->contains('id', $fee->id)) {
+            return false;
+        }
+
+        return $this->getActiveFees($alumni, $paymentYear)->contains('id', $fee->id);
     }
 
     /**
@@ -202,11 +343,6 @@ class AlumniDuesService
         return $query->orderBy('fee_type_id')->get();
     }
 
-    public function feeIsPayableByAlumni(FeeTemplate $fee, Alumni $alumni, $paymentYear = null): bool
-    {
-        return $this->getActiveFees($alumni, $paymentYear)->contains('id', $fee->id);
-    }
-
     /**
      * Create a pending transaction for the active year's annual due when appropriate.
      */
@@ -223,6 +359,11 @@ class AlumniDuesService
 
         $template = $year->annualDueTemplate();
         if (!$template || ! $template->isValid() || $template->isPaidByAlumni($alumni)) {
+            return null;
+        }
+
+        $combined = $this->resolveCombinedCheckout($alumni, $year);
+        if ($combined && $combined['fees']->contains('id', $template->id)) {
             return null;
         }
 
@@ -253,6 +394,11 @@ class AlumniDuesService
                         continue;
                     }
 
+                    $combined = $this->resolveCombinedCheckout($alumni, $paymentYear);
+                    if ($combined && $combined['fees']->contains('id', $template->id)) {
+                        continue;
+                    }
+
                     if ($this->createPendingDueTransaction($alumni, $template, $paymentYear)) {
                         $assigned++;
                     }
@@ -260,6 +406,35 @@ class AlumniDuesService
             });
 
         return $assigned;
+    }
+
+    public function templateAppliesToAlumni(FeeTemplate $fee, Alumni $alumni, ?AlumniYear $activeYear = null): bool
+    {
+        $fee->loadMissing('feeType');
+
+        if ($fee->feeType?->isEoiFee()) {
+            return false;
+        }
+
+        $effectiveCategoryId = $this->resolveEffectiveCategoryId($alumni);
+        if ($fee->category_id && (int) $fee->category_id !== (int) $effectiveCategoryId) {
+            return false;
+        }
+
+        $year = (int) $fee->graduation_year;
+
+        if ($fee->isAnnualRenewal() || $fee->isAnnualDueType()) {
+            if ($year === FeeTemplate::PAYMENT_YEAR_ALL) {
+                return true;
+            }
+
+            $activeYear ??= AlumniYear::where('is_active', true)->first();
+
+            return $activeYear && $year === (int) $activeYear->year;
+        }
+
+        return $year === (int) $alumni->year_of_graduation
+            || $year === FeeTemplate::PAYMENT_YEAR_ALL;
     }
 
     public function resolveEffectiveCategoryId(Alumni $alumni): ?int
@@ -293,6 +468,29 @@ class AlumniDuesService
         $specializedCategory = AlumniCategory::where('slug', "postgraduate-{$qualificationKey}")->first();
 
         return $specializedCategory?->id ?? $effectiveCategoryId;
+    }
+
+    protected function normalizedPostgraduateQualificationKey(Alumni $alumni): ?string
+    {
+        if (! $alumni->qualification_type) {
+            return null;
+        }
+
+        $normalizedQualification = strtolower(str_replace(['.', ' ', '_'], '', trim($alumni->qualification_type)));
+        $qualificationMap = [
+            'phd' => 'phd',
+            'ph.d' => 'phd',
+            'doctorofphilosophy' => 'phd',
+            'msc' => 'msc',
+            'm.sc' => 'msc',
+            'masters' => 'msc',
+            'masterofscience' => 'msc',
+            'pgd' => 'pgd',
+            'pg.d' => 'pgd',
+            'postgraduatediploma' => 'pgd',
+        ];
+
+        return $qualificationMap[$normalizedQualification] ?? null;
     }
 
     protected function resolvePaymentYear($paymentYear): ?AlumniYear

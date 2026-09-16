@@ -256,7 +256,7 @@ class FeeTemplateController extends Controller
             DB::beginTransaction();
 
             // Check if there are any transactions
-            if ($feeTemplate->transactions()->exists()) {
+            if ($feeTemplate->transactions()->exists() || $feeTemplate->transactionItems()->exists()) {
                 return back()->with('error', 'Cannot delete fee template with existing transactions.');
             }
 

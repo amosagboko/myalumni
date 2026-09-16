@@ -115,8 +115,14 @@
                                                         <div class="adt-muted small">{{ $transaction->alumni->user->email ?? 'N/A' }}</div>
                                                     </td>
                                                     <td>
-                                                        <div class="fw-medium">{{ $transaction->feeTemplate->feeType->name ?? 'N/A' }}</div>
-                                                        <div class="adt-muted small">{{ $transaction->feeTemplate->feeType->code ?? 'N/A' }}</div>
+                                                        <div class="fw-medium">{{ $transaction->display_description }}</div>
+                                                        <div class="adt-muted small">
+                                                            @if ($transaction->isCombined())
+                                                                Combined ({{ $transaction->items->count() }} items)
+                                                            @else
+                                                                {{ $transaction->feeTemplate->feeType->code ?? 'N/A' }}
+                                                            @endif
+                                                        </div>
                                                     </td>
                                                     <td class="fw-medium">₦{{ number_format($transaction->amount, 2) }}</td>
                                                     <td>

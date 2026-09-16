@@ -64,6 +64,16 @@ class FeeTemplate extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function transactionItems(): HasMany
+    {
+        return $this->hasMany(TransactionItem::class);
+    }
+
+    public function paymentStructureItems(): HasMany
+    {
+        return $this->hasMany(PaymentStructureItem::class);
+    }
+
     /**
      * Scope a query to only include active templates.
      */
@@ -234,9 +244,21 @@ class FeeTemplate extends Model
 
     public function isPaidByAlumni(Alumni $alumni): bool
     {
-        return $this->transactions()
+        $paidDirectly = $this->transactions()
             ->where('alumni_id', $alumni->id)
             ->where('status', 'paid')
+            ->exists();
+
+        if ($paidDirectly) {
+            return true;
+        }
+
+        return TransactionItem::query()
+            ->where('fee_template_id', $this->id)
+            ->whereHas('transaction', function ($query) use ($alumni) {
+                $query->where('alumni_id', $alumni->id)
+                    ->where('status', 'paid');
+            })
             ->exists();
     }
 
@@ -247,10 +269,25 @@ class FeeTemplate extends Model
             return null;
         }
 
-        return $this->transactions()
+        $direct = $this->transactions()
             ->where('alumni_id', $alumniId)
             ->where('status', 'paid')
             ->latest('id')
             ->first();
+
+        if ($direct) {
+            return $direct;
+        }
+
+        $item = TransactionItem::query()
+            ->where('fee_template_id', $this->id)
+            ->whereHas('transaction', function ($query) use ($alumniId) {
+                $query->where('alumni_id', $alumniId)
+                    ->where('status', 'paid');
+            })
+            ->latest('id')
+            ->first();
+
+        return $item?->transaction;
     }
 }

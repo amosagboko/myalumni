@@ -12,10 +12,13 @@
                     @php
                         $duesPhase = $duesPhase ?? 'onboarding';
                         $paymentYearLabel = $activePaymentYear?->year;
+                        $combinedCheckout = $combinedCheckout ?? null;
                     @endphp
 
                     <div class="mb-3 mb-md-4 text-muted">
-                        @if($duesPhase === 'onboarding')
+                        @if($combinedCheckout)
+                            Pay the items below as a single combined payment. Individual items cannot be paid separately while this combined option is active.
+                        @elseif($duesPhase === 'onboarding')
                             Please complete all required onboarding payments for your graduation cohort before you can access full alumni services.
                         @elseif($duesPhase === 'annual')
                             Pay your annual alumni due for payment year {{ $paymentYearLabel }} to keep your membership active.
@@ -36,6 +39,55 @@
                         </div>
                     @endif
 
+                    @endif
+
+                    @if($combinedCheckout)
+                        <div class="border rounded-3 p-3 p-md-4 mb-4">
+                            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                <div>
+                                    <h4 class="h6 mb-1">{{ $combinedCheckout['structure']->payerTitle() }}</h4>
+                                    <div class="text-muted small">Combined payment — {{ $combinedCheckout['fees']->count() }} items</div>
+                                </div>
+                                <div class="fw-semibold fs-5">₦{{ number_format($combinedCheckout['total'], 2) }}</div>
+                            </div>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th class="text-end">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($combinedCheckout['fees'] as $fee)
+                                            <tr>
+                                                <td>{{ $fee->description ?: $fee->feeType?->name }}</td>
+                                                <td class="text-end">₦{{ number_format($fee->amount, 2) }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th>Total</th>
+                                            <th class="text-end">₦{{ number_format($combinedCheckout['total'], 2) }}</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <form action="{{ route('alumni.payments.initiate-combined') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="payment_structure_id" value="{{ $combinedCheckout['structure']->id }}">
+                                <button type="submit" class="btn btn-primary">Pay Combined Total</button>
+                            </form>
+                        </div>
+                    @endif
+
+                    @php
+                        $combinedIds = collect($combinedCheckout['fees'] ?? [])->pluck('id');
+                        $separateFees = $fees->reject(fn ($fee) => $combinedIds->contains($fee->id))->values();
+                    @endphp
+
+                    @if($separateFees->isNotEmpty() || ! $combinedCheckout)
                     <!-- Desktop/tablet view -->
                     <div class="table-responsive d-none d-md-block">
                         <table class="table table-bordered align-middle mb-0">
@@ -48,7 +100,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($fees as $fee)
+                                @forelse($separateFees as $fee)
                                     <tr>
                                         <td>{{ $fee->description }}</td>
                                         <td>₦{{ number_format($fee->amount, 2) }}</td>
@@ -82,7 +134,7 @@
 
                     <!-- Mobile view: cards -->
                     <div class="d-md-none">
-                        @forelse($fees as $fee)
+                        @forelse($separateFees as $fee)
                             <div class="card mb-3">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start">
@@ -115,6 +167,7 @@
                             <div class="text-center text-muted">No fees found for your profile.</div>
                         @endforelse
                     </div>
+                    @endif
 
                     @if($duesPhase === 'onboarding' && $fees->isNotEmpty() && $fees->every->isPaid())
                         <div class="mt-4 text-center">

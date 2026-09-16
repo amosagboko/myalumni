@@ -7,6 +7,7 @@
         $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
         $activePaymentYear = \App\Models\AlumniYear::where('is_active', true)->first();
         $duesPhase = $alumni ? $alumni->getDuesPhase() : 'none';
+        $combinedCheckout = $alumni ? app(\App\Services\AlumniDuesService::class)->resolveCombinedCheckout($alumni) : null;
     @endphp
 
     @if($needsBioData || $needsPayments)
@@ -28,7 +29,12 @@
                     @if($needsPayments)
                         <div class="mb-4">
                             <h6>Pending Payments</h6>
-                            @if($duesPhase === 'annual' && $activePaymentYear)
+                            @if(!empty($combinedCheckout))
+                                <p class="mb-2">
+                                    Pay <strong>{{ $combinedCheckout['structure']->payerTitle() }}</strong> as a single combined payment of
+                                    <strong>₦{{ number_format($combinedCheckout['total'], 2) }}</strong>.
+                                </p>
+                            @elseif($duesPhase === 'annual' && $activePaymentYear)
                                 <p class="mb-2">
                                     Your <strong>annual alumni due for payment year {{ $activePaymentYear->year }}</strong> is unpaid.
                                 </p>

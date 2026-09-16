@@ -93,6 +93,13 @@
                                         <div class="d-flex flex-wrap gap-1 mt-1">
                                             <span class="badge bg-light text-dark border">{{ $transaction->fee_category_label }}</span>
                                         </div>
+                                        @if($transaction->isCombined() && $transaction->items->isNotEmpty())
+                                            <ul class="small text-muted mb-1 mt-1 ps-3">
+                                                @foreach($transaction->items as $item)
+                                                    <li>{{ $item->description }} — ₦{{ number_format($item->amount, 2) }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
                                         <small class="text-muted d-block text-truncate payment-ref" title="{{ $transaction->payment_reference }}">
                                             {{ $transaction->payment_reference }}
                                         </small>
@@ -120,7 +127,7 @@
                                         @endif
                                     </td>
                                     <td class="text-nowrap">
-                                        @if($transaction->status === 'pending' && $transaction->feeTemplate?->isValid())
+                                        @if($transaction->status === 'pending' && ($transaction->isCombined() || $transaction->feeTemplate?->isValid()))
                                             <a href="{{ route('alumni.payments.process', $transaction) }}" class="btn btn-sm btn-primary">
                                                 Pay Now
                                             </a>
@@ -165,10 +172,17 @@
                                         <span class="badge bg-light text-dark border">{{ $transaction->payment_year_label }}</span>
                                     @endif
                                 </div>
+                                @if($transaction->isCombined() && $transaction->items->isNotEmpty())
+                                    <ul class="small text-muted ps-3 mb-2">
+                                        @foreach($transaction->items as $item)
+                                            <li>{{ $item->description }} — ₦{{ number_format($item->amount, 2) }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
 
                                 <div class="d-flex justify-content-between align-items-center gap-2">
                                     <div class="fw-semibold">₦{{ number_format($transaction->amount, 2) }}</div>
-                                    @if($transaction->status === 'pending' && $transaction->feeTemplate?->isValid())
+                                    @if($transaction->status === 'pending' && ($transaction->isCombined() || $transaction->feeTemplate?->isValid()))
                                         <a href="{{ route('alumni.payments.process', $transaction) }}" class="btn btn-sm btn-primary flex-shrink-0">
                                             Pay Now
                                         </a>

@@ -120,6 +120,36 @@
                         </div>
                     </div>
 
+                    @if($transaction->isCombined() && $transaction->items->isNotEmpty())
+                        <div class="mt-4">
+                            <h6 class="mb-2">Included items</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th class="text-end">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($transaction->items as $item)
+                                            <tr>
+                                                <td>{{ $item->description }}</td>
+                                                <td class="text-end">₦{{ number_format($item->amount, 2) }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th>Total</th>
+                                            <th class="text-end">₦{{ number_format($transaction->amount, 2) }}</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+
                     @if($transaction->status === 'pending')
                         <div class="mt-4 text-center text-md-start">
                             <a href="{{ route('alumni.payments.process', $transaction) }}" class="btn btn-success btn-lg w-100 w-md-auto">

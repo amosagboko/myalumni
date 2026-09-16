@@ -64,6 +64,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     Route::resource('fee-templates', \App\Http\Controllers\Admin\FeeTemplateController::class);
     Route::post('fee-templates/{feeTemplate}/activate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'activate'])->name('fee-templates.activate');
     Route::post('fee-templates/{feeTemplate}/deactivate', [\App\Http\Controllers\Admin\FeeTemplateController::class, 'deactivate'])->name('fee-templates.deactivate');
+
+    Route::resource('payment-structures', \App\Http\Controllers\Admin\PaymentStructureController::class)->except(['show']);
     
     // Alumni Category Management
     // Assignment routes must come BEFORE resource routes to avoid conflicts
@@ -250,6 +252,7 @@ Route::middleware(['auth', 'role:alumni|alumni-president'])->group(function () {
         Route::get('/', [AlumniPaymentController::class, 'index'])->name('index');
         Route::get('/history', [AlumniPaymentController::class, 'history'])->name('history');
         Route::post('/initiate', [AlumniPaymentController::class, 'initiatePayment'])->name('initiate');
+        Route::post('/initiate-combined', [AlumniPaymentController::class, 'initiateCombinedPayment'])->name('initiate-combined');
         Route::get('/{transaction}', [AlumniPaymentController::class, 'show'])->name('show');
         Route::get('/{transaction}/process', [AlumniPaymentController::class, 'processPayment'])->name('process');
         Route::post('/{transaction}/confirm', [AlumniPaymentController::class, 'confirmPayment'])->name('confirm');
