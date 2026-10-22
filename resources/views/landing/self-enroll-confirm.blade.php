@@ -63,7 +63,7 @@
                                 <div class="col-md-6"><strong>Name:</strong> {{ $pending['name'] ?: '—' }}</div>
                                 <div class="col-md-6"><strong>Matriculation No:</strong> {{ $pending['matric_number'] }}</div>
                                 <div class="col-md-6"><strong>Department:</strong> {{ $pending['department'] ?: '—' }}</div>
-                                <div class="col-md-6"><strong>Category:</strong> {{ $pending['category_label'] ?? 'Undergraduate (Full-time)' }}</div>
+                                <div class="col-md-6"><strong>Category:</strong> {{ $pending['category_label'] ?? 'Undergraduate' }}</div>
                                 <div class="col-md-6"><strong>Year of Graduation:</strong> {{ $pending['year_of_graduation'] ?? date('Y') }}</div>
                             </div>
                         </div>

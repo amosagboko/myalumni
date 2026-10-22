@@ -97,7 +97,7 @@
                                             <tr>
                                                 <td colspan="6" class="text-center py-4 text-muted">
                                                     No payment structures yet.
-                                                    <a href="{{ route('admin.payment-structures.create') }}">Create one</a> to enable combined checkout for undergraduate full-time.
+                                                    <a href="{{ route('admin.payment-structures.create') }}">Create one</a> to enable combined checkout for undergraduate full-time and part-time.
                                                 </td>
                                             </tr>
                                         @endforelse

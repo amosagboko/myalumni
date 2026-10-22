@@ -14,6 +14,10 @@ use Spatie\Permission\Models\Role;
 
 class AlumniSelfEnrollmentService
 {
+    public const CATEGORY_FULL_TIME = 'undergraduate-full-time';
+
+    public const CATEGORY_PART_TIME = 'undergraduate-part-time';
+
     public function __construct(
         protected FulafiaStudentApi $studentApi
     ) {}
@@ -45,6 +49,7 @@ class AlumniSelfEnrollmentService
      *     student_email: string,
      *     year_of_entry: int|null,
      *     year_of_graduation: int,
+     *     category_slug: string,
      *     category_label: string
      * }
      */
@@ -53,6 +58,7 @@ class AlumniSelfEnrollmentService
         $matric = trim((string) ($student['userId'] ?? $fallbackMatric));
         $state = NigeriaLocations::matchState((string) ($student['state'] ?? ''));
         $lga = NigeriaLocations::matchLga($state, (string) ($student['lga'] ?? ''));
+        $category = $this->resolveUndergraduateCategory($student);
 
         return [
             'matric_number' => $matric,
@@ -67,8 +73,49 @@ class AlumniSelfEnrollmentService
             'student_email' => trim((string) ($student['email'] ?? '')),
             'year_of_entry' => $this->guessYearOfEntry($matric),
             'year_of_graduation' => (int) config('fulafia.self_enrollment_graduation_year', date('Y')),
-            'category_label' => 'Undergraduate (Full-time)',
+            'category_slug' => $category['slug'],
+            'category_label' => $category['label'],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $student
+     * @return array{slug: string, label: string}
+     */
+    public function resolveUndergraduateCategory(array $student): array
+    {
+        if ($this->directoryIndicatesPartTime($student)) {
+            return [
+                'slug' => self::CATEGORY_PART_TIME,
+                'label' => 'Undergraduate (Part-time)',
+            ];
+        }
+
+        return [
+            'slug' => self::CATEGORY_FULL_TIME,
+            'label' => 'Undergraduate (Full-time)',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $student
+     */
+    public function directoryIndicatesPartTime(array $student): bool
+    {
+        foreach (['studyMode', 'programmeType', 'category', 'entryMode'] as $field) {
+            if ($this->valueIndicatesPartTime((string) ($student[$field] ?? ''))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function valueIndicatesPartTime(string $value): bool
+    {
+        $normalized = strtolower((string) preg_replace('/[\s\-_]+/', '', $value));
+
+        return str_contains($normalized, 'parttime');
     }
 
     /**
@@ -125,7 +172,8 @@ class AlumniSelfEnrollmentService
      *     year_of_graduation?: int,
      *     gender: string,
      *     phone_number?: string|null,
-     *     student_email?: string|null
+     *     student_email?: string|null,
+     *     category_slug?: string|null
      * }  $data
      */
     public function enroll(array $data): Alumni
@@ -136,10 +184,10 @@ class AlumniSelfEnrollmentService
             throw new RuntimeException('An alumni record already exists for this matriculation number.');
         }
 
-        $category = AlumniCategory::where('slug', config('fulafia.self_enrollment_category_slug', 'undergraduate-full-time'))->first();
+        $category = $this->resolveEnrollmentCategory($data['category_slug'] ?? null);
 
         if (! $category) {
-            throw new RuntimeException('Default undergraduate full-time category is not configured.');
+            throw new RuntimeException('The alumni category for this enrolment is not configured.');
         }
 
         $alumniRole = Role::findByName('alumni');
@@ -214,5 +262,15 @@ class AlumniSelfEnrollmentService
         $gender = strtolower(trim((string) $value));
 
         return in_array($gender, ['male', 'female'], true) ? $gender : '';
+    }
+
+    protected function resolveEnrollmentCategory(?string $slug): ?AlumniCategory
+    {
+        $allowed = [self::CATEGORY_FULL_TIME, self::CATEGORY_PART_TIME];
+        $resolved = in_array($slug, $allowed, true)
+            ? $slug
+            : self::CATEGORY_FULL_TIME;
+
+        return AlumniCategory::where('slug', $resolved)->first();
     }
 }

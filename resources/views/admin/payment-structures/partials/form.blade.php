@@ -36,7 +36,7 @@
                 <option value="{{ $category->id }}" @selected((string) old('category_id', $paymentStructure->category_id ?? '') === (string) $category->id)>{{ $category->name }}</option>
             @endforeach
         </select>
-        <div class="form-text">V1 combined Credo code is configured for Undergraduate Full Time only.</div>
+        <div class="form-text">Combined Credo codes are configured for Undergraduate Full Time and Part Time.</div>
         @error('category_id')<div class="form-text text-danger">{{ $message }}</div>@enderror
     </div>
 </div>

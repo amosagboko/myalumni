@@ -140,6 +140,7 @@ class LandingPageController extends Controller
                     'gender' => $pending['gender'],
                     'phone_number' => $pending['phone_number'] !== '' ? $pending['phone_number'] : null,
                     'student_email' => $pending['student_email'] !== '' ? $pending['student_email'] : null,
+                    'category_slug' => $pending['category_slug'] ?? null,
                 ]);
             } catch (\Throwable $e) {
                 Log::error('Self-enrollment auto-create failed', [
@@ -245,6 +246,7 @@ class LandingPageController extends Controller
                 'year_of_graduation' => (int) ($pending['year_of_graduation'] ?? config('fulafia.self_enrollment_graduation_year', date('Y'))),
                 'gender' => $validated['gender'],
                 'phone_number' => $phoneNumber,
+                'category_slug' => $pending['category_slug'] ?? null,
             ]);
         } catch (\Throwable $e) {
             Log::error('Self-enrollment create failed', [

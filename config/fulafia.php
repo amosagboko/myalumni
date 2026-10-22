@@ -19,7 +19,10 @@ return [
     'secret' => env('FULAFIA_SECRET'),
 
     /*
-    | App code sent with each lookup. UG is fixed for undergraduate self-enrollment.
+    | App code sent with each lookup. UG covers both undergraduate full-time
+    | and part-time in the student directory. Category is resolved from
+    | directory fields (studyMode, programmeType, category, entryMode) after
+    | lookup — it is not this app code.
     */
     'app' => env('FULAFIA_APP', 'UG'),
 
@@ -39,7 +42,8 @@ return [
     'self_enrollment_graduation_year' => (int) env('FULAFIA_SELF_ENROLLMENT_GRADUATION_YEAR', date('Y')),
 
     /*
-    | Default alumni category slug for UG API self-enrollment.
+    | Fallback alumni category slug when directory fields do not indicate
+    | part-time. Part-time is assigned from the directory, never by the graduate.
     */
     'self_enrollment_category_slug' => 'undergraduate-full-time',
 

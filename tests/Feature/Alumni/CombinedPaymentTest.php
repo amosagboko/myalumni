@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\User;
 use App\Services\AlumniDuesService;
+use App\Services\CredoCentralService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
@@ -103,6 +104,57 @@ class CombinedPaymentTest extends TestCase
         $this->assertTrue($registration->isPaidByAlumni($alumni));
         $this->assertFalse($levy->isPaidByAlumni($alumni));
         $this->assertTrue($service->feeIsPayableByAlumni($levy, $alumni));
+    }
+
+    public function test_ug_part_time_combined_structure_surfaces_one_checkout(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUgPartTimeOnboardingPair();
+        $this->createCombinedStructure([$registration, $levy], $alumni->category_id, $alumni->year_of_graduation);
+
+        $service = app(AlumniDuesService::class);
+        $checkout = $service->resolveCombinedCheckout($alumni);
+
+        $this->assertSame('003486JRC2PE', $service->combinedServiceCodeFor($alumni));
+        $this->assertNotNull($checkout);
+        $this->assertCount(2, $checkout['fees']);
+        $this->assertEquals(12700.0, $checkout['total']);
+        $this->assertFalse($service->feeIsPayableByAlumni($registration, $alumni));
+        $this->assertFalse($service->feeIsPayableByAlumni($levy, $alumni));
+    }
+
+    public function test_ug_part_time_combined_initialize_posts_the_part_time_credo_code(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUgPartTimeOnboardingPair();
+        $structure = $this->createCombinedStructure([$registration, $levy], $alumni->category_id, $alumni->year_of_graduation);
+        $transaction = $this->createPendingCombinedTransaction($alumni, $structure, $registration, $levy);
+
+        config([
+            'services.credocentral.public_key' => 'pk_test',
+            'services.credocentral.secret_key' => 'sk_test',
+        ]);
+
+        Http::fake([
+            '*' => Http::response([
+                'data' => [
+                    'authorizationUrl' => 'https://pay.example/part-time',
+                    'credoReference' => 'CREDO-PT-COMBINED',
+                ],
+            ], 200),
+        ]);
+
+        $url = app(CredoCentralService::class)->initializePayment($transaction->fresh([
+            'items.feeType',
+            'paymentStructure',
+            'alumni.user',
+            'alumni.category',
+        ]));
+
+        $this->assertSame('https://pay.example/part-time', $url);
+
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            return str_contains($request->url(), '/transaction/initialize')
+                && ($request['serviceCode'] ?? null) === '003486JRC2PE';
+        });
     }
 
     public function test_diploma_alumni_stay_on_separate_payment_without_combined_service_code(): void
@@ -280,6 +332,24 @@ class CombinedPaymentTest extends TestCase
         [$registrationType, $levyType] = $this->onboardingTypes();
         $registration = $this->createFee($registrationType, $category->id, 5000, 'Registration UG FT', 2035);
         $levy = $this->createFee($levyType, $category->id, 7700, 'Development levy UG FT', 2035);
+
+        return [$alumni, $registration, $levy];
+    }
+
+    /**
+     * @return array{0: Alumni, 1: FeeTemplate, 2: FeeTemplate}
+     */
+    private function createUgPartTimeOnboardingPair(): array
+    {
+        $category = AlumniCategory::firstOrCreate(
+            ['slug' => 'undergraduate-part-time'],
+            ['name' => 'Undergraduate (Part-time)', 'description' => 'Undergraduate part time alumni', 'is_active' => true]
+        );
+
+        $alumni = $this->createAlumni($category, 2035);
+        [$registrationType, $levyType] = $this->onboardingTypes();
+        $registration = $this->createFee($registrationType, $category->id, 5000, 'Registration UG PT', 2035);
+        $levy = $this->createFee($levyType, $category->id, 7700, 'Development levy UG PT', 2035);
 
         return [$alumni, $registration, $levy];
     }

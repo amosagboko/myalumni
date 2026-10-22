@@ -127,9 +127,9 @@ return [
             ],
 
             // Combined checkout (one Credo product for a bundled statutory payment).
-            // V1: undergraduate full-time only. Add other category keys when codes are issued.
             'combined' => [
                 'undergraduate-full-time' => '003486O4WAZK',
+                'undergraduate-part-time' => '003486JRC2PE',
             ],
 
             // Add more fee types as needed
