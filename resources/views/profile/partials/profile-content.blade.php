@@ -32,8 +32,8 @@
                     <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-4">
                         <div class="card-body p-4">
                             <h2 class="fw-700 mb-0 mt-0 font-md text-grey-900">Profile Information</h2>
-                            <p class="fw-500 font-xssss text-grey-500 mt-0 mb-3">Update your account's profile information and email address.</p>
-                            @include('profile.partials.update-profile-information-form')
+                            <p class="fw-500 font-xssss text-grey-500 mt-0 mb-3">Your name and email cannot be changed here.</p>
+                            @include('profile.partials.update-profile-information-form', ['hideHeader' => true])
                         </div>
                     </div>
 
@@ -56,8 +56,7 @@
                     <div class="card w-100 border-0 bg-white shadow-xs p-0 mb-4">
                         <div class="card-body p-4">
                             <h2 class="fw-700 mb-0 mt-0 font-md text-grey-900">Delete Account</h2>
-                            <p class="fw-500 font-xssss text-grey-500 mt-0 mb-3">Once your account is deleted, all of its resources and data will be permanently deleted.</p>
-                            @include('profile.partials.delete-user-form')
+                            @include('profile.partials.delete-user-form', ['hideHeader' => true, 'compact' => true])
                         </div>
                     </div>
 

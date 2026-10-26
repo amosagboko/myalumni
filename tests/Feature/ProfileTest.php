@@ -3,12 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     public function test_profile_page_is_displayed(): void
     {
@@ -21,79 +22,89 @@ class ProfileTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_profile_information_can_be_updated(): void
+    public function test_name_email_and_delete_account_are_read_only_on_profile(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'name' => 'Locked Name',
+            'email' => 'locked@example.com',
+        ]);
 
-        $response = $this
-            ->actingAs($user)
+        $this->actingAs($user)
+            ->get('/profile')
+            ->assertOk()
+            ->assertSee('Locked Name')
+            ->assertSee('locked@example.com')
+            ->assertSee('Name and email cannot be edited from this page.')
+            ->assertSee('Account deletion is disabled.')
+            ->assertDontSee('name="name"', false)
+            ->assertDontSee('name="email"', false)
+            ->assertDontSee('_method" value="PATCH"', false)
+            ->assertDontSee('_method" value="DELETE"', false);
+    }
+
+    public function test_profile_information_cannot_be_updated(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Original Name',
+            'email' => 'original@example.com',
+        ]);
+
+        $this->actingAs($user)
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ])
+            ->assertForbidden();
 
         $user->refresh();
 
-        $this->assertSame('Test User', $user->name);
-        $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
+        $this->assertSame('Original Name', $user->name);
+        $this->assertSame('original@example.com', $user->email);
     }
 
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
+    public function test_user_cannot_delete_their_account_from_profile(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->patch('/profile', [
-                'name' => 'Test User',
-                'email' => $user->email,
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->refresh()->email_verified_at);
-    }
-
-    public function test_user_can_delete_their_account(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
+        $this->actingAs($user)
             ->delete('/profile', [
                 'password' => 'password',
-            ]);
+            ])
+            ->assertForbidden();
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh());
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account(): void
+    public function test_admin_profile_also_locks_name_email_and_deletion(): void
     {
-        $user = User::factory()->create();
+        Role::findOrCreate('administrator');
 
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
+        $user = User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin-locked@example.com',
+        ]);
+        $user->assignRole('administrator');
 
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
+        $this->actingAs($user)
+            ->get('/profile')
+            ->assertOk()
+            ->assertSee('Admin User')
+            ->assertSee('admin-locked@example.com')
+            ->assertSee('Name and email cannot be edited from this page.')
+            ->assertSee('Account deletion is disabled.')
+            ->assertDontSee('name="name"', false)
+            ->assertDontSee('name="email"', false)
+            ->assertDontSee('_method" value="PATCH"', false)
+            ->assertDontSee('_method" value="DELETE"', false);
 
-        $this->assertNotNull($user->fresh());
+        $this->actingAs($user)
+            ->patch('/profile', [
+                'name' => 'Hacked Admin',
+                'email' => 'hacked@example.com',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('Admin User', $user->fresh()->name);
     }
 }

@@ -1,11 +1,10 @@
 @php
     $adminSurface = $adminSurface ?? false;
     $hideHeader = $hideHeader ?? false;
-    $labelClass = $adminSurface ? 'form-label small text-muted mb-1' : 'mont-font fw-600 font-xsss';
-    $inputClass = $adminSurface ? 'form-control form-control-sm' : 'form-control';
-    $errorClass = $adminSurface ? 'text-danger small mt-1' : 'text-danger font-xssss mt-1';
-    $buttonClass = $adminSurface ? 'btn btn-sm ads-btn-primary' : 'btn btn-primary btn-sm';
-    $metaClass = $adminSurface ? 'text-muted small' : 'text-grey-500 font-xssss';
+    $compact = $compact ?? $adminSurface;
+    $labelClass = $adminSurface ? 'form-label small text-muted mb-1' : ($compact ? 'form-label small mb-1' : 'mont-font fw-600 font-xsss');
+    $inputClass = $compact ? 'form-control form-control-sm bg-light' : 'form-control bg-light';
+    $metaClass = $adminSurface ? 'text-muted small' : ($compact ? 'text-grey-500 font-xssss' : 'text-grey-500 font-xssss');
     $successClass = $adminSurface ? 'text-success small mb-0' : 'text-success font-xssss mb-0';
 @endphp
 
@@ -17,7 +16,7 @@
             </h2>
 
             <p class="mt-1 text-sm text-gray-600">
-                {{ __("Update your account's profile information and email address.") }}
+                {{ __('Your name and email are shown below and cannot be changed here.') }}
             </p>
         </header>
     @endunless
@@ -26,25 +25,17 @@
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="{{ $hideHeader ? '' : 'mt-4' }}">
-        @csrf
-        @method('patch')
-
+    <div class="{{ $hideHeader ? '' : 'mt-4' }}">
         <div class="mb-3">
             <label for="name" class="{{ $labelClass }}">Name</label>
             <input
                 type="text"
                 id="name"
-                name="name"
                 class="{{ $inputClass }}"
-                value="{{ old('name', $user->name) }}"
-                required
-                autofocus
+                value="{{ $user->name }}"
+                readonly
                 autocomplete="name"
             >
-            @error('name')
-                <div class="{{ $errorClass }}">{{ $message }}</div>
-            @enderror
         </div>
 
         <div class="mb-3">
@@ -52,15 +43,11 @@
             <input
                 type="email"
                 id="email"
-                name="email"
                 class="{{ $inputClass }}"
-                value="{{ old('email', $user->email) }}"
-                required
+                value="{{ $user->email }}"
+                readonly
                 autocomplete="username"
             >
-            @error('email')
-                <div class="{{ $errorClass }}">{{ $message }}</div>
-            @enderror
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div class="mt-2">
@@ -81,16 +68,6 @@
             @endif
         </div>
 
-        <div class="d-flex align-items-center gap-3">
-            <button type="submit" class="{{ $buttonClass }}">
-                {{ __('Save') }}
-            </button>
-
-            @if (session('status') === 'profile-updated')
-                <p class="{{ $successClass }}">
-                    {{ __('Saved.') }}
-                </p>
-            @endif
-        </div>
-    </form>
+        <p class="{{ $metaClass }} mb-0">Name and email cannot be edited from this page.</p>
+    </div>
 </section>
