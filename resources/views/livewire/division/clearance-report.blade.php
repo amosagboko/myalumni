@@ -13,7 +13,35 @@
                                 <h1 class="ads-page-title">{{ $pageTitle }}</h1>
                                 <p class="ads-page-subtitle">Current clearance status for alumni, with last action details.</p>
                             </div>
+                            @if (! empty($canExport))
+                                <div class="ads-page-actions d-flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm ads-btn-primary text-white"
+                                        wire:click="exportPdf"
+                                        wire:loading.attr="disabled"
+                                        wire:target="exportPdf,exportExcel"
+                                    >
+                                        <i data-feather="file-text" style="width: 14px; height: 14px;"></i>
+                                        Download PDF
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm ads-btn-primary text-white"
+                                        wire:click="exportExcel"
+                                        wire:loading.attr="disabled"
+                                        wire:target="exportPdf,exportExcel"
+                                    >
+                                        <i data-feather="download" style="width: 14px; height: 14px;"></i>
+                                        Download Excel
+                                    </button>
+                                </div>
+                            @endif
                         </div>
+
+                        @if ($exportMessage)
+                            <div class="ads-alert ads-alert-error mb-3">{{ $exportMessage }}</div>
+                        @endif
 
                         @unless ($officeEnabled)
                             <div class="ads-alert ads-alert-error mb-3">

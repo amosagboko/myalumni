@@ -27,6 +27,8 @@ trait HasClearanceReport
 
     public string $paginationTheme = 'bootstrap';
 
+    public ?string $exportMessage = null;
+
     protected $queryString = [
         'search' => ['except' => ''],
         'year' => ['except' => ''],
@@ -43,6 +45,28 @@ trait HasClearanceReport
     abstract protected function layoutName(): string;
 
     abstract protected function pageTitle(): string;
+
+    protected function canExportClearanceReport(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function exportFilterCriteria(): array
+    {
+        return [
+            'Search' => $this->search !== '' ? $this->search : 'All',
+            'Graduation year' => $this->year !== '' ? $this->year : 'All years',
+            'Status' => match ($this->status) {
+                'cleared' => 'Cleared',
+                'not_cleared' => 'Not cleared',
+                default => 'All statuses',
+            },
+            'Actor' => $this->actorName !== '' ? $this->actorName : 'All',
+        ];
+    }
 
     public function updatingSearch(): void
     {
@@ -177,6 +201,8 @@ trait HasClearanceReport
             'officeEnabled' => $officeEnabled,
             'fixedReason' => 'To collect result statement',
             'pageTitle' => $this->pageTitle(),
+            'canExport' => $this->canExportClearanceReport(),
+            'exportMessage' => $this->exportMessage,
         ])->layout($this->layoutName(), ['title' => $this->pageTitle()]);
     }
 
