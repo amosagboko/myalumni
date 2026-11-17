@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Alumni;
 use App\Models\Event;
 use App\Models\LandingPageSetting;
+use App\Models\LimitedAlumniRecord;
 use App\Models\OnboardingSetting;
 use App\Services\AlumniSelfEnrollmentService;
 use App\Support\NigeriaLocations;
@@ -95,6 +96,24 @@ class LandingPageController extends Controller
             }
 
             return $this->credentialsView($alumni);
+        }
+
+        $limited = LimitedAlumniRecord::incomplete()->forMatric($matric)->first();
+        if ($limited) {
+            if (! $this->isOnboardingAllowed()) {
+                return redirect()->back()
+                    ->with('error', 'Onboarding is currently closed. Please try again later.');
+            }
+
+            session(['limited_alumni_pending' => [
+                'id' => $limited->id,
+                'matric_number' => $limited->matric_number,
+                'firstname' => $limited->firstname,
+                'surname' => $limited->surname,
+                'year_of_graduation' => $limited->year_of_graduation,
+            ]]);
+
+            return redirect()->route('landing.complete-profile');
         }
 
         // Not uploaded — attempt 2026+ self-enrollment path
@@ -269,7 +288,7 @@ class LandingPageController extends Controller
         return $this->credentialsView($alumni->fresh(['user', 'category']), 'Your account has been created. Update your email below to set your password and continue onboarding.');
     }
 
-    protected function credentialsView(Alumni $alumni, ?string $flashInfo = null)
+    public function credentialsView(Alumni $alumni, ?string $flashInfo = null)
     {
         $user = $alumni->user;
         $tempEmail = $this->selfEnrollment->tempEmailFromMatric($alumni->matric_number);

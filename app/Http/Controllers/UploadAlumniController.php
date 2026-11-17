@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\AlumniImport;
+use App\Imports\LimitedAlumniImport;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -104,6 +105,90 @@ class UploadAlumniController extends Controller
             return redirect()->back()
                 ->with('error', 'Error uploading alumni records: ' . $e->getMessage());
         }
+    }
+
+    public function storeLimited(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => ['required', 'file', 'max:10240', 'extensions:csv,xlsx,xls'],
+            ]);
+
+            set_time_limit(180);
+
+            $file = $request->file('file');
+            $import = new LimitedAlumniImport;
+            $extension = strtolower((string) $file->getClientOriginalExtension());
+
+            if ($extension === 'csv') {
+                $import->importCsv($file->getRealPath());
+            } else {
+                Excel::import($import, $file);
+            }
+
+            $imported = $import->getImportedCount();
+            $skippedRecords = $import->getSkippedRecords();
+            $skipped = count($skippedRecords);
+            $summary = "Imported {$imported} limited alumni record(s).";
+
+            $import->markCompleted();
+            Cache::put($import->skippedCacheKey(), $skippedRecords, now()->addHours(6));
+
+            $redirect = redirect()->back()
+                ->with('success', $summary)
+                ->with('importId', $import->getImportId())
+                ->with('limited_import_id', $import->getImportId())
+                ->with('limited_import_skipped', $skippedRecords);
+
+            if ($skipped > 0) {
+                $redirect->with('warning', "{$skipped} record(s) were not imported. See the list below or download the CSV.");
+            }
+
+            return $redirect;
+        } catch (\Exception $e) {
+            Log::error('Limited Alumni Import Error: '.$e->getMessage());
+
+            return redirect()->back()
+                ->with('error', 'Error uploading limited alumni records: '.$e->getMessage());
+        }
+    }
+
+    public function downloadLimitedSkipped(Request $request)
+    {
+        $importId = (string) $request->query('importId', session('limited_import_id'));
+        $rows = [];
+
+        if ($importId !== '') {
+            $rows = Cache::get('limited_import_skipped_'.$importId, []);
+        }
+
+        if (! is_array($rows) || $rows === []) {
+            $rows = session('limited_import_skipped', []);
+        }
+
+        if (! is_array($rows) || $rows === []) {
+            return redirect()->route('upload.alumni')
+                ->with('error', 'No skipped limited-import records are available to download.');
+        }
+
+        $filename = 'limited-import-not-uploaded-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($rows) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['row', 'firstname', 'surname', 'matriculation_id', 'reason']);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['row'] ?? '',
+                    $row['firstname'] ?? '',
+                    $row['surname'] ?? '',
+                    $row['matric_number'] ?? '',
+                    $row['reason'] ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function getImportProgress(Request $request)

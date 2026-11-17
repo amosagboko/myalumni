@@ -27,6 +27,7 @@ use App\Http\Controllers\AlumniElectionController;
 use App\Http\Controllers\AlumniCategoryController;
 use App\Http\Controllers\FeeTypeController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\LimitedAlumniProfileController;
 use App\Http\Controllers\Agent\CandidateController;
 use App\Http\Controllers\Candidate\AgentController;
 use App\Http\Controllers\ARODashboardController;
@@ -123,6 +124,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
 Route::middleware(['auth', 'role:administrator|alumni-relations-officer'])->group(function () {
     Route::get('/upload-alumni', [UploadAlumniController::class, 'index'])->name('upload.alumni');
     Route::post('/upload-alumni', [UploadAlumniController::class, 'store'])->name('upload.alumni.store');
+    Route::post('/upload-alumni/limited', [UploadAlumniController::class, 'storeLimited'])->name('upload.alumni.limited');
+    Route::get('/upload-alumni/limited/skipped', [UploadAlumniController::class, 'downloadLimitedSkipped'])->name('upload.alumni.limited.skipped');
     Route::get('/upload-alumni/progress', [UploadAlumniController::class, 'getImportProgress'])->name('upload.alumni.progress');
     Route::get('/upload-alumni/search', [UploadAlumniController::class, 'search'])->name('upload.alumni.search');
     Route::get('/retrieve-credentials', [UploadAlumniController::class, 'showRetrieveCredentials'])->name('retrieve.credentials');
@@ -473,6 +476,8 @@ Route::get('/alumni/{id}/print', function ($id) {
 // Landing Page Routes
 Route::get('/', [LandingPageController::class, 'index'])->name('landing');
 Route::get('/search-credentials', [LandingPageController::class, 'searchCredentials'])->name('landing.search-credentials');
+Route::get('/complete-alumni-profile', [LimitedAlumniProfileController::class, 'show'])->name('landing.complete-profile');
+Route::post('/complete-alumni-profile', [LimitedAlumniProfileController::class, 'store'])->name('landing.complete-profile.submit');
 Route::get('/self-enroll/confirm', [LandingPageController::class, 'showSelfEnrollConfirm'])->name('landing.self-enroll.confirm');
 Route::post('/self-enroll/confirm', [LandingPageController::class, 'submitSelfEnrollConfirm'])->name('landing.self-enroll.submit');
 Route::post('/update-email', [LandingPageController::class, 'updateEmail'])->name('landing.update-email');

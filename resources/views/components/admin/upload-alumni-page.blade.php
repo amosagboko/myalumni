@@ -58,7 +58,7 @@
 
                     <div class="ads-section">
                         <div class="ads-section-card">
-                            <h2 class="ads-section-title">Import file</h2>
+                            <h2 class="ads-section-title">Full records (all columns)</h2>
 
                             <div id="import-progress" class="ads-progress-wrap" style="display: none;">
                                 <div class="progress ads-progress">
@@ -87,6 +87,84 @@
                             </form>
                         </div>
                     </div>
+
+                    <div class="ads-section">
+                        <div class="ads-section-card">
+                            <h2 class="ads-section-title">Limited records (matric, first name, surname)</h2>
+                            <p class="text-muted small mb-3">
+                                Use this for batches that only have identity fields. Graduates will complete faculty, department, programme, category, date of birth, state, LGA, year of entry, and gender on the public form before credentials.
+                            </p>
+
+                            <div id="limited-import-progress" class="ads-progress-wrap" style="display: none;">
+                                <div class="progress ads-progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <small class="ads-progress-text" id="limited-progress-text">Processing…</small>
+                            </div>
+
+                            <form action="{{ route('upload.alumni.limited') }}" method="POST" enctype="multipart/form-data" id="limited-upload-form">
+                                @csrf
+                                <div class="mb-3">
+                                    <label for="limited-file" class="form-label">Upload file</label>
+                                    <input type="file" class="form-control form-control-sm" id="limited-file" name="file" accept=".csv,.xlsx,.xls" required>
+                                    <div class="form-text mt-2">
+                                        <strong>CSV columns:</strong> firstname, surname, matriculation_id
+                                        <br>
+                                        <small class="text-muted">
+                                            Aliases accepted: first_name, matric_number. Year of graduation is set to 2026. Duplicate matrics already in alumni or this list are skipped.
+                                        </small>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-sm ads-btn-primary" id="limited-upload-button">
+                                    <i data-feather="upload" style="width: 14px; height: 14px;"></i>
+                                    Upload limited records
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    @php
+                        $limitedSkipped = session('limited_import_skipped', []);
+                        $limitedImportId = session('limited_import_id');
+                    @endphp
+                    @if (is_array($limitedSkipped) && count($limitedSkipped) > 0)
+                        <div class="ads-section">
+                            <div class="ads-section-card">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                    <h2 class="ads-section-title mb-0">Records not uploaded ({{ count($limitedSkipped) }})</h2>
+                                    <a href="{{ route('upload.alumni.limited.skipped', ['importId' => $limitedImportId]) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i data-feather="download" style="width: 14px; height: 14px;"></i>
+                                        Download CSV
+                                    </a>
+                                </div>
+                                <p class="text-muted small">These rows were not imported. Fix them in the file and upload again; already-imported matrics will be skipped.</p>
+                                <div class="table-responsive" style="max-height: 420px; overflow: auto;">
+                                    <table class="table table-sm table-striped mb-0">
+                                        <thead class="table-light" style="position: sticky; top: 0;">
+                                            <tr>
+                                                <th>Row</th>
+                                                <th>First name</th>
+                                                <th>Surname</th>
+                                                <th>Matriculation number</th>
+                                                <th>Reason</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($limitedSkipped as $skipped)
+                                                <tr>
+                                                    <td>{{ $skipped['row'] ?? '' }}</td>
+                                                    <td>{{ ($skipped['firstname'] ?? '') !== '' ? $skipped['firstname'] : '—' }}</td>
+                                                    <td>{{ ($skipped['surname'] ?? '') !== '' ? $skipped['surname'] : '—' }}</td>
+                                                    <td>{{ ($skipped['matric_number'] ?? '') !== '' ? $skipped['matric_number'] : '—' }}</td>
+                                                    <td>{{ $skipped['reason'] ?? '' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="ads-section">
                         <div class="ads-section-card">
@@ -205,6 +283,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const progressBar = document.querySelector('#import-progress .progress-bar');
     const progressText = document.getElementById('progress-text');
     const uploadButton = document.getElementById('upload-button');
+    const limitedForm = document.getElementById('limited-upload-form');
+    const limitedProgress = document.getElementById('limited-import-progress');
+    const limitedProgressBar = document.querySelector('#limited-import-progress .progress-bar');
+    const limitedProgressText = document.getElementById('limited-progress-text');
+    const limitedUploadButton = document.getElementById('limited-upload-button');
     let importId = null;
 
     if (typeof feather !== 'undefined') {
@@ -218,38 +301,56 @@ document.addEventListener('DOMContentLoaded', function () {
         progressText.textContent = 'Starting import…';
     });
 
+    limitedForm?.addEventListener('submit', function () {
+        limitedProgress.style.display = 'block';
+        limitedUploadButton.disabled = true;
+        limitedProgressBar.style.width = '0%';
+        limitedProgressText.textContent = 'Starting import…';
+    });
+
     @if (session()->has('importId'))
         importId = @json(session('importId'));
-        importProgress.style.display = 'block';
-        uploadButton.disabled = true;
-        checkProgress();
+        const isLimitedImport = String(importId).indexOf('limited_import_') === 0;
+        const activeProgress = isLimitedImport ? limitedProgress : importProgress;
+        const activeBar = isLimitedImport ? limitedProgressBar : progressBar;
+        const activeText = isLimitedImport ? limitedProgressText : progressText;
+        const activeButton = isLimitedImport ? limitedUploadButton : uploadButton;
+        if (activeProgress) {
+            activeProgress.style.display = 'block';
+        }
+        if (activeButton) {
+            activeButton.disabled = true;
+        }
+        checkProgress(activeBar, activeText, activeButton);
     @endif
 
-    function checkProgress() {
+    function checkProgress(bar, text, button) {
         if (!importId) return;
 
         fetch(@json(route('upload.alumni.progress')) + '?importId=' + encodeURIComponent(importId))
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    progressText.textContent = 'Unable to load progress.';
+                    text.textContent = 'Unable to load progress.';
                     return;
                 }
 
-                progressBar.style.width = `${data.progress ?? 0}%`;
-                progressText.textContent = data.total
+                bar.style.width = `${data.progress ?? 0}%`;
+                text.textContent = data.total
                     ? `Processed ${data.processed ?? 0} of ${data.total} records`
                     : (data.message || 'Processing…');
 
                 if (!data.completed) {
-                    setTimeout(checkProgress, 1000);
+                    setTimeout(function () { checkProgress(bar, text, button); }, 1000);
                 } else {
-                    progressText.textContent = 'Import completed.';
-                    uploadButton.disabled = false;
+                    text.textContent = 'Import completed.';
+                    if (button) {
+                        button.disabled = false;
+                    }
                 }
             })
             .catch(() => {
-                progressText.textContent = 'Error checking progress.';
+                text.textContent = 'Error checking progress.';
             });
     }
 });
