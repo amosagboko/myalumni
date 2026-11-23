@@ -4,6 +4,7 @@ namespace App\Services\Alumni;
 
 use App\Models\Alumni;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class SkippedPaymentReportService
@@ -13,7 +14,7 @@ class SkippedPaymentReportService
     /**
      * Alumni who have not completed statutory onboarding/cohort fees.
      *
-     * @param  array{year?:int|null, source?:string, search?:string, category_id?:int|null, bypassed?:bool}  $filters
+     * @param  array{year?:int|null, source?:string, search?:string, category_id?:int|null, bypassed?:bool, from?:string|null, to?:string|null}  $filters
      * @return Collection<int, array<string, mixed>>
      */
     public function rows(array $filters = []): Collection
@@ -25,6 +26,7 @@ class SkippedPaymentReportService
         $search = trim((string) ($filters['search'] ?? ''));
         $categoryId = ! empty($filters['category_id']) ? (int) $filters['category_id'] : null;
         $bypassedOnly = (bool) ($filters['bypassed'] ?? false);
+        [$from, $to] = $this->period($filters['from'] ?? null, $filters['to'] ?? null);
 
         $query = Alumni::query()->with(['user', 'category']);
 
@@ -42,6 +44,14 @@ class SkippedPaymentReportService
 
         if ($categoryId) {
             $query->where('category_id', $categoryId);
+        }
+
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
         }
 
         if ($search !== '') {
@@ -100,6 +110,37 @@ class SkippedPaymentReportService
         }
 
         return $rows->values();
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function period(mixed $from, mixed $to): array
+    {
+        $start = $this->date($from);
+        $end = $this->date($to);
+
+        if ($start && $end && $start > $end) {
+            return [$end, $start];
+        }
+
+        return [$start, $end];
+    }
+
+    private function date(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        try {
+            $date = Carbon::createFromFormat('Y-m-d', $value);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $date && $date->format('Y-m-d') === $value ? $value : null;
     }
 
     /**

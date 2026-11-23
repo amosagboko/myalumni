@@ -47,6 +47,26 @@
                                             class="form-control form-control-sm"
                                         >
                                     </div>
+                                    <label class="small text-muted mb-0 d-flex align-items-center gap-1">
+                                        From
+                                        <input
+                                            type="date"
+                                            name="from"
+                                            value="{{ $filters['from'] }}"
+                                            class="form-control form-control-sm"
+                                            aria-label="Enrolled from"
+                                        >
+                                    </label>
+                                    <label class="small text-muted mb-0 d-flex align-items-center gap-1">
+                                        To
+                                        <input
+                                            type="date"
+                                            name="to"
+                                            value="{{ $filters['to'] }}"
+                                            class="form-control form-control-sm"
+                                            aria-label="Enrolled to"
+                                        >
+                                    </label>
                                     <select name="year" class="form-select form-select-sm adt-select adt-select-narrow">
                                         <option value="">{{ \App\Services\Alumni\SkippedPaymentReportService::DEFAULT_MIN_YEAR }}+</option>
                                         @foreach ($years as $year)
@@ -72,7 +92,7 @@
                                         <i data-feather="filter" style="width: 14px; height: 14px;"></i>
                                         Filter
                                     </button>
-                                    @if (request()->hasAny(['search', 'year', 'source', 'category_id', 'bypassed']))
+                                    @if (request()->hasAny(['search', 'year', 'source', 'category_id', 'bypassed', 'from', 'to']))
                                         <a href="{{ route('admin.skipped-payments.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
                                     @endif
                                 </form>
@@ -86,6 +106,7 @@
                                                 <th>Alumni</th>
                                                 <th>Matric</th>
                                                 <th>Year</th>
+                                                <th>Enrolled</th>
                                                 <th>Category</th>
                                                 <th>Source</th>
                                                 <th>Gate</th>
@@ -101,6 +122,7 @@
                                                     </td>
                                                     <td class="fw-medium">{{ $row['matric_number'] ?? '—' }}</td>
                                                     <td>{{ $row['year_of_graduation'] ?? '—' }}</td>
+                                                    <td>{{ $row['created_at'] ? \Illuminate\Support\Str::before($row['created_at'], ' ') : '—' }}</td>
                                                     <td>{{ $row['category'] ?? '—' }}</td>
                                                     <td>{{ $row['source'] }}</td>
                                                     <td>

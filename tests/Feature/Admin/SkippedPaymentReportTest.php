@@ -63,6 +63,29 @@ class SkippedPaymentReportTest extends TestCase
         $this->assertFalse(app(AlumniMemberAccessService::class)->isFullMember($alumni));
     }
 
+    public function test_period_filter_keeps_only_alumni_enrolled_in_that_range(): void
+    {
+        [$inside] = $this->createUnpaidUgAlumni('2021/SC/PSB/SKIP-IN', createdBy: null);
+        $inside->forceFill(['created_at' => '2033-03-15 09:00:00'])->save();
+
+        $outside = $this->createAlumni($this->ugCategory(), [
+            'matric_number' => '2021/SC/PSB/SKIP-OUT',
+            'year_of_graduation' => 2033,
+            'created_by' => null,
+        ]);
+        $outside->forceFill(['created_at' => '2033-06-02 09:00:00'])->save();
+
+        $rows = app(SkippedPaymentReportService::class)->rows([
+            'year' => 2033,
+            'from' => '2033-03-01',
+            'to' => '2033-03-31',
+        ]);
+        $matrics = $rows->pluck('matric_number');
+
+        $this->assertTrue($matrics->contains($inside->matric_number));
+        $this->assertFalse($matrics->contains($outside->matric_number));
+    }
+
     public function test_admin_can_view_and_export_the_skipped_payments_report(): void
     {
         [$alumni] = $this->createUnpaidUgAlumni('2021/SC/PSB/SKIP-UI', createdBy: null);
@@ -73,7 +96,9 @@ class SkippedPaymentReportTest extends TestCase
             ->assertOk()
             ->assertSee($alumni->matric_number)
             ->assertSee('Skipped payments')
-            ->assertSee('Download CSV');
+            ->assertSee('Download CSV')
+            ->assertSee('Enrolled from', false)
+            ->assertSee('Enrolled to', false);
 
         $csv = $this->actingAs($admin)
             ->get(route('admin.skipped-payments.export', ['year' => 2033, 'search' => $alumni->matric_number]));

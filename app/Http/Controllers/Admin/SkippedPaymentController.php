@@ -71,7 +71,7 @@ class SkippedPaymentController extends Controller
     }
 
     /**
-     * @return array{year:int|null, source:string, search:string, category_id:int|null, bypassed:bool}
+     * @return array{year:int|null, source:string, search:string, category_id:int|null, bypassed:bool, from:?string, to:?string}
      */
     private function filters(Request $request): array
     {
@@ -83,6 +83,8 @@ class SkippedPaymentController extends Controller
             'search' => (string) $request->input('search', ''),
             'category_id' => $request->filled('category_id') ? (int) $request->input('category_id') : null,
             'bypassed' => $request->boolean('bypassed'),
+            'from' => $request->filled('from') ? (string) $request->input('from') : null,
+            'to' => $request->filled('to') ? (string) $request->input('to') : null,
         ];
     }
 }
