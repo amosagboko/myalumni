@@ -3,8 +3,8 @@
         $alumni = Auth::user()->alumni;
         $needsBioData = !$alumni || !$alumni->contact_address || !$alumni->phone_number || !$alumni->qualification_type;
         $activeFees = $alumni ? $alumni->getActiveFees() : collect([]);
-        $unpaidFees = $activeFees->filter(fn ($fee) => !$fee->isPaid());
-        $needsPayments = $alumni && $activeFees->isNotEmpty() && $unpaidFees->isNotEmpty();
+        $unpaidFees = $activeFees->filter(fn ($fee) => !$fee->isPaidByAlumni($alumni));
+        $needsPayments = $alumni && (! $alumni->hasCompletedRequiredPayments() || $unpaidFees->isNotEmpty());
         $activePaymentYear = \App\Models\AlumniYear::where('is_active', true)->first();
         $duesPhase = $alumni ? $alumni->getDuesPhase() : 'none';
         $combinedCheckout = $alumni ? app(\App\Services\AlumniDuesService::class)->resolveCombinedCheckout($alumni) : null;

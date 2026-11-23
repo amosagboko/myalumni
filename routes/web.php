@@ -83,6 +83,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
     // Transaction Management
     Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
     Route::get('transactions/export', [\App\Http\Controllers\Admin\TransactionController::class, 'export'])->name('transactions.export');
+    Route::get('skipped-payments', [\App\Http\Controllers\Admin\SkippedPaymentController::class, 'index'])->name('skipped-payments.index');
+    Route::get('skipped-payments/export', [\App\Http\Controllers\Admin\SkippedPaymentController::class, 'export'])->name('skipped-payments.export');
     Route::get('transactions/{transaction}', [\App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('transactions.show');
     Route::post('transactions/{transaction}/mark-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markPaid'])->name('transactions.mark-paid');
     Route::post('transactions/{transaction}/mark-failed', [\App\Http\Controllers\Admin\TransactionController::class, 'markFailed'])->name('transactions.mark-failed');
@@ -265,7 +267,7 @@ Route::middleware(['auth', 'role:alumni|alumni-president'])->group(function () {
         Route::get('/{transaction}/failed', [AlumniPaymentController::class, 'paymentFailed'])->name('failed');
     });
 
-    // Clearance form (component gates access; print/download require completed profile + payments)
+    // Clearance form. Unpaid alumni are turned away by the member gate before this page loads.
     Route::get('/reports', App\Livewire\AlumniReport::class)->name('reports');
     Route::get('/reports/print', [\App\Http\Controllers\AlumniReportController::class, 'print'])->name('reports.print');
     Route::get('/reports/download-pdf', [\App\Http\Controllers\AlumniReportController::class, 'downloadPdf'])->name('reports.download-pdf');

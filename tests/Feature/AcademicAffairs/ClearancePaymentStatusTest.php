@@ -1,0 +1,202 @@
+<?php
+
+namespace Tests\Feature\AcademicAffairs;
+
+use App\Livewire\AcademicAffairs\Clearance;
+use App\Models\Alumni;
+use App\Models\AlumniCategory;
+use App\Models\FeeTemplate;
+use App\Models\FeeType;
+use App\Models\OnboardingSetting;
+use App\Models\Transaction;
+use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+class ClearancePaymentStatusTest extends TestCase
+{
+    use DatabaseTransactions;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Role::findOrCreate('academic-affairs');
+        Role::findOrCreate('alumni');
+        Permission::findOrCreate('toggle academic affairs clearance');
+
+        FeeType::where('code', 'subscription')->update(['is_active' => false]);
+    }
+
+    public function test_unpaid_onboarding_fees_are_not_treated_as_paid(): void
+    {
+        [$alumni] = $this->createUnpaidUgAlumni('2021/SC/PSB/TEST-UNPAID');
+
+        $this->assertFalse($alumni->hasCompletedRequiredPayments());
+        $this->assertFalse($alumni->hasPaidAllActiveFees());
+        $this->assertTrue($alumni->biodata_completed);
+    }
+
+    public function test_paid_onboarding_fees_are_treated_as_paid(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/TEST-PAID');
+        $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+
+        $this->assertTrue($alumni->fresh()->hasCompletedRequiredPayments());
+        $this->assertTrue($alumni->fresh()->hasPaidAllActiveFees());
+    }
+
+    public function test_academic_affairs_clearance_shows_unpaid_for_new_onboarder(): void
+    {
+        [$alumni] = $this->createUnpaidUgAlumni('2021/SC/PSB/0014-TEST');
+        $officer = $this->academicAffairsUser();
+
+        Livewire::actingAs($officer)
+            ->test(Clearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee($alumni->matric_number)
+            ->assertSee('Unpaid');
+    }
+
+    public function test_academic_affairs_cannot_clear_an_unpaid_alumni(): void
+    {
+        [$alumni] = $this->createUnpaidUgAlumni('2021/SC/PSB/TEST-CLEAR');
+        $officer = $this->academicAffairsUser();
+        $officer->givePermissionTo('toggle academic affairs clearance');
+
+        OnboardingSetting::unguarded(function () {
+            OnboardingSetting::updateOrCreate(
+                ['id' => 1],
+                ['is_academic_affairs_clearance_enabled' => true]
+            );
+        });
+
+        $this->actingAs($officer)
+            ->from(route('academic-affairs.clearance'))
+            ->post(route('academic-affairs.clearance.toggle', $alumni->id), ['value' => '1'])
+            ->assertRedirect(route('academic-affairs.clearance'));
+
+        $this->assertFalse((bool) $alumni->fresh()->academic_affairs_cleared);
+        $this->assertFalse($alumni->fresh()->hasCompletedRequiredPayments());
+    }
+
+    public function test_incomplete_biodata_is_not_shown_as_done(): void
+    {
+        $category = AlumniCategory::firstOrCreate(
+            ['slug' => 'undergraduate-full-time'],
+            ['name' => 'Undergraduate Full Time', 'description' => 'Undergraduate full time alumni', 'is_active' => true]
+        );
+
+        $alumni = $this->createAlumni($category, [
+            'matric_number' => '2021/SC/PSB/TEST-BIO',
+            'contact_address' => null,
+            'phone_number' => null,
+            'qualification_type' => null,
+        ]);
+
+        $this->assertFalse($alumni->biodata_completed);
+    }
+
+    private function academicAffairsUser(): User
+    {
+        $user = User::factory()->create();
+        $user->assignRole('academic-affairs');
+
+        return $user;
+    }
+
+    /**
+     * @return array{0: Alumni, 1: FeeTemplate, 2: FeeTemplate}
+     */
+    private function createUnpaidUgAlumni(string $matric): array
+    {
+        $category = AlumniCategory::firstOrCreate(
+            ['slug' => 'undergraduate-full-time'],
+            ['name' => 'Undergraduate Full Time', 'description' => 'Undergraduate full time alumni', 'is_active' => true]
+        );
+
+        $alumni = $this->createAlumni($category, [
+            'matric_number' => $matric,
+            'year_of_graduation' => 2026,
+            'contact_address' => '12 Alumni Street, Lafia',
+            'phone_number' => '08012345678',
+            'qualification_type' => 'B.Sc',
+        ]);
+
+        [$registrationType, $levyType] = $this->onboardingTypes();
+        $registration = $this->createFee($registrationType, $category->id, 5000, 'Registration UG FT', 2026);
+        $levy = $this->createFee($levyType, $category->id, 7700, 'Development levy UG FT', 2026);
+
+        return [$alumni, $registration, $levy];
+    }
+
+    private function createAlumni(AlumniCategory $category, array $overrides = []): Alumni
+    {
+        $user = User::factory()->create();
+        $user->assignRole('alumni');
+
+        return Alumni::create(array_merge([
+            'user_id' => $user->id,
+            'category_id' => $category->id,
+            'matric_number' => 'MAT'.uniqid(),
+            'programme' => 'B.Sc Computer Science',
+            'department' => 'Computer Science',
+            'faculty' => 'Science',
+            'year_of_graduation' => 2026,
+            'date_of_birth' => '2000-01-01',
+            'state' => 'Nasarawa',
+            'lga' => 'Lafia',
+            'year_of_entry' => 2021,
+            'gender' => 'male',
+        ], $overrides));
+    }
+
+    /**
+     * @return array{0: FeeType, 1: FeeType}
+     */
+    private function onboardingTypes(): array
+    {
+        $registration = FeeType::firstOrCreate(
+            ['code' => 'registration'],
+            ['name' => 'Registration', 'description' => 'Registration', 'is_active' => true, 'is_system' => true]
+        );
+        $levy = FeeType::firstOrCreate(
+            ['code' => 'development_levy'],
+            ['name' => 'Development Levy', 'description' => 'Levy', 'is_active' => true, 'is_system' => true]
+        );
+
+        return [$registration, $levy];
+    }
+
+    private function createFee(FeeType $type, int $categoryId, float $amount, string $description, int $year): FeeTemplate
+    {
+        return FeeTemplate::create([
+            'fee_type_id' => $type->id,
+            'category_id' => $categoryId,
+            'fee_purpose' => FeeTemplate::PURPOSE_ONBOARDING,
+            'graduation_year' => $year,
+            'amount' => $amount,
+            'description' => $description,
+            'is_active' => true,
+            'valid_from' => now()->subDay(),
+            'valid_until' => null,
+        ]);
+    }
+
+    private function payFee(Alumni $alumni, FeeTemplate $fee): void
+    {
+        Transaction::create([
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => $fee->id,
+            'amount' => $fee->amount,
+            'status' => 'paid',
+            'payment_reference' => 'ALUMNI-'.uniqid(),
+            'payment_provider' => 'credocentral',
+            'paid_at' => now(),
+        ]);
+    }
+}

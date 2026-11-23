@@ -154,8 +154,8 @@
                                         <tbody>
                                             @foreach ($alumni as $a)
                                                 @php
-                                                    $onboard = $a->biodata_completed ?? true;
-                                                    $paid = method_exists($a, 'hasCompletedRequiredPayments') ? $a->hasCompletedRequiredPayments() : true;
+                                                    $onboard = $a->biodata_completed;
+                                                    $paid = $a->hasCompletedRequiredPayments();
                                                     $eligible = $onboard && $paid;
                                                     $cleared = (bool) $a->student_affairs_cleared;
                                                 @endphp

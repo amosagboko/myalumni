@@ -120,6 +120,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('admin.skipped-payments.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.skipped-payments*') ? 'active' : '' }}">
+                                    <i data-feather="alert-circle" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>Skipped Payments</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('admin.payment-years.index') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.payment-years*') ? 'active' : '' }}">
                                     <i data-feather="calendar" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Dues Config</span>

@@ -3,6 +3,9 @@
 namespace Tests\Feature\Alumni;
 
 use App\Models\Alumni;
+use App\Models\FeeTemplate;
+use App\Models\FeeType;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AlumniDuesService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -25,6 +28,7 @@ class ClearanceFormTest extends TestCase
         $this->mock(AlumniDuesService::class, function ($mock) {
             $mock->shouldReceive('getActiveFees')->andReturn(collect());
             $mock->shouldReceive('hasCompletedOnboardingFees')->andReturn(true);
+            $mock->shouldReceive('hasCompletedDefaultFees')->andReturn(true);
             $mock->shouldReceive('getDuesPhase')->andReturn(AlumniDuesService::PHASE_NONE);
         });
     }
@@ -46,6 +50,29 @@ class ClearanceFormTest extends TestCase
         ], $overrides));
     }
 
+    private function seedUnpaidSubscription(Alumni $alumni): FeeTemplate
+    {
+        $subscriptionType = FeeType::firstOrCreate(
+            ['code' => 'subscription'],
+            [
+                'name' => 'Subscription Registration Fee',
+                'description' => 'Initial alumni subscription',
+                'is_active' => true,
+                'is_system' => true,
+            ]
+        );
+
+        return FeeTemplate::create([
+            'fee_type_id' => $subscriptionType->id,
+            'graduation_year' => $alumni->year_of_graduation,
+            'amount' => 2000,
+            'description' => 'Alumni subscription',
+            'is_active' => true,
+            'valid_from' => now()->subYear(),
+            'valid_until' => null,
+        ]);
+    }
+
     public function test_clearance_form_shows_gate_when_profile_incomplete(): void
     {
         $user = User::factory()->create();
@@ -53,12 +80,9 @@ class ClearanceFormTest extends TestCase
 
         $this->createAlumni($user);
 
-        $response = $this->actingAs($user->fresh(['alumni']))->get(route('reports'));
-
-        $response->assertOk();
-        $response->assertSee('Complete the steps below to unlock your clearance form.');
-        $response->assertSee('Complete Bio-data');
-        $response->assertDontSee('Print Form', false);
+        $this->actingAs($user->fresh(['alumni']))
+            ->get(route('reports'))
+            ->assertRedirect(route('alumni.bio-data'));
     }
 
     public function test_clearance_form_renders_for_completed_profile(): void
@@ -97,7 +121,7 @@ class ClearanceFormTest extends TestCase
         $this->get(route('reports.print'))->assertRedirect(route('login'));
 
         $response = $this->actingAs($user->fresh(['alumni']))->get(route('reports.print'));
-        $response->assertRedirect(route('reports'));
+        $response->assertRedirect(route('alumni.bio-data'));
 
         Alumni::whereKey($alumni->id)->update([
             'contact_address' => '12 Alumni Street, Lafia',
@@ -137,5 +161,56 @@ class ClearanceFormTest extends TestCase
         $this->actingAs($user)
             ->get('/reports/clearance-form')
             ->assertRedirect('/reports');
+    }
+
+    public function test_unpaid_alumni_see_inactive_clearance_form_menu_and_cannot_open_the_form(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('alumni');
+
+        $alumni = $this->createAlumni($user, [
+            'year_of_graduation' => 2031,
+            'contact_address' => '12 Alumni Street, Lafia',
+            'phone_number' => '08012345678',
+            'qualification_type' => 'B.Sc',
+        ]);
+        $this->seedUnpaidSubscription($alumni);
+
+        $payments = $this->actingAs($user->fresh(['alumni']))->get(route('alumni.payments.index'));
+        $payments->assertOk();
+        $payments->assertSee('Clearance Form');
+        $payments->assertSee('disabled-link');
+        $payments->assertDontSee('href="'.route('reports').'"', false);
+
+        $this->actingAs($user->fresh(['alumni']))
+            ->get(route('reports'))
+            ->assertRedirect(route('alumni.payments.index'));
+
+        $this->actingAs($user->fresh(['alumni']))
+            ->get(route('reports.print'))
+            ->assertRedirect(route('alumni.payments.index'));
+
+        $this->actingAs($user->fresh(['alumni']))
+            ->get(route('reports.download-pdf'))
+            ->assertRedirect(route('alumni.payments.index'));
+    }
+
+    public function test_paid_alumni_get_an_active_clearance_form_menu_link(): void
+    {
+        $this->allowClearanceAccess();
+
+        $user = User::factory()->create();
+        $user->assignRole('alumni');
+
+        $this->createAlumni($user, [
+            'contact_address' => '12 Alumni Street, Lafia',
+            'phone_number' => '08012345678',
+            'qualification_type' => 'B.Sc',
+        ]);
+
+        $response = $this->actingAs($user->fresh(['alumni']))->get(route('reports'));
+        $response->assertOk();
+        $response->assertSee('href="'.route('reports').'"', false);
+        $response->assertSee(route('reports.print'), false);
     }
 }

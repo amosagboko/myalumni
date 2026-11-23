@@ -59,6 +59,9 @@
                             <x-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions*')">
                                 {{ __('Transactions') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('admin.skipped-payments.index')" :active="request()->routeIs('admin.skipped-payments*')">
+                                {{ __('Skipped Payments') }}
+                            </x-nav-link>
                             <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
                                 {{ __('My Profile') }}
                             </x-nav-link>
@@ -112,6 +115,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions*')">
                         {{ __('Transactions') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.skipped-payments.index')" :active="request()->routeIs('admin.skipped-payments*')">
+                        {{ __('Skipped Payments') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
                         {{ __('My Profile') }}

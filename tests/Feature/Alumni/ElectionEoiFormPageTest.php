@@ -61,7 +61,7 @@ class ElectionEoiFormPageTest extends TestCase
             $mock->shouldReceive('getActiveFees')->andReturn(collect());
 
             $mock->shouldReceive('hasCompletedOnboardingFees')->andReturn(true);
-
+            $mock->shouldReceive('hasCompletedDefaultFees')->andReturn(true);
             $mock->shouldReceive('getDuesPhase')->andReturn(AlumniDuesService::PHASE_NONE);
 
         });

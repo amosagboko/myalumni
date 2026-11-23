@@ -21,9 +21,10 @@ class EnsurePaymentsComplete
         if (Auth::check() && Auth::user()->alumni) {
             $alumni = Auth::user()->alumni;
 
-            $hasUnpaidFees = $alumni->getActiveFees()->contains(function ($fee) {
-                return !$fee->isPaid();
-            });
+            $hasUnpaidFees = ! $alumni->hasCompletedRequiredPayments()
+                || $alumni->getActiveFees()->contains(function ($fee) use ($alumni) {
+                    return ! $fee->isPaidByAlumni($alumni);
+                });
 
             Log::info('Payment enforcement check', [
                 'alumni_id' => $alumni->id,

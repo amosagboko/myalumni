@@ -27,8 +27,8 @@ class ClearanceController extends Controller
 
         $alumni = Alumni::findOrFail($alumniId);
 
-        $onboard = $alumni->biodata_completed ?? true;
-        $paid = method_exists($alumni, 'hasCompletedRequiredPayments') ? $alumni->hasCompletedRequiredPayments() : true;
+        $onboard = $alumni->biodata_completed;
+        $paid = $alumni->hasCompletedRequiredPayments();
 
         if (! $onboard || ! $paid) {
             return redirect()->route('academic-affairs.clearance')

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Alumni;
 
 use App\Models\Alumni;
+use App\Models\OnboardingSetting;
 use App\Models\User;
 use App\Services\AlumniDuesService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -25,6 +26,7 @@ class ClearanceStatusTest extends TestCase
         $this->mock(AlumniDuesService::class, function ($mock) {
             $mock->shouldReceive('getActiveFees')->andReturn(collect());
             $mock->shouldReceive('hasCompletedOnboardingFees')->andReturn(true);
+            $mock->shouldReceive('hasCompletedDefaultFees')->andReturn(true);
             $mock->shouldReceive('getDuesPhase')->andReturn(AlumniDuesService::PHASE_NONE);
         });
     }
@@ -88,6 +90,15 @@ class ClearanceStatusTest extends TestCase
     public function test_clearance_status_shows_division_status_for_2025_graduates(): void
     {
         $this->allowPortalAccess();
+        OnboardingSetting::unguarded(function () {
+            OnboardingSetting::query()->updateOrCreate(
+                ['id' => 1],
+                [
+                    'is_student_affairs_clearance_enabled' => true,
+                    'is_academic_affairs_clearance_enabled' => true,
+                ]
+            );
+        });
 
         $user = User::factory()->create(['name' => 'Recent Graduate']);
         $user->assignRole('alumni');

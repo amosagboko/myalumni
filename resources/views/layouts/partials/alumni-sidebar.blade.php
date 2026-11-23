@@ -106,8 +106,9 @@
                     <li>
                         <a href="{{ $memberNavRestricted ? '#' : route('reports') }}"
                            class="nav-content-bttn open-font{{ $memberNavRestricted ? ' disabled-link' : '' }}{{ request()->routeIs('reports*') ? ' active' : '' }}"
+                           title="{{ $memberNavRestricted ? $memberNavMessage : 'Clearance Form' }}"
                            @if($memberNavRestricted)
-                               onclick="event.preventDefault(); alert(@json($memberNavMessage));"
+                               onclick="event.preventDefault();"
                                tabindex="-1" aria-disabled="true"
                            @endif
                         >

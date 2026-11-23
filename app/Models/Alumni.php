@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Auth;
 use App\Services\AlumniDuesService;
 
 class Alumni extends Model
@@ -87,6 +86,27 @@ class Alumni extends Model
     public function hasCompletedDefaultFees(): bool
     {
         return app(AlumniDuesService::class)->hasCompletedDefaultFees($this);
+    }
+
+    /**
+     * Whether statutory onboarding/cohort fees required before clearance are paid.
+     */
+    public function hasCompletedRequiredPayments(): bool
+    {
+        return $this->hasCompletedDefaultFees();
+    }
+
+    public function isBiodataComplete(): bool
+    {
+        return filled($this->date_of_birth)
+            && filled($this->contact_address)
+            && filled($this->phone_number)
+            && filled($this->qualification_type);
+    }
+
+    public function getBiodataCompletedAttribute(): bool
+    {
+        return $this->isBiodataComplete();
     }
 
     public function getDuesPhase(): string
@@ -213,7 +233,13 @@ class Alumni extends Model
      */
     public function hasPaidAllActiveFees(): bool
     {
-        return $this->getActiveFees()->every(fn ($fee) => $fee->isPaid());
+        $fees = $this->getActiveFees();
+
+        if ($fees->isEmpty()) {
+            return $this->hasCompletedDefaultFees();
+        }
+
+        return $fees->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($this));
     }
 
     /**

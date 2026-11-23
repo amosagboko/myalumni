@@ -31,10 +31,15 @@ class AlumniMemberAccessService
 
         if ($alumni) {
             try {
-                $activeFees = $alumni->getActiveFees();
-                $needsPayments = $activeFees->contains(fn ($fee) => ! $fee->isPaid());
+                if (! $alumni->hasCompletedRequiredPayments()) {
+                    $needsPayments = true;
+                } else {
+                    $activeFees = $alumni->getActiveFees();
+                    $needsPayments = $activeFees->contains(fn ($fee) => ! $fee->isPaidByAlumni($alumni));
+                }
             } catch (\Throwable $e) {
                 report($e);
+                $needsPayments = true;
             }
         }
 

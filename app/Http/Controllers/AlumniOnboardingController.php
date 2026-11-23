@@ -60,11 +60,7 @@ class AlumniOnboardingController extends Controller
 
             // Check if payments need to be completed
             $alumni = $user->alumni;
-            $hasUnpaidFees = $alumni->getActiveFees()->contains(function ($fee) {
-                return !$fee->isPaid();
-            });
-
-            if ($hasUnpaidFees) {
+            if (! $alumni->hasCompletedRequiredPayments()) {
                 return redirect()->route('alumni.payments.index')
                     ->with('warning', 'Please complete your payments to continue.');
             }
