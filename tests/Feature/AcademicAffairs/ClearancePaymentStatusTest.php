@@ -3,6 +3,7 @@
 namespace Tests\Feature\AcademicAffairs;
 
 use App\Livewire\AcademicAffairs\Clearance;
+use App\Livewire\StudentAffairs\Clearance as StudentAffairsClearance;
 use App\Models\Alumni;
 use App\Models\AlumniCategory;
 use App\Models\FeeTemplate;
@@ -25,6 +26,7 @@ class ClearancePaymentStatusTest extends TestCase
         parent::setUp();
 
         Role::findOrCreate('academic-affairs');
+        Role::findOrCreate('student-affairs');
         Role::findOrCreate('alumni');
         Permission::findOrCreate('toggle academic affairs clearance');
 
@@ -84,6 +86,109 @@ class ClearancePaymentStatusTest extends TestCase
         $this->assertFalse($alumni->fresh()->hasCompletedRequiredPayments());
     }
 
+    public function test_academic_affairs_payment_modal_shows_only_the_selected_alumni_transactions(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/MODAL-PAID');
+        $payment = $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+
+        $other = $this->createAlumni($alumni->category, [
+            'matric_number' => '2021/SC/PSB/MODAL-OTHER',
+            'year_of_graduation' => 2026,
+            'contact_address' => '12 Alumni Street, Lafia',
+            'phone_number' => '08012345678',
+            'qualification_type' => 'B.Sc',
+        ]);
+        $otherPayment = $this->payFee($other, $registration);
+
+        $paidAt = $payment->paid_at->format('d M Y, H:i');
+
+        Livewire::actingAs($this->academicAffairsUser())
+            ->test(Clearance::class)
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertSee($alumni->user->name)
+            ->assertSee($alumni->matric_number)
+            ->assertSee('Registration UG FT')
+            ->assertSee('5,000.00')
+            ->assertSee($payment->payment_reference)
+            ->assertSee($paidAt)
+            ->assertSee('Paid')
+            ->assertDontSee($otherPayment->payment_reference)
+            ->call('closePaymentDetails')
+            ->assertDontSee($payment->payment_reference);
+    }
+
+    public function test_academic_affairs_payment_modal_shows_outstanding_fees(): void
+    {
+        [$alumni, $registration] = $this->createUnpaidUgAlumni('2021/SC/PSB/MODAL-UNPAID');
+
+        Livewire::actingAs($this->academicAffairsUser())
+            ->test(Clearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee('View Details')
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertSee($alumni->matric_number)
+            ->assertSee($registration->description)
+            ->assertSee('5,000.00')
+            ->assertSee('Amount expected')
+            ->assertSee('Amount outstanding')
+            ->assertSee('Unpaid');
+    }
+
+    public function test_student_affairs_payment_modal_shows_only_the_selected_alumni_transactions(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/SA-PAID');
+        $payment = $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+
+        $other = $this->createAlumni($alumni->category, [
+            'matric_number' => '2021/SC/PSB/SA-OTHER',
+            'year_of_graduation' => 2026,
+            'contact_address' => '12 Alumni Street, Lafia',
+            'phone_number' => '08012345678',
+            'qualification_type' => 'B.Sc',
+        ]);
+        $otherPayment = $this->payFee($other, $registration);
+
+        Livewire::actingAs($this->studentAffairsUser())
+            ->test(StudentAffairsClearance::class)
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertSee($payment->payment_reference)
+            ->assertSee('Paid')
+            ->assertDontSee($otherPayment->payment_reference);
+    }
+
+    public function test_student_affairs_payment_modal_shows_outstanding_fees(): void
+    {
+        [$alumni, $registration] = $this->createUnpaidUgAlumni('2021/SC/PSB/SA-UNPAID');
+
+        Livewire::actingAs($this->studentAffairsUser())
+            ->test(StudentAffairsClearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee('View Details')
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertSee($registration->description)
+            ->assertSee('7,700.00', false)
+            ->assertSee('Unpaid');
+    }
+
+    public function test_alumni_cannot_open_clearance_payment_details(): void
+    {
+        [$alumni] = $this->createUnpaidUgAlumni('2021/SC/PSB/MODAL-FORBIDDEN');
+        $user = User::factory()->create();
+        $user->assignRole('alumni');
+
+        Livewire::actingAs($user)
+            ->test(Clearance::class)
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertForbidden();
+
+        Livewire::actingAs($user)
+            ->test(StudentAffairsClearance::class)
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertForbidden();
+    }
+
     public function test_incomplete_biodata_is_not_shown_as_done(): void
     {
         $category = AlumniCategory::firstOrCreate(
@@ -105,6 +210,14 @@ class ClearancePaymentStatusTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('academic-affairs');
+
+        return $user;
+    }
+
+    private function studentAffairsUser(): User
+    {
+        $user = User::factory()->create();
+        $user->assignRole('student-affairs');
 
         return $user;
     }
@@ -187,9 +300,9 @@ class ClearancePaymentStatusTest extends TestCase
         ]);
     }
 
-    private function payFee(Alumni $alumni, FeeTemplate $fee): void
+    private function payFee(Alumni $alumni, FeeTemplate $fee): Transaction
     {
-        Transaction::create([
+        return Transaction::create([
             'alumni_id' => $alumni->id,
             'fee_template_id' => $fee->id,
             'amount' => $fee->amount,

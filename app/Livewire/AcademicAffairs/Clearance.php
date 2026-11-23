@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Alumni;
 use App\Models\OnboardingSetting;
+use App\Services\Alumni\ClearancePaymentInspectionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +27,8 @@ class Clearance extends Component
     public $messageType = '';
     public $selectedAlumniId = null;
     public $selectedAlumniValue = null;
+    public ?int $paymentAlumniId = null;
+    public ?array $paymentInspection = null;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -191,6 +194,25 @@ class Clearance extends Component
             Log::error('Academic Affairs bulk unclear failed', ['error' => $e->getMessage()]);
             session()->flash('error', 'Failed to bulk unclear.');
         }
+    }
+
+    public function viewPaymentDetails(int $alumniId): void
+    {
+        $user = Auth::user();
+
+        if (! $user || ! $user->hasRole('academic-affairs')) {
+            abort(403);
+        }
+
+        $alumni = Alumni::query()->findOrFail($alumniId);
+        $this->paymentAlumniId = $alumni->id;
+        $this->paymentInspection = app(ClearancePaymentInspectionService::class)->snapshot($alumni);
+    }
+
+    public function closePaymentDetails(): void
+    {
+        $this->paymentAlumniId = null;
+        $this->paymentInspection = null;
     }
 
     public function markCleared($alumniId)

@@ -184,6 +184,13 @@
                                                             <span class="adt-status-dot"></span>
                                                             {{ $paid ? 'Paid' : 'Unpaid' }}
                                                         </span>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-link btn-sm p-0 d-block"
+                                                            wire:click="viewPaymentDetails({{ $a->id }})"
+                                                        >
+                                                            View Details
+                                                        </button>
                                                     </td>
                                                     <td>
                                                         <span class="adt-status {{ $cleared ? 'adt-status-active' : 'adt-status-suspended' }}">
@@ -250,6 +257,8 @@
             </div>
         </div>
     </div>
+
+    @include('livewire.division.clearance-payment-modal')
 
     @push('scripts')
     <script>
