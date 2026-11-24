@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Services\AlumniDuesService;
 
 class Alumni extends Model
@@ -68,6 +69,33 @@ class Alumni extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(AlumniCategory::class, 'category_id');
+    }
+
+    /**
+     * Latest Students Affairs log that marked this alumnus onboarded.
+     */
+    public function nyscOnboardingLog(): HasOne
+    {
+        return $this->hasOne(ClearanceLog::class, 'alumni_id')->ofMany(
+            ['id' => 'max'],
+            fn ($query) => $query->where('division', 'student_affairs')->where('new_value', true)
+        );
+    }
+
+    public function nyscOnboardingActorName(): string
+    {
+        if (! $this->student_affairs_cleared) {
+            return '—';
+        }
+
+        return $this->nyscOnboardingLog?->actor?->name ?: '—';
+    }
+
+    public function isEligibleForNyscOnboarding(): bool
+    {
+        return (bool) $this->academic_affairs_cleared
+            && ! $this->student_affairs_cleared
+            && $this->hasCompletedRequiredPayments();
     }
 
     /**

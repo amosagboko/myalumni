@@ -5,6 +5,7 @@ namespace App\Livewire\StudentAffairs;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Alumni;
+use App\Models\ClearanceLog;
 use App\Models\OnboardingSetting;
 use App\Services\Alumni\ClearancePaymentInspectionService;
 use Illuminate\Support\Facades\Auth;
@@ -98,7 +99,7 @@ class Clearance extends Component
         }
 
         $user = Auth::user();
-        if (!$user || !$user->can('toggle student affairs clearance')) {
+        if (! $user || ! $user->hasRole('student-affairs') || ! $user->can('toggle student affairs clearance')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
@@ -109,38 +110,20 @@ class Clearance extends Component
             $skippedCount = 0;
 
             foreach ($alumniRecords as $alumni) {
-                $onboardingComplete = $alumni->biodata_completed;
-                $paymentsComplete = $alumni->hasCompletedRequiredPayments();
-                
-                if (!$onboardingComplete || !$paymentsComplete) {
+                if (! $alumni->isEligibleForNyscOnboarding()) {
                     $skippedCount++;
                     continue;
                 }
 
-                $old = (bool) $alumni->student_affairs_cleared;
-                $alumni->student_affairs_cleared = true;
-                $alumni->save();
-
-                DB::table('clearance_logs')->insert([
-                    'alumni_id' => $alumni->id,
-                    'division' => 'student_affairs',
-                    'actor_user_id' => $user->id,
-                    'actor_role' => $user->getRoleNames()->first(),
-                    'old_value' => $old,
-                    'new_value' => true,
-                    'reason' => 'To collect result statement',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
+                ClearanceLog::recordStudentAffairs($alumni, $user, true, 'NYSC onboarding');
                 $successCount++;
             }
 
             DB::commit();
             $this->selectedAlumni = [];
-            $message = "Bulk cleared: {$successCount} alumni";
+            $message = "NYSC onboarded: {$successCount} alumni";
             if ($skippedCount > 0) {
-                $message .= ", {$skippedCount} skipped (onboarding/payments incomplete)";
+                $message .= ", {$skippedCount} skipped (Academic Affairs clearance or payments incomplete)";
             }
             session()->flash('success', $message);
         } catch (\Throwable $e) {
@@ -161,7 +144,7 @@ class Clearance extends Component
         }
 
         $user = Auth::user();
-        if (!$user || !$user->can('toggle student affairs clearance')) {
+        if (! $user || ! $user->hasRole('student-affairs') || ! $user->can('toggle student affairs clearance')) {
             return session()->flash('error', 'Unauthorized.');
         }
 
@@ -170,21 +153,7 @@ class Clearance extends Component
             $alumniRecords = Alumni::with('user')->whereIn('id', $this->selectedAlumni)->get();
 
             foreach ($alumniRecords as $alumni) {
-                $old = (bool) $alumni->student_affairs_cleared;
-                $alumni->student_affairs_cleared = false;
-                $alumni->save();
-
-                DB::table('clearance_logs')->insert([
-                    'alumni_id' => $alumni->id,
-                    'division' => 'student_affairs',
-                    'actor_user_id' => $user->id,
-                    'actor_role' => $user->getRoleNames()->first(),
-                    'old_value' => $old,
-                    'new_value' => false,
-                    'reason' => 'To collect result statement',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                ClearanceLog::recordStudentAffairs($alumni, $user, false, 'To collect result statement');
             }
 
             DB::commit();
@@ -230,10 +199,49 @@ class Clearance extends Component
 
     public function markCleared($alumniId)
     {
-        Log::info('markCleared CALLED', ['id' => $alumniId]);
-        $this->selectedAlumniId = (int) $alumniId;
-        $this->selectedAlumniValue = true;
-        $this->toggleClearance();
+        $this->onboard((int) $alumniId);
+    }
+
+    public function onboard(int $alumniId): void
+    {
+        if (! $this->officeClearanceEnabled()) {
+            $this->message = 'Clearance for this office is currently disabled by admin.';
+            $this->messageType = 'error';
+
+            return;
+        }
+
+        $user = Auth::user();
+        if (! $user || ! $user->hasRole('student-affairs') || ! $user->can('toggle student affairs clearance')) {
+            abort(403);
+        }
+
+        $alumni = Alumni::find($alumniId);
+        if (! $alumni) {
+            $this->message = 'Alumni not found.';
+            $this->messageType = 'error';
+
+            return;
+        }
+
+        if ($alumni->student_affairs_cleared) {
+            $this->message = 'This alumnus has already been onboarded.';
+            $this->messageType = 'error';
+
+            return;
+        }
+
+        if (! $alumni->academic_affairs_cleared || ! $alumni->hasCompletedRequiredPayments()) {
+            $this->message = 'Academic Affairs clearance and full payment are required before NYSC onboarding.';
+            $this->messageType = 'error';
+
+            return;
+        }
+
+        ClearanceLog::recordStudentAffairs($alumni, $user, true, 'NYSC onboarding');
+
+        $this->message = 'NYSC onboarding completed.';
+        $this->messageType = 'success';
     }
 
     public function markUncleared($alumniId)
@@ -263,11 +271,20 @@ class Clearance extends Component
         
         $user = Auth::user();
         
-        if (!$user || !$user->can('toggle student affairs clearance')) {
+        if (! $user || ! $user->hasRole('student-affairs') || ! $user->can('toggle student affairs clearance')) {
             $this->message = 'Unauthorized.';
             $this->messageType = 'error';
             $this->selectedAlumniId = null;
             $this->selectedAlumniValue = null;
+            return;
+        }
+
+        if ($this->selectedAlumniValue) {
+            $alumniId = (int) $this->selectedAlumniId;
+            $this->selectedAlumniId = null;
+            $this->selectedAlumniValue = null;
+            $this->onboard($alumniId);
+
             return;
         }
 
@@ -280,32 +297,7 @@ class Clearance extends Component
             return;
         }
 
-        $onboard = $alumni->biodata_completed;
-        $paid = $alumni->hasCompletedRequiredPayments();
-        
-        if (!$onboard || !$paid) {
-            $this->message = 'Alumni must complete onboarding and payments first.';
-            $this->messageType = 'error';
-            $this->selectedAlumniId = null;
-            $this->selectedAlumniValue = null;
-            return;
-        }
-
-        $old = (bool) $alumni->student_affairs_cleared;
-        $alumni->student_affairs_cleared = $this->selectedAlumniValue;
-        $alumni->save();
-
-        DB::table('clearance_logs')->insert([
-            'alumni_id' => $alumni->id,
-            'division' => 'student_affairs',
-            'actor_user_id' => $user->id,
-            'actor_role' => $user->getRoleNames()->first() ?? 'student-affairs',
-            'old_value' => $old,
-            'new_value' => $this->selectedAlumniValue,
-            'reason' => 'To collect result statement',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        ClearanceLog::recordStudentAffairs($alumni, $user, false, 'To collect result statement');
 
         $this->message = 'Clearance updated successfully.';
         $this->messageType = 'success';
@@ -326,7 +318,7 @@ class Clearance extends Component
 
     public function getQuery()
     {
-        $q = Alumni::with(['user', 'category'])->orderBy('created_at', 'desc');
+        $q = Alumni::with(['user', 'category', 'nyscOnboardingLog.actor'])->orderBy('created_at', 'desc');
         if ($this->search) {
             $q->where(function($sub){
                 $sub->whereHas('user', function($uq){
@@ -364,11 +356,10 @@ class Clearance extends Component
 
         return response()->streamDownload(function () use ($query) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Name', 'Matric', 'Faculty', 'Department', 'Year', 'Onboarding', 'Payments', 'Student Affairs']);
+            fputcsv($handle, ['Name', 'Matric', 'Faculty', 'Department', 'Year', 'AA Status', 'Payments', 'NYSC Onboarding', 'Actor']);
 
             $query->chunk(500, function ($chunk) use ($handle) {
                 foreach ($chunk as $a) {
-                    $onboard = $a->biodata_completed;
                     $paid = $a->hasCompletedRequiredPayments();
                     fputcsv($handle, [
                         $a->user->name ?? 'N/A',
@@ -376,9 +367,10 @@ class Clearance extends Component
                         $a->faculty ?? 'N/A',
                         $a->department ?? 'N/A',
                         $a->year_of_graduation ?? 'N/A',
-                        $onboard ? 'YES' : 'NO',
-                        $paid ? 'YES' : 'NO',
-                        $a->student_affairs_cleared ? 'CLEARED' : 'NOT CLEARED',
+                        $a->academic_affairs_cleared ? 'CLEARED' : 'PENDING',
+                        $paid ? 'PAID' : 'UNPAID',
+                        $a->student_affairs_cleared ? 'ONBOARDED' : 'PENDING',
+                        $a->nyscOnboardingActorName(),
                     ]);
                 }
             });

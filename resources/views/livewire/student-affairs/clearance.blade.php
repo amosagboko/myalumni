@@ -94,7 +94,7 @@
                                     <select wire:model.live="clearanceStatus" class="form-select form-select-sm adt-select adt-select-narrow">
                                         <option value="">All statuses</option>
                                         <option value="pending">Pending</option>
-                                        <option value="cleared">Cleared</option>
+                                        <option value="cleared">Onboarded</option>
                                     </select>
                                     <select wire:model.live="perPage" class="form-select form-select-sm adt-select adt-select-narrow">
                                         @foreach ([10, 20, 50, 100] as $n)
@@ -145,21 +145,24 @@
                                                 <th>Faculty</th>
                                                 <th>Department</th>
                                                 <th>Year</th>
-                                                <th>Onboarding</th>
+                                                <th>AA Status</th>
                                                 <th>Payments</th>
-                                                <th>SA status</th>
-                                                <th class="adt-th-actions">Action</th>
+                                                <th>NYSC Onboarding Status</th>
+                                                <th>Actor</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($alumni as $a)
                                                 @php
-                                                    $onboard = $a->biodata_completed;
+                                                    $aaCleared = (bool) $a->academic_affairs_cleared;
                                                     $paid = $a->hasCompletedRequiredPayments();
-                                                    $eligible = $onboard && $paid;
-                                                    $cleared = (bool) $a->student_affairs_cleared;
+                                                    $onboarded = (bool) $a->student_affairs_cleared;
+                                                    $canOnboard = $officeEnabled && $aaCleared && $paid && ! $onboarded;
+                                                    $paidClass = ! $paid
+                                                        ? 'adt-status-suspended'
+                                                        : ($aaCleared ? 'adt-status-active' : 'adt-status-inactive');
                                                 @endphp
-                                                <tr wire:key="sa-clearance-{{ $a->id }}-{{ (int) $cleared }}">
+                                                <tr wire:key="sa-clearance-{{ $a->id }}-{{ (int) $onboarded }}-{{ (int) $aaCleared }}">
                                                     <td>
                                                         <input
                                                             type="checkbox"
@@ -174,16 +177,19 @@
                                                     <td>{{ $a->department ?? '—' }}</td>
                                                     <td>{{ $a->year_of_graduation ?? '—' }}</td>
                                                     <td>
-                                                        <span class="adt-status {{ $onboard ? 'adt-status-active' : 'adt-status-suspended' }}">
+                                                        <span class="adt-status {{ $aaCleared ? 'adt-status-active' : 'adt-status-suspended' }}">
                                                             <span class="adt-status-dot"></span>
-                                                            {{ $onboard ? 'Done' : 'Pending' }}
+                                                            {{ $aaCleared ? 'Cleared' : 'Pending' }}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <span class="adt-status {{ $paid ? 'adt-status-active' : 'adt-status-suspended' }}">
+                                                        <span class="adt-status {{ $paidClass }}">
                                                             <span class="adt-status-dot"></span>
                                                             {{ $paid ? 'Paid' : 'Unpaid' }}
                                                         </span>
+                                                        @if (! $paid && $aaCleared)
+                                                            <span class="d-block small text-danger">Review</span>
+                                                        @endif
                                                         <button
                                                             type="button"
                                                             class="btn btn-link btn-sm p-0 d-block"
@@ -193,38 +199,24 @@
                                                         </button>
                                                     </td>
                                                     <td>
-                                                        <span class="adt-status {{ $cleared ? 'adt-status-active' : 'adt-status-suspended' }}">
+                                                        <span class="adt-status {{ $onboarded ? 'adt-status-active' : 'adt-status-suspended' }}">
                                                             <span class="adt-status-dot"></span>
-                                                            {{ $cleared ? 'Cleared' : 'Pending' }}
+                                                            {{ $onboarded ? 'Onboarded' : 'Pending' }}
                                                         </span>
-                                                    </td>
-                                                    <td class="adt-actions">
-                                                        @unless ($eligible)
-                                                            <span class="adt-muted small">Complete onboarding & payments first</span>
-                                                        @else
-                                                            @if ($cleared)
-                                                                <button
-                                                                    type="button"
-                                                                    class="btn btn-sm btn-outline-danger py-0"
-                                                                    wire:click="markUncleared({{ $a->id }})"
-                                                                    wire:loading.attr="disabled"
-                                                                    wire:target="markUncleared({{ $a->id }})"
-                                                                >
-                                                                    Unclear
-                                                                </button>
-                                                            @else
-                                                                <button
-                                                                    type="button"
-                                                                    class="btn btn-sm btn-outline-success py-0"
-                                                                    wire:click="markCleared({{ $a->id }})"
-                                                                    wire:loading.attr="disabled"
-                                                                    wire:target="markCleared({{ $a->id }})"
-                                                                >
-                                                                    Mark cleared
-                                                                </button>
-                                                            @endif
+                                                        @unless ($onboarded)
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-success py-0 d-block mt-1"
+                                                                wire:click="onboard({{ $a->id }})"
+                                                                wire:loading.attr="disabled"
+                                                                wire:target="onboard({{ $a->id }})"
+                                                                @disabled(! $canOnboard)
+                                                            >
+                                                                Onboard
+                                                            </button>
                                                         @endunless
                                                     </td>
+                                                    <td>{{ $a->nyscOnboardingActorName() }}</td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
