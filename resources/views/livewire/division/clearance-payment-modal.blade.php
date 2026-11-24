@@ -57,7 +57,7 @@
 
                     <h6 class="fw-600 mt-3 mb-2">Outstanding fees</h6>
                     @if ($paymentInspection['missing_fee_line'])
-                        <p class="small text-muted">Required payments are not complete, and no active fee line is currently shown.</p>
+                        <p class="small text-muted">{{ \App\Services\Alumni\ClearancePaymentInspectionService::MISSING_FEE_NOTE }}</p>
                     @endif
                     @forelse ($paymentInspection['outstanding'] as $fee)
                         <div class="border rounded-3 p-3 mb-2">

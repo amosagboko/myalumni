@@ -8,6 +8,8 @@ use App\Models\Transaction;
 
 class ClearancePaymentInspectionService
 {
+    public const MISSING_FEE_NOTE = 'Required payments are not complete, and no active fee line is currently shown.';
+
     /**
      * Payment ledger for one alumni, built from stored transactions and current fee lines.
      *
@@ -34,17 +36,7 @@ class ClearancePaymentInspectionService
             ->values()
             ->all();
 
-        $outstanding = $alumni->getActiveFees()
-            ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
-            ->map(fn (FeeTemplate $fee) => [
-                'description' => $this->feeLabel($fee),
-                'amount_expected' => $this->money($fee->amount),
-                'amount_outstanding' => $this->money($fee->amount),
-                'status' => 'Unpaid',
-            ])
-            ->values()
-            ->all();
-
+        $outstanding = $this->outstandingFees($alumni);
         $paymentsComplete = $alumni->hasCompletedRequiredPayments();
 
         return [
@@ -55,6 +47,33 @@ class ClearancePaymentInspectionService
             'transactions' => $transactions,
             'outstanding' => $outstanding,
         ];
+    }
+
+    /**
+     * Names of active fees that still have no paid transaction for this alumnus.
+     *
+     * @return list<string>
+     */
+    public function outstandingFeeLabels(Alumni $alumni): array
+    {
+        return array_column($this->outstandingFees($alumni), 'description');
+    }
+
+    /**
+     * @return list<array{description: string, amount_expected: string, amount_outstanding: string, status: string}>
+     */
+    public function outstandingFees(Alumni $alumni): array
+    {
+        return $alumni->getActiveFees()
+            ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
+            ->map(fn (FeeTemplate $fee) => [
+                'description' => $this->feeLabel($fee),
+                'amount_expected' => $this->money($fee->amount),
+                'amount_outstanding' => $this->money($fee->amount),
+                'status' => 'Unpaid',
+            ])
+            ->values()
+            ->all();
     }
 
     /**

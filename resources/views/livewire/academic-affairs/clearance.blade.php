@@ -156,6 +156,9 @@
                                                 @php
                                                     $onboard = $a->biodata_completed;
                                                     $paid = $a->hasCompletedRequiredPayments();
+                                                    $outstandingFees = $paid
+                                                        ? []
+                                                        : app(\App\Services\Alumni\ClearancePaymentInspectionService::class)->outstandingFeeLabels($a);
                                                     $eligible = $onboard && $paid;
                                                     $cleared = (bool) $a->academic_affairs_cleared;
                                                 @endphp
@@ -184,6 +187,13 @@
                                                             <span class="adt-status-dot"></span>
                                                             {{ $paid ? 'Paid' : 'Unpaid' }}
                                                         </span>
+                                                        @unless ($paid)
+                                                            @forelse ($outstandingFees as $feeName)
+                                                                <span class="d-block small text-muted">{{ $feeName }}</span>
+                                                            @empty
+                                                                <span class="d-block small text-muted">{{ \App\Services\Alumni\ClearancePaymentInspectionService::MISSING_FEE_NOTE }}</span>
+                                                            @endforelse
+                                                        @endunless
                                                         <button
                                                             type="button"
                                                             class="btn btn-link btn-sm p-0 d-block"

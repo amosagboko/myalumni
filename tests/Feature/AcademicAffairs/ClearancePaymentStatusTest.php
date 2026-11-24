@@ -52,6 +52,36 @@ class ClearancePaymentStatusTest extends TestCase
         $this->assertTrue($alumni->fresh()->hasPaidAllActiveFees());
     }
 
+    public function test_fee_added_after_payment_stays_unpaid_and_is_named(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/LATE-FEE');
+        $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+        $alumni->update(['academic_affairs_cleared' => true]);
+
+        $lateType = FeeType::firstOrCreate(
+            ['code' => 'data_processing'],
+            ['name' => 'Data Processing', 'description' => 'Data processing', 'is_active' => true, 'is_system' => true]
+        );
+        $lateFee = $this->createFee($lateType, $alumni->category_id, 2500, 'Late data processing LATE-FEE', 2026);
+
+        $this->assertFalse($alumni->fresh()->hasCompletedRequiredPayments());
+        $this->assertTrue((bool) $alumni->fresh()->academic_affairs_cleared);
+
+        Livewire::actingAs($this->academicAffairsUser())
+            ->test(Clearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee('Unpaid')
+            ->assertSee($lateFee->description)
+            ->assertSee('Cleared')
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertSee('Outstanding fees')
+            ->assertSee($lateFee->description)
+            ->assertSee($registration->description)
+            ->assertSee($levy->description)
+            ->assertSee('Paid');
+    }
+
     public function test_academic_affairs_clearance_shows_unpaid_for_new_onboarder(): void
     {
         [$alumni] = $this->createUnpaidUgAlumni('2021/SC/PSB/0014-TEST');
