@@ -65,6 +65,12 @@ class ProfileController extends Controller
             ]);
         }
 
+        if ($user->hasRole('accountant-linkages')) {
+            return view('profile.accountant-linkages-edit', [
+                'user' => $user,
+            ]);
+        }
+
         if ($user->usesAlumniProfileLayout()) {
             return view('profile.alumni-edit', [
                 'user' => $user,

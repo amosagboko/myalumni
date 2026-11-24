@@ -124,6 +124,8 @@ class AlumniMemberAccessService
             'student-affairs/*',
             'academic-affairs',
             'academic-affairs/*',
+            'accountant-linkages',
+            'accountant-linkages/*',
             'agent',
             'agent/*',
         );

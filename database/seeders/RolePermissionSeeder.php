@@ -63,6 +63,7 @@ class RolePermissionSeeder extends Seeder
         // New roles
         $studentAffairs = Role::firstOrCreate(['name' => 'student-affairs']);
         $academicAffairs = Role::firstOrCreate(['name' => 'academic-affairs']);
+        $accountantLinkages = Role::firstOrCreate(['name' => 'accountant-linkages']);
         $alumniPresident = Role::firstOrCreate(['name' => 'alumni-president']);
 
         // Assign permissions to roles
@@ -159,6 +160,11 @@ class RolePermissionSeeder extends Seeder
         $academicAffairs->givePermissionTo([
             'view clearance pages',
             'toggle academic affairs clearance',
+        ]);
+
+        $accountantLinkages->givePermissionTo([
+            'view alumni',
+            'update profile',
         ]);
     }
 }

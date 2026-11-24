@@ -54,6 +54,8 @@ class PortalModeService
 
         'academic-affairs',
 
+        'accountant-linkages',
+
         'alumni-agent',
 
     ];
@@ -369,6 +371,14 @@ class PortalModeService
         if ($user->hasRole('academic-affairs')) {
 
             return 'academic-affairs.home';
+
+        }
+
+
+
+        if ($user->hasRole('accountant-linkages')) {
+
+            return 'accountant-linkages.payments';
 
         }
 

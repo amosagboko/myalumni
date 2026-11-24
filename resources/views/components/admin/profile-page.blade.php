@@ -18,7 +18,9 @@
                         ? route('student-affairs.home')
                         : (auth()->user()?->hasRole('academic-affairs')
                             ? route('academic-affairs.home')
-                            : url('/')))))
+                            : (auth()->user()?->hasRole('accountant-linkages')
+                                ? route('accountant-linkages.payments')
+                                : url('/'))))))
     );
 @endphp
 

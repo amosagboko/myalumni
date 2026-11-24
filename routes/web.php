@@ -311,6 +311,13 @@ Route::middleware(['auth', 'role:academic-affairs'])->prefix('academic-affairs')
     Route::get('/audit', \App\Livewire\AcademicAffairs\Audit::class)->name('audit');
 });
 
+// Accountant-Linkages
+Route::middleware(['auth', 'role:accountant-linkages'])->prefix('accountant-linkages')->name('accountant-linkages.')->group(function () {
+    Route::get('/payments', [\App\Http\Controllers\AccountantLinkages\PaymentStatusController::class, 'index'])->name('payments');
+    Route::get('/payments/{alumni}/print', [\App\Http\Controllers\AccountantLinkages\PaymentStatusController::class, 'print'])->name('payments.print');
+    Route::get('/payments/{alumni}', [\App\Http\Controllers\AccountantLinkages\PaymentStatusController::class, 'show'])->name('payments.show');
+});
+
 // Admin: Clearance Audit
 Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/clearance-audit', \App\Livewire\Admin\ClearanceAudit::class)
