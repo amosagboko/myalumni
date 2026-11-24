@@ -120,15 +120,7 @@ class AccountantLinkagePaymentService
                 $coveredFeeIds[$feeId] = true;
             }
 
-            $rows[] = [
-                'description' => $this->transactionDescription($transaction),
-                'amount' => $this->money($transaction->amount),
-                'reference' => $transaction->payment_reference ?: '—',
-                'date' => $transaction->paid_at?->format('d M Y')
-                    ?: $transaction->created_at?->format('d M Y')
-                    ?: '—',
-                'status' => $this->isPaidStatus($transaction->status) ? 'Paid' : 'Pending',
-            ];
+            array_push($rows, ...$this->rowsForTransaction($transaction));
         }
 
         $outstanding = $alumni->getActiveFees()
@@ -155,7 +147,7 @@ class AccountantLinkagePaymentService
     private function scopedTransactions(Alumni $alumni): Collection
     {
         return Transaction::query()
-            ->with(['feeTemplate.feeType', 'items.feeTemplate.feeType'])
+            ->with(['feeTemplate.feeType', 'items.feeTemplate.feeType', 'items.feeType'])
             ->where('alumni_id', $alumni->id)
             ->whereIn('status', array_merge(self::PAID_STATUSES, ['pending']))
             ->where(function (Builder $query) {
@@ -185,6 +177,44 @@ class AccountantLinkagePaymentService
 
         return (int) $year === FeeTemplate::PAYMENT_YEAR_ALL
             || (int) $year >= self::MIN_YEAR;
+    }
+
+    /**
+     * One row per paid or pending item. Combined payments keep each item and its own amount.
+     *
+     * @return list<array{description: string, amount: string, reference: string, date: string, status: string}>
+     */
+    private function rowsForTransaction(Transaction $transaction): array
+    {
+        $shared = [
+            'reference' => $transaction->payment_reference ?: '—',
+            'date' => $transaction->paid_at?->format('d M Y')
+                ?: $transaction->created_at?->format('d M Y')
+                ?: '—',
+            'status' => $this->isPaidStatus($transaction->status) ? 'Paid' : 'Pending',
+        ];
+
+        $items = $transaction->items->filter(function ($item) {
+            return ! $item->feeTemplate || $this->feeIsInScope($item->feeTemplate);
+        });
+
+        if ($items->isNotEmpty()) {
+            return $items->map(fn ($item) => [
+                'description' => $item->description
+                    ?: $item->feeTemplate?->description
+                    ?: $item->feeTemplate?->feeType?->name
+                    ?: $item->feeType?->name
+                    ?: 'Fee',
+                'amount' => $this->money($item->amount),
+                ...$shared,
+            ])->values()->all();
+        }
+
+        return [[
+            'description' => $this->transactionDescription($transaction),
+            'amount' => $this->money($transaction->amount),
+            ...$shared,
+        ]];
     }
 
     private function transactionDescription(Transaction $transaction): string

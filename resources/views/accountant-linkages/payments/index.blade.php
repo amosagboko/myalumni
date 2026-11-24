@@ -10,7 +10,7 @@
                         <div class="ads-page-header">
                             <div>
                                 <h1 class="ads-page-title">Payment status</h1>
-                                <p class="ads-page-subtitle">Alumni from {{ $minYear }} onward. Payment status uses only fees and transactions from {{ $minYear }} onward.</p>
+                                <p class="ads-page-subtitle">Welcome, {{ auth()->user()->name }}.</p>
                             </div>
                         </div>
 

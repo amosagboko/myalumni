@@ -123,6 +123,47 @@ class PaymentStatusTest extends TestCase
             ->assertDontSee($oldPayment->payment_reference);
     }
 
+    public function test_view_lists_each_paid_item_with_its_own_amount(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2037/SC/PSB/ACCT-ITEMS', 2037);
+        $transaction = Transaction::create([
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => null,
+            'amount' => $registration->amount + $levy->amount,
+            'status' => 'paid',
+            'payment_reference' => 'ALUMNI-COMBINED-ITEMS',
+            'payment_provider' => 'credocentral',
+            'paid_at' => now(),
+        ]);
+
+        foreach ([$registration, $levy] as $fee) {
+            $transaction->items()->create([
+                'fee_template_id' => $fee->id,
+                'fee_type_id' => $fee->fee_type_id,
+                'category_id' => $fee->category_id,
+                'description' => $fee->description,
+                'amount' => $fee->amount,
+            ]);
+        }
+
+        $this->actingAs($this->officer())
+            ->get(route('accountant-linkages.payments.show', $alumni))
+            ->assertOk()
+            ->assertSee($registration->description)
+            ->assertSee('5,000.00')
+            ->assertSee($levy->description)
+            ->assertSee('7,700.00')
+            ->assertDontSee('12,700.00');
+
+        $this->actingAs($this->officer())
+            ->get(route('accountant-linkages.payments.print', $alumni))
+            ->assertOk()
+            ->assertSee($registration->description)
+            ->assertSee('5,000.00')
+            ->assertSee($levy->description)
+            ->assertSee('7,700.00');
+    }
+
     public function test_alumni_cannot_open_accountant_linkages_payments(): void
     {
         [$alumni] = $this->createUnpaidUgAlumni('2026/SC/PSB/ACCT-DENY', 2038);
