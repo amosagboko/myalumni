@@ -832,13 +832,22 @@ class AlumniPaymentController extends Controller
             ->latest()
             ->paginate(10);
 
+        $pendingFeeIds = (clone $baseQuery)
+            ->pending()
+            ->whereNotNull('fee_template_id')
+            ->pluck('fee_template_id');
+
+        $remainingFees = $this->duesService->remainingCombinedFees($alumni)
+            ->reject(fn (FeeTemplate $fee) => $pendingFeeIds->contains($fee->id))
+            ->values();
+
         $summary = [
             'paid_count' => (clone $baseQuery)->paid()->count(),
-            'pending_count' => (clone $baseQuery)->pending()->count(),
+            'pending_count' => (clone $baseQuery)->pending()->count() + $remainingFees->count(),
             'total_paid' => (clone $baseQuery)->paid()->sum('amount'),
         ];
 
-        return view('alumni.payments.history', compact('transactions', 'summary'));
+        return view('alumni.payments.history', compact('transactions', 'summary', 'remainingFees'));
     }
 
     public function processPayment(Transaction $transaction)

@@ -154,6 +154,91 @@ class AlumniDuesService
         return $best;
     }
 
+    /**
+     * The one unpaid item left in a combined payment after the other items are paid.
+     *
+     * @return Collection<int, FeeTemplate>
+     */
+    public function remainingCombinedFees(Alumni $alumni, $paymentYear = null): Collection
+    {
+        $activeYear = $this->resolvePaymentYear($paymentYear);
+        $effectiveCategoryId = $this->resolveEffectiveCategoryId($alumni);
+        $fees = collect();
+
+        $structures = PaymentStructure::query()
+            ->combined()
+            ->active()
+            ->with(['items.feeTemplate.feeType', 'items.feeTemplate.category'])
+            ->get();
+
+        foreach ($structures as $structure) {
+            if ($structure->category_id && (int) $structure->category_id !== (int) $effectiveCategoryId) {
+                continue;
+            }
+
+            if ($structure->graduation_year !== null
+                && (int) $structure->graduation_year !== (int) $alumni->year_of_graduation) {
+                continue;
+            }
+
+            $unpaid = $structure->items
+                ->map(fn ($item) => $item->feeTemplate)
+                ->filter()
+                ->unique('id')
+                ->filter(fn (FeeTemplate $fee) => $this->templateAppliesToAlumni($fee, $alumni, $activeYear))
+                ->filter(fn (FeeTemplate $fee) => $fee->isValid())
+                ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
+                ->values();
+
+            if ($unpaid->count() === 1) {
+                $fees->push($unpaid->first());
+            }
+        }
+
+        return $fees->unique('id')->values();
+    }
+
+    /**
+     * Combined structure whose only unpaid applicable item is this fee.
+     */
+    public function remainingCombinedStructureFor(Alumni $alumni, FeeTemplate $fee, $paymentYear = null): ?PaymentStructure
+    {
+        $activeYear = $this->resolvePaymentYear($paymentYear);
+        $effectiveCategoryId = $this->resolveEffectiveCategoryId($alumni);
+
+        $structures = PaymentStructure::query()
+            ->combined()
+            ->active()
+            ->with(['items.feeTemplate'])
+            ->get();
+
+        foreach ($structures as $structure) {
+            if ($structure->category_id && (int) $structure->category_id !== (int) $effectiveCategoryId) {
+                continue;
+            }
+
+            if ($structure->graduation_year !== null
+                && (int) $structure->graduation_year !== (int) $alumni->year_of_graduation) {
+                continue;
+            }
+
+            $unpaid = $structure->items
+                ->map(fn ($item) => $item->feeTemplate)
+                ->filter()
+                ->unique('id')
+                ->filter(fn (FeeTemplate $template) => $this->templateAppliesToAlumni($template, $alumni, $activeYear))
+                ->filter(fn (FeeTemplate $template) => $template->isValid())
+                ->filter(fn (FeeTemplate $template) => ! $template->isPaidByAlumni($alumni))
+                ->values();
+
+            if ($unpaid->count() === 1 && (int) $unpaid->first()->id === (int) $fee->id) {
+                return $structure;
+            }
+        }
+
+        return null;
+    }
+
     public function combinedServiceCodeFor(Alumni $alumni, string $mapKey = 'combined'): ?string
     {
         $codes = config('services.credocentral.service_codes.'.$mapKey);
@@ -204,7 +289,11 @@ class AlumniDuesService
             return false;
         }
 
-        return $this->getActiveFees($alumni, $paymentYear)->contains('id', $fee->id);
+        if ($this->getActiveFees($alumni, $paymentYear)->contains('id', $fee->id)) {
+            return true;
+        }
+
+        return $this->remainingCombinedFees($alumni, $paymentYear)->contains('id', $fee->id);
     }
 
     /**

@@ -28,7 +28,7 @@
                 <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
 
-            @if($transactions->isEmpty())
+            @if($transactions->isEmpty() && $remainingFees->isEmpty())
                 <div class="text-center py-5">
                     <p class="text-muted mb-3">You have no payment history yet.</p>
                     <a href="{{ route('alumni.payments.index') }}" class="btn btn-primary">
@@ -68,7 +68,64 @@
                     </div>
                 @endif
 
+                @if($remainingFees->isNotEmpty())
+                    <div class="payment-history-table-wrap d-none d-lg-block mb-4">
+                        <table class="table table-bordered table-sm align-middle mb-0 payment-history-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Payment</th>
+                                    <th class="text-nowrap">Amount</th>
+                                    <th class="text-nowrap">Status</th>
+                                    <th class="text-nowrap">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($remainingFees as $fee)
+                                    <tr>
+                                        <td>
+                                            <div class="fw-medium text-break">{{ $fee->description ?: ($fee->feeType->name ?? 'Fee') }}</div>
+                                            <span class="badge bg-light text-dark border">Remaining combined fee</span>
+                                        </td>
+                                        <td class="text-nowrap fw-semibold">₦{{ number_format((float) $fee->amount, 2) }}</td>
+                                        <td class="text-nowrap">
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        </td>
+                                        <td class="text-nowrap">
+                                            <form action="{{ route('alumni.payments.initiate') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="fee_id" value="{{ $fee->id }}">
+                                                <button type="submit" class="btn btn-sm btn-primary">Pay Now</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-lg-none mb-4">
+                        @foreach($remainingFees as $fee)
+                            <div class="card mb-3 border shadow-none">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                        <div class="fw-semibold text-break">{{ $fee->description ?: ($fee->feeType->name ?? 'Fee') }}</div>
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                        <div class="fw-semibold">₦{{ number_format((float) $fee->amount, 2) }}</div>
+                                        <form action="{{ route('alumni.payments.initiate') }}" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="fee_id" value="{{ $fee->id }}">
+                                            <button type="submit" class="btn btn-sm btn-primary">Pay Now</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
                 {{-- Desktop: table scrolls inside content area only --}}
+                @if($transactions->isNotEmpty())
                 <div class="payment-history-table-wrap d-none d-lg-block">
                     <table class="table table-bordered table-sm align-middle mb-0 payment-history-table">
                         <thead class="table-light">
@@ -205,6 +262,7 @@
                     <div class="payment-history-pagination mt-4">
                         {{ $transactions->links() }}
                     </div>
+                @endif
                 @endif
             @endif
         </div>

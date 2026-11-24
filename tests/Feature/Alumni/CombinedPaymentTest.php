@@ -106,6 +106,115 @@ class CombinedPaymentTest extends TestCase
         $this->assertTrue($service->feeIsPayableByAlumni($levy, $alumni));
     }
 
+    public function test_payment_history_lists_one_remaining_combined_fee_and_starts_payment(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUgFullTimeOnboardingPair();
+        $association = $this->associationFee($alumni);
+        $this->createCombinedStructure(
+            [$registration, $levy, $association],
+            $alumni->category_id,
+            $alumni->year_of_graduation
+        );
+
+        foreach ([$registration, $levy] as $fee) {
+            Transaction::create([
+                'alumni_id' => $alumni->id,
+                'fee_template_id' => $fee->id,
+                'amount' => $fee->amount,
+                'status' => 'paid',
+                'payment_reference' => 'ALUMNI-PAID-'.uniqid(),
+                'payment_provider' => 'credocentral',
+                'paid_at' => now(),
+            ]);
+        }
+
+        $service = app(AlumniDuesService::class);
+        $this->assertTrue($service->remainingCombinedFees($alumni)->contains('id', $association->id));
+        $this->assertTrue($service->feeIsPayableByAlumni($association, $alumni));
+
+        $this->actingAs($alumni->user)
+            ->get(route('alumni.payments.history'))
+            ->assertOk()
+            ->assertSee('Alumni Association Registration')
+            ->assertSee('3,000.00')
+            ->assertSee('Pending')
+            ->assertSee('Pay Now');
+
+        $otherCategory = AlumniCategory::firstOrCreate(
+            ['slug' => 'diploma'],
+            ['name' => 'Diploma', 'description' => 'Diploma alumni', 'is_active' => true]
+        );
+        $unrelated = $this->createFee(
+            FeeType::firstOrCreate(
+                ['code' => 'tech_support'],
+                ['name' => 'Tech Support', 'description' => 'Tech', 'is_active' => true, 'is_system' => true]
+            ),
+            $otherCategory->id,
+            1500,
+            'Unrelated tech fee',
+            $alumni->year_of_graduation
+        );
+
+        $this->assertFalse($service->feeIsPayableByAlumni($unrelated, $alumni));
+
+        $this->actingAs($alumni->user)
+            ->from(route('alumni.payments.history'))
+            ->post(route('alumni.payments.initiate'), ['fee_id' => $unrelated->id])
+            ->assertRedirect(route('alumni.payments.history'));
+
+        $this->assertDatabaseMissing('transactions', [
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => $unrelated->id,
+        ]);
+
+        config([
+            'services.credocentral.public_key' => 'pk_test',
+            'services.credocentral.secret_key' => 'sk_test',
+        ]);
+
+        Http::fake([
+            '*' => Http::response([
+                'data' => [
+                    'authorizationUrl' => 'https://pay.example/leftover',
+                    'credoReference' => 'CREDO-LEFTOVER',
+                ],
+            ], 200),
+        ]);
+
+        $this->actingAs($alumni->user)
+            ->post(route('alumni.payments.initiate'), ['fee_id' => $association->id])
+            ->assertRedirect('https://pay.example/leftover');
+
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            return str_contains($request->url(), '/transaction/initialize')
+                && ($request['serviceCode'] ?? null) === '003486O4WAZK'
+                && (int) ($request['amount'] ?? 0) === 300000;
+        });
+
+        $this->assertDatabaseHas('transactions', [
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => $association->id,
+            'payment_structure_id' => null,
+            'status' => 'pending',
+            'amount' => 3000,
+        ]);
+    }
+
+    public function test_two_unpaid_combined_items_are_not_split_into_history_pay_now_rows(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUgFullTimeOnboardingPair();
+        $this->createCombinedStructure([$registration, $levy], $alumni->category_id, $alumni->year_of_graduation);
+
+        $this->assertCount(0, app(AlumniDuesService::class)->remainingCombinedFees($alumni));
+
+        $this->actingAs($alumni->user)
+            ->get(route('alumni.payments.history'))
+            ->assertOk()
+            ->assertDontSee('Pay Now')
+            ->assertDontSee($registration->description)
+            ->assertDontSee($levy->description);
+    }
+
     public function test_ug_part_time_combined_structure_surfaces_one_checkout(): void
     {
         [$alumni, $registration, $levy] = $this->createUgPartTimeOnboardingPair();
@@ -393,6 +502,31 @@ class CombinedPaymentTest extends TestCase
         );
 
         return [$registration, $levy];
+    }
+
+    private function associationFee(Alumni $alumni): FeeTemplate
+    {
+        $type = FeeType::firstOrCreate(
+            ['code' => 'alumni-association-registration'],
+            [
+                'name' => 'Alumni Association Registration',
+                'description' => 'Alumni Association Registration',
+                'is_active' => true,
+                'is_system' => false,
+            ]
+        );
+
+        return FeeTemplate::create([
+            'fee_type_id' => $type->id,
+            'category_id' => $alumni->category_id,
+            'fee_purpose' => null,
+            'graduation_year' => $alumni->year_of_graduation,
+            'amount' => 3000,
+            'description' => null,
+            'is_active' => true,
+            'valid_from' => now()->subDay(),
+            'valid_until' => null,
+        ]);
     }
 
     private function createFee(FeeType $type, int $categoryId, float $amount, string $description, int $year = 2035): FeeTemplate

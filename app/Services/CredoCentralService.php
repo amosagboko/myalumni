@@ -649,7 +649,34 @@ class CredoCentralService
             ];
         }
 
-        $transaction->loadMissing(['feeTemplate.feeType', 'feeTemplate.category']);
+        $transaction->loadMissing(['feeTemplate.feeType', 'feeTemplate.category', 'alumni']);
+        $fee = $transaction->feeTemplate;
+        if ($fee && $transaction->alumni) {
+            $structure = $this->duesService->remainingCombinedStructureFor($transaction->alumni, $fee);
+            if ($structure) {
+                $mapKey = $structure->credo_service_code_key ?: 'combined';
+                $categorySlug = $this->duesService->resolveEffectiveCategorySlug($transaction->alumni);
+                $serviceCode = $this->duesService->combinedServiceCodeFor($transaction->alumni, $mapKey);
+
+                if (empty($serviceCode)) {
+                    Log::error('No combined service code configured for leftover fee', [
+                        'transaction_id' => $transaction->id,
+                        'category_slug' => $categorySlug,
+                        'map_key' => $mapKey,
+                        'alumni_id' => $transaction->alumni_id,
+                        'fee_template_id' => $fee->id,
+                    ]);
+                    throw new \Exception('No combined service code configured for this payment category. Please contact the administrator.');
+                }
+
+                return [
+                    'service_code' => $serviceCode,
+                    'category_slug' => $categorySlug,
+                    'fee_type_code' => $fee->feeType?->code ?: 'combined',
+                ];
+            }
+        }
+
         $feeTypeCode = $transaction->feeTemplate?->feeType?->code;
         $categorySlug = $transaction->feeTemplate?->category?->slug;
         $feeTypeServiceCodes = config('services.credocentral.service_codes.'.$feeTypeCode);
