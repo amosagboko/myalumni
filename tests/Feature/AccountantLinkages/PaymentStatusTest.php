@@ -58,6 +58,28 @@ class PaymentStatusTest extends TestCase
             ->assertRedirect(route('accountant-linkages.payments'));
     }
 
+    public function test_payment_status_dropdown_filters_paid_and_pending(): void
+    {
+        [$pending] = $this->createUnpaidUgAlumni('2035/SC/PSB/ACCT-FILTER-PENDING', 2035);
+        [$paid, $registration, $levy] = $this->createUnpaidUgAlumni('2036/SC/PSB/ACCT-FILTER-PAID', 2036);
+        $this->payFee($paid, $registration);
+        $this->payFee($paid, $levy);
+
+        $officer = $this->officer();
+
+        $this->actingAs($officer)
+            ->get(route('accountant-linkages.payments', ['status' => 'pending', 'search' => 'ACCT-FILTER']))
+            ->assertOk()
+            ->assertSee($pending->matric_number)
+            ->assertDontSee($paid->matric_number);
+
+        $this->actingAs($officer)
+            ->get(route('accountant-linkages.payments', ['status' => 'paid', 'search' => 'ACCT-FILTER']))
+            ->assertOk()
+            ->assertSee($paid->matric_number)
+            ->assertDontSee($pending->matric_number);
+    }
+
     public function test_view_and_print_show_only_the_selected_alumni_2026_payments(): void
     {
         [$alumni, $registration] = $this->createUnpaidUgAlumni('2026/SC/PSB/ACCT-VIEW', 2037);

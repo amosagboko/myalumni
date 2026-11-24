@@ -33,8 +33,13 @@
                                             <option value="{{ $year }}" @selected((string) $filters['year'] === (string) $year)>{{ $year }}</option>
                                         @endforeach
                                     </select>
+                                    <select name="status" class="form-select form-select-sm adt-select adt-select-narrow" aria-label="Payment status">
+                                        <option value="" @selected($filters['status'] === '')>All payments</option>
+                                        <option value="paid" @selected($filters['status'] === 'paid')>Paid</option>
+                                        <option value="pending" @selected($filters['status'] === 'pending')>Pending</option>
+                                    </select>
                                     <button type="submit" class="btn btn-sm ads-btn-primary">Filter</button>
-                                    @if (request()->filled('search') || request()->filled('year'))
+                                    @if (request()->filled('search') || request()->filled('year') || request()->filled('status'))
                                         <a href="{{ route('accountant-linkages.payments') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
                                     @endif
                                 </form>
