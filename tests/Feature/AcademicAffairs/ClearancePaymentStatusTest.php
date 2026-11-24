@@ -72,14 +72,53 @@ class ClearancePaymentStatusTest extends TestCase
             ->test(Clearance::class)
             ->set('search', $alumni->matric_number)
             ->assertSee('Unpaid')
+            ->assertSee('Required payments are not complete;')
             ->assertSee($lateFee->description)
+            ->assertSee('pending.')
             ->assertSee('Cleared')
             ->call('viewPaymentDetails', $alumni->id)
-            ->assertSee('Outstanding fees')
+            ->assertSee('Pending fees')
             ->assertSee($lateFee->description)
             ->assertSee($registration->description)
             ->assertSee($levy->description)
-            ->assertSee('Paid');
+            ->assertSee('Paid')
+            ->assertSee('Pending');
+    }
+
+    public function test_added_cohort_fee_without_a_purpose_is_named_as_pending(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/ASSOC-FEE');
+        $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+
+        $type = FeeType::firstOrCreate(
+            ['code' => 'alumni-association-registration'],
+            ['name' => 'Alumni Association Registration', 'description' => 'Alumni Association Registration', 'is_active' => true, 'is_system' => false]
+        );
+        FeeTemplate::create([
+            'fee_type_id' => $type->id,
+            'category_id' => $alumni->category_id,
+            'fee_purpose' => null,
+            'graduation_year' => 2026,
+            'amount' => 3000,
+            'description' => null,
+            'is_active' => true,
+            'valid_from' => now()->subDay(),
+            'valid_until' => null,
+        ]);
+
+        Livewire::actingAs($this->academicAffairsUser())
+            ->test(Clearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee('Required payments are not complete;')
+            ->assertSee('Alumni Association Registration')
+            ->assertSee('pending.')
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertSee('Paid')
+            ->assertSee($registration->description)
+            ->assertSee('Pending fees')
+            ->assertSee('Alumni Association Registration')
+            ->assertSee('Pending');
     }
 
     public function test_academic_affairs_clearance_shows_unpaid_for_new_onboarder(): void

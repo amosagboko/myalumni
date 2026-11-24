@@ -155,11 +155,10 @@
                                             @foreach ($alumni as $a)
                                                 @php
                                                     $onboard = $a->biodata_completed;
-                                                    $paid = $a->hasCompletedRequiredPayments();
-                                                    $outstandingFees = $paid
-                                                        ? []
-                                                        : app(\App\Services\Alumni\ClearancePaymentInspectionService::class)->outstandingFeeLabels($a);
-                                                    $eligible = $onboard && $paid;
+                                                    $paymentColumn = app(\App\Services\Alumni\ClearancePaymentInspectionService::class)->paymentColumn($a);
+                                                    $paid = $paymentColumn['paid'];
+                                                    $pendingPaymentNote = $paymentColumn['note'];
+                                                    $eligible = $onboard && $a->hasCompletedRequiredPayments();
                                                     $cleared = (bool) $a->academic_affairs_cleared;
                                                 @endphp
                                                 <tr wire:key="aa-clearance-{{ $a->id }}-{{ (int) $cleared }}">
@@ -188,11 +187,7 @@
                                                             {{ $paid ? 'Paid' : 'Unpaid' }}
                                                         </span>
                                                         @unless ($paid)
-                                                            @forelse ($outstandingFees as $feeName)
-                                                                <span class="d-block small text-muted">{{ $feeName }}</span>
-                                                            @empty
-                                                                <span class="d-block small text-muted">{{ \App\Services\Alumni\ClearancePaymentInspectionService::MISSING_FEE_NOTE }}</span>
-                                                            @endforelse
+                                                            <span class="d-block small text-muted">{{ $pendingPaymentNote }}</span>
                                                         @endunless
                                                         <button
                                                             type="button"

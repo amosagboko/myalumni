@@ -26,6 +26,9 @@
 
                     <div class="ads-modal-detail-label">Payment status</div>
                     <div class="ads-modal-detail-value">{{ $paymentInspection['payments_complete'] ? 'Paid' : 'Unpaid' }}</div>
+                    @if (! empty($paymentInspection['pending_note']))
+                        <p class="small text-muted">{{ $paymentInspection['pending_note'] }}</p>
+                    @endif
 
                     <h6 class="fw-600 mb-2">Recorded transactions</h6>
                     @forelse ($paymentInspection['transactions'] as $transaction)
@@ -55,9 +58,9 @@
                         <p class="small text-muted">No payment transactions recorded.</p>
                     @endforelse
 
-                    <h6 class="fw-600 mt-3 mb-2">Outstanding fees</h6>
+                    <h6 class="fw-600 mt-3 mb-2">Pending fees</h6>
                     @if ($paymentInspection['missing_fee_line'])
-                        <p class="small text-muted">{{ \App\Services\Alumni\ClearancePaymentInspectionService::MISSING_FEE_NOTE }}</p>
+                        <p class="small text-muted">{{ $paymentInspection['pending_note'] }}</p>
                     @endif
                     @forelse ($paymentInspection['outstanding'] as $fee)
                         <div class="border rounded-3 p-3 mb-2">

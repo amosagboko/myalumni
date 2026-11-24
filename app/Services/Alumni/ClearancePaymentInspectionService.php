@@ -5,10 +5,11 @@ namespace App\Services\Alumni;
 use App\Models\Alumni;
 use App\Models\FeeTemplate;
 use App\Models\Transaction;
+use App\Services\AlumniDuesService;
+use Illuminate\Support\Collection;
 
 class ClearancePaymentInspectionService
 {
-    public const MISSING_FEE_NOTE = 'Required payments are not complete, and no active fee line is currently shown.';
 
     /**
      * Payment ledger for one alumni, built from stored transactions and current fee lines.
@@ -19,7 +20,8 @@ class ClearancePaymentInspectionService
      *     payments_complete: bool,
      *     missing_fee_line: bool,
      *     transactions: list<array<string, mixed>>,
-     *     outstanding: list<array<string, string>>
+     *     outstanding: list<array<string, string>>,
+     *     pending_note: ?string
      * }
      */
     public function snapshot(Alumni $alumni): array
@@ -37,7 +39,7 @@ class ClearancePaymentInspectionService
             ->all();
 
         $outstanding = $this->outstandingFees($alumni);
-        $paymentsComplete = $alumni->hasCompletedRequiredPayments();
+        $paymentsComplete = $alumni->hasCompletedRequiredPayments() && $outstanding === [];
 
         return [
             'name' => $alumni->user?->name ?: '—',
@@ -46,6 +48,21 @@ class ClearancePaymentInspectionService
             'missing_fee_line' => ! $paymentsComplete && $outstanding === [],
             'transactions' => $transactions,
             'outstanding' => $outstanding,
+            'pending_note' => $paymentsComplete ? null : $this->pendingPaymentNote($outstanding),
+        ];
+    }
+
+    /**
+     * @return array{paid: bool, note: ?string}
+     */
+    public function paymentColumn(Alumni $alumni): array
+    {
+        $outstanding = $this->outstandingFees($alumni);
+        $paid = $alumni->hasCompletedRequiredPayments() && $outstanding === [];
+
+        return [
+            'paid' => $paid,
+            'note' => $paid ? null : $this->pendingPaymentNote($outstanding),
         ];
     }
 
@@ -64,16 +81,72 @@ class ClearancePaymentInspectionService
      */
     public function outstandingFees(Alumni $alumni): array
     {
-        return $alumni->getActiveFees()
-            ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
+        $seen = [];
+
+        return $this->candidateFees($alumni)
+            ->filter(function (FeeTemplate $fee) use ($alumni, &$seen) {
+                if (isset($seen[$fee->id]) || $fee->isPaidByAlumni($alumni)) {
+                    return false;
+                }
+
+                $seen[$fee->id] = true;
+
+                return true;
+            })
             ->map(fn (FeeTemplate $fee) => [
                 'description' => $this->feeLabel($fee),
                 'amount_expected' => $this->money($fee->amount),
                 'amount_outstanding' => $this->money($fee->amount),
-                'status' => 'Unpaid',
+                'status' => 'Pending',
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  list<array{description: string, amount_expected: string, amount_outstanding: string, status: string}>  $outstanding
+     */
+    private function pendingPaymentNote(array $outstanding): string
+    {
+        $names = array_column($outstanding, 'description');
+
+        if ($names === []) {
+            return 'Required payments are not complete; a required fee is pending.';
+        }
+
+        if (count($names) === 1) {
+            return 'Required payments are not complete; '.$names[0].' is pending.';
+        }
+
+        $last = array_pop($names);
+
+        return 'Required payments are not complete; '.implode(', ', $names).' and '.$last.' are pending.';
+    }
+
+    /**
+     * @return Collection<int, FeeTemplate>
+     */
+    private function candidateFees(Alumni $alumni): Collection
+    {
+        $categoryId = app(AlumniDuesService::class)->resolveEffectiveCategoryId($alumni);
+
+        $cohort = FeeTemplate::query()
+            ->with('feeType')
+            ->where('is_active', true)
+            ->when($categoryId, fn ($query) => $query->where('category_id', $categoryId))
+            ->where(function ($query) use ($alumni) {
+                $query->where('graduation_year', $alumni->year_of_graduation)
+                    ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
+            })
+            ->where(function ($query) {
+                $query->whereNull('fee_purpose')
+                    ->orWhere('fee_purpose', '')
+                    ->orWhere('fee_purpose', FeeTemplate::PURPOSE_ONBOARDING);
+            })
+            ->get()
+            ->filter(fn (FeeTemplate $fee) => $fee->isValid() && ! $fee->feeType?->isEoiFee());
+
+        return $alumni->getActiveFees()->concat($cohort)->unique('id')->values();
     }
 
     /**
