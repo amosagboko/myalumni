@@ -12,6 +12,9 @@ class AccountantLinkagePaymentService
 {
     public const MIN_YEAR = 2026;
 
+    /** Statuses that mean the alumnus has completed that payment. */
+    private const PAID_STATUSES = ['paid', 'success', 'successful', 'completed'];
+
     public function query(array $filters = []): Builder
     {
         $year = isset($filters['year']) && (int) $filters['year'] >= self::MIN_YEAR
@@ -72,13 +75,19 @@ class AccountantLinkagePaymentService
 
     public function isFullyPaid(Alumni $alumni): bool
     {
-        if (! $alumni->hasCompletedRequiredPayments()) {
+        $rows = $this->ledger($alumni);
+
+        if ($rows === []) {
             return false;
         }
 
-        return ! $this->scopedTransactions($alumni)->contains(
-            fn (Transaction $transaction) => $transaction->status === 'pending'
-        );
+        foreach ($rows as $row) {
+            if ($row['status'] !== 'Paid') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function photoUrl(Alumni $alumni): string
@@ -118,7 +127,7 @@ class AccountantLinkagePaymentService
                 'date' => $transaction->paid_at?->format('d M Y')
                     ?: $transaction->created_at?->format('d M Y')
                     ?: '—',
-                'status' => $transaction->status === 'paid' ? 'Paid' : 'Pending',
+                'status' => $this->isPaidStatus($transaction->status) ? 'Paid' : 'Pending',
             ];
         }
 
@@ -148,7 +157,7 @@ class AccountantLinkagePaymentService
         return Transaction::query()
             ->with(['feeTemplate.feeType', 'items.feeTemplate.feeType'])
             ->where('alumni_id', $alumni->id)
-            ->whereIn('status', ['paid', 'pending'])
+            ->whereIn('status', array_merge(self::PAID_STATUSES, ['pending']))
             ->where(function (Builder $query) {
                 $query->whereHas('feeTemplate', fn (Builder $fee) => $this->scopeFeeYear($fee))
                     ->orWhereHas('items.feeTemplate', fn (Builder $fee) => $this->scopeFeeYear($fee));
@@ -162,8 +171,7 @@ class AccountantLinkagePaymentService
     {
         $fee->where(function (Builder $year) {
             $year->where('graduation_year', '>=', self::MIN_YEAR)
-                ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL)
-                ->orWhereNull('graduation_year');
+                ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
         });
     }
 
@@ -171,8 +179,11 @@ class AccountantLinkagePaymentService
     {
         $year = $fee->graduation_year;
 
-        return $year === null
-            || (int) $year === FeeTemplate::PAYMENT_YEAR_ALL
+        if ($year === null) {
+            return false;
+        }
+
+        return (int) $year === FeeTemplate::PAYMENT_YEAR_ALL
             || (int) $year >= self::MIN_YEAR;
     }
 
@@ -195,6 +206,11 @@ class AccountantLinkagePaymentService
         return $transaction->feeTemplate?->description
             ?: $transaction->feeTemplate?->feeType?->name
             ?: ($transaction->isCombined() ? 'Combined payment' : 'Payment');
+    }
+
+    private function isPaidStatus(?string $status): bool
+    {
+        return in_array(strtolower((string) $status), self::PAID_STATUSES, true);
     }
 
     private function money(mixed $amount): string
