@@ -297,6 +297,7 @@ Route::middleware(['auth', 'role:alumni|alumni-president'])->group(function () {
 Route::middleware(['auth', 'role:student-affairs'])->prefix('student-affairs')->name('student-affairs.')->group(function () {
     Route::get('/', \App\Livewire\StudentAffairs\Dashboard::class)->name('home');
     Route::get('/clearance', \App\Livewire\StudentAffairs\Clearance::class)->name('clearance');
+    Route::get('/nysc-onboarding', \App\Livewire\StudentAffairs\NyscOnboarding::class)->name('nysc-onboarding');
     Route::post('/clearance/{alumni}/toggle', [\App\Http\Controllers\StudentAffairs\ClearanceController::class, 'toggle'])->name('clearance.toggle');
     Route::get('/clearance-report', \App\Livewire\StudentAffairs\ClearanceReport::class)->name('clearance-report');
     Route::get('/audit', \App\Livewire\StudentAffairs\Audit::class)->name('audit');

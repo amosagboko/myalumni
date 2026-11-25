@@ -56,6 +56,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('student-affairs.nysc-onboarding') }}" class="nav-content-bttn open-font {{ request()->routeIs('student-affairs.nysc-onboarding') ? 'active' : '' }}">
+                                    <i data-feather="flag" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
+                                    <span>NYSC Onboarding</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('student-affairs.clearance-report') }}" class="nav-content-bttn open-font {{ request()->routeIs('student-affairs.clearance-report') ? 'active' : '' }}">
                                     <i data-feather="file-text" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i>
                                     <span>Clearance Report</span>
