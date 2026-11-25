@@ -200,6 +200,13 @@
                                     <span>Alumni Distribution</span>
                                 </a>
                             </li>
+                            @if (auth()->user()?->hasRole('administrator'))
+                                <li>
+                                    <a href="{{ route('admin.nysc-onboarding') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.nysc-onboarding') ? 'active' : '' }}">
+                                        <i data-feather="flag" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i><span>NYSC Onboarding</span>
+                                    </a>
+                                </li>
+                            @endif
                             <li>
                                 <a href="{{ route('admin.clearance-audit') }}" class="nav-content-bttn open-font {{ request()->routeIs('admin.clearance-audit') ? 'active' : '' }}">
                                     <i data-feather="clipboard" class="btn-round-md me-3" style="width: 16px; height: 16px;"></i><span>Clearance Audit</span>

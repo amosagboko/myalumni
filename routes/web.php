@@ -321,6 +321,7 @@ Route::middleware(['auth', 'role:accountant-linkages'])->prefix('accountant-link
 
 // Admin: Clearance Audit
 Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/nysc-onboarding', \App\Livewire\StudentAffairs\NyscOnboarding::class)->name('nysc-onboarding');
     Route::get('/clearance-audit', \App\Livewire\Admin\ClearanceAudit::class)
         ->middleware('can:view clearance audit')
         ->name('clearance-audit');

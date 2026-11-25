@@ -20,6 +20,12 @@
                             </div>
                         </div>
 
+                        @if ($message)
+                            <div class="ads-alert {{ $messageType === 'success' ? 'ads-alert-success' : 'ads-alert-error' }}">
+                                {{ $message }}
+                            </div>
+                        @endif
+
                         @if ($exportMessage)
                             <div class="ads-alert ads-alert-error">
                                 {{ $exportMessage }}
@@ -70,6 +76,9 @@
                                                 <th>Department</th>
                                                 <th>Programme</th>
                                                 <th>Year</th>
+                                                @if ($canRemove)
+                                                    <th>Action</th>
+                                                @endif
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -81,6 +90,18 @@
                                                     <td>{{ $a->department ?? '—' }}</td>
                                                     <td>{{ $a->programme ?? '—' }}</td>
                                                     <td>{{ $a->year_of_graduation ?? '—' }}</td>
+                                                    @if ($canRemove)
+                                                        <td>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-danger"
+                                                                wire:click="remove({{ $a->id }})"
+                                                                wire:confirm="Remove this alumnus from NYSC onboarding?"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </td>
+                                                    @endif
                                                 </tr>
                                             @endforeach
                                         </tbody>

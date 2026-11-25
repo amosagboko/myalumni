@@ -4,6 +4,7 @@ namespace App\Livewire\StudentAffairs;
 
 use App\Exports\NyscOnboardingExport;
 use App\Models\Alumni;
+use App\Models\ClearanceLog;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -24,6 +25,10 @@ class NyscOnboarding extends Component
     public int $perPage = 20;
 
     public ?string $exportMessage = null;
+
+    public ?string $message = null;
+
+    public string $messageType = '';
 
     protected $paginationTheme = 'bootstrap';
 
@@ -90,15 +95,42 @@ class NyscOnboarding extends Component
         );
     }
 
+    public function remove(int $alumniId): void
+    {
+        abort_unless(auth()->user()?->hasRole('administrator') === true, 403);
+
+        $alumni = Alumni::query()
+            ->where('student_affairs_cleared', true)
+            ->find($alumniId);
+
+        if (! $alumni) {
+            $this->message = 'This alumnus is not on the NYSC onboarding list.';
+            $this->messageType = 'error';
+
+            return;
+        }
+
+        ClearanceLog::recordStudentAffairs($alumni, auth()->user(), false, 'NYSC onboarding removed');
+
+        $this->message = 'NYSC onboarding removed.';
+        $this->messageType = 'success';
+    }
+
     public function render()
     {
+        $isAdminPage = request()->routeIs('admin.nysc-onboarding');
+
         return view('livewire.student-affairs.nysc-onboarding', [
             'alumni' => $this->filteredQuery()->paginate($this->perPage)->withQueryString(),
             'years' => $this->optionValues('year_of_graduation'),
             'faculties' => $this->optionValues('faculty'),
             'departments' => $this->optionValues('department', faculty: true),
             'programmes' => $this->optionValues('programme', faculty: true, department: true),
-        ])->layout('layouts.student-affairs', ['title' => 'NYSC Onboarding']);
+            'canRemove' => $isAdminPage && auth()->user()?->hasRole('administrator') === true,
+        ])->layout(
+            $isAdminPage ? 'components.alumniadmin-dashboard' : 'layouts.student-affairs',
+            ['title' => $isAdminPage ? 'NYSC Onboarding | FuLafia Alumni' : 'NYSC Onboarding']
+        );
     }
 
     protected function filteredQuery(): Builder

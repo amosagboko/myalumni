@@ -5,6 +5,7 @@ namespace Tests\Feature\StudentAffairs;
 use App\Livewire\StudentAffairs\NyscOnboarding;
 use App\Models\Alumni;
 use App\Models\AlumniCategory;
+use App\Models\ClearanceLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Livewire\Livewire;
@@ -22,6 +23,7 @@ class NyscOnboardingListTest extends TestCase
         parent::setUp();
 
         Role::findOrCreate('student-affairs');
+        Role::findOrCreate('administrator');
         Role::findOrCreate('alumni');
     }
 
@@ -84,6 +86,59 @@ class NyscOnboardingListTest extends TestCase
             'exportMessage',
             'No records match the current filters. Adjust your filters and try again.'
         );
+    }
+
+    public function test_only_an_administrator_can_remove_an_onboarding_recorded_by_someone_else(): void
+    {
+        $officer = $this->officer();
+        $admin = User::factory()->create();
+        $admin->assignRole('administrator');
+        $alpha = $this->alumnus('Alpha Person', 'NYSC-REMOVE', 'Remove Faculty', 'Remove Dept', 'Remove Programme', 2093, true);
+        ClearanceLog::recordStudentAffairs($alpha, $officer, true, 'NYSC onboarding');
+
+        $this->actingAs($admin)
+            ->get(route('admin.nysc-onboarding', ['faculty' => 'Remove Faculty']))
+            ->assertOk()
+            ->assertSee('NYSC Onboarding')
+            ->assertSee('Remove')
+            ->assertSee($alpha->matric_number);
+
+        $this->actingAs($officer)
+            ->get(route('student-affairs.nysc-onboarding', ['faculty' => 'Remove Faculty']))
+            ->assertOk()
+            ->assertDontSee('Remove this alumnus from NYSC onboarding?');
+
+        $this->actingAs($officer)
+            ->get(route('admin.nysc-onboarding'))
+            ->assertForbidden();
+
+        Livewire::actingAs($officer)
+            ->test(NyscOnboarding::class)
+            ->call('remove', $alpha->id)
+            ->assertForbidden();
+
+        $this->assertTrue((bool) $alpha->fresh()->student_affairs_cleared);
+
+        Livewire::actingAs($admin)
+            ->test(NyscOnboarding::class)
+            ->set('faculty', 'Remove Faculty')
+            ->call('remove', $alpha->id)
+            ->assertSet('message', 'NYSC onboarding removed.')
+            ->assertDontSee($alpha->matric_number);
+
+        $this->assertFalse((bool) $alpha->fresh()->student_affairs_cleared);
+        $this->assertDatabaseHas('clearance_logs', [
+            'alumni_id' => $alpha->id,
+            'actor_user_id' => $officer->id,
+            'reason' => 'NYSC onboarding',
+            'new_value' => true,
+        ]);
+        $this->assertDatabaseHas('clearance_logs', [
+            'alumni_id' => $alpha->id,
+            'actor_user_id' => $admin->id,
+            'reason' => 'NYSC onboarding removed',
+            'new_value' => false,
+        ]);
     }
 
     public function test_other_roles_cannot_open_nysc_onboarding(): void
