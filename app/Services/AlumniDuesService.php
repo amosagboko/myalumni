@@ -303,7 +303,7 @@ class AlumniDuesService
     {
         if ($alumni->year_of_graduation >= 2025) {
             return $this->hasCompletedOnboardingFeesForCohort($alumni)
-                && $this->hasCompletedCohortSubscription($alumni);
+                && $this->hasNoUnpaidActiveSubscription($alumni);
         }
 
         return $this->hasCompletedLegacySubscription($alumni);
@@ -325,6 +325,21 @@ class AlumniDuesService
         }
 
         return $this->unpaidSubscriptionFeeTemplates($alumni, $includeInactive);
+    }
+
+    /**
+     * A 2025+ cohort owes a subscription only when an active subscription template applies.
+     * No template means there is nothing further to pay.
+     */
+    private function hasNoUnpaidActiveSubscription(Alumni $alumni): bool
+    {
+        $activeTemplates = $this->getSubscriptionFeeTemplatesForAlumni($alumni, includeInactive: false);
+
+        if ($activeTemplates->isEmpty()) {
+            return true;
+        }
+
+        return $activeTemplates->every(fn (FeeTemplate $fee) => $fee->isPaidByAlumni($alumni));
     }
 
     private function hasCompletedCohortSubscription(Alumni $alumni): bool

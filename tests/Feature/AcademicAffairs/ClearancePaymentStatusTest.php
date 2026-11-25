@@ -188,6 +188,41 @@ class ClearancePaymentStatusTest extends TestCase
         $this->assertTrue($alumni->fresh()->hasCompletedRequiredPayments());
     }
 
+    public function test_paid_cohort_with_no_subscription_fee_is_complete_and_an_active_subscription_still_blocks(): void
+    {
+        FeeType::where('code', 'subscription')->update(['is_active' => true]);
+
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PHY/NO-SUB');
+        $alumni->update(['year_of_graduation' => 2039]);
+        $registration->update(['graduation_year' => 2039]);
+        $levy->update(['graduation_year' => 2039]);
+        $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+
+        $alumni = $alumni->fresh();
+        $service = app(\App\Services\Alumni\ClearancePaymentInspectionService::class);
+
+        $this->assertTrue($alumni->hasCompletedRequiredPayments());
+        $this->assertTrue($service->paymentColumn($alumni)['paid']);
+
+        $subscription = FeeType::where('code', 'subscription')->first();
+        FeeTemplate::create([
+            'fee_type_id' => $subscription->id,
+            'category_id' => null,
+            'fee_purpose' => FeeTemplate::PURPOSE_ANNUAL_RENEWAL,
+            'graduation_year' => 2039,
+            'amount' => 2000,
+            'description' => 'Subscription fee 2039',
+            'is_active' => true,
+            'valid_from' => now()->subDay(),
+            'valid_until' => null,
+        ]);
+
+        $alumni = $alumni->fresh();
+        $this->assertFalse($alumni->hasCompletedRequiredPayments());
+        $this->assertFalse($service->paymentColumn($alumni)['paid']);
+    }
+
     public function test_paid_required_fees_stay_paid_when_the_annual_due_is_unpaid(): void
     {
         [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/ANNUAL-DUE');
