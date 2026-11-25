@@ -6,6 +6,7 @@ use App\Livewire\AcademicAffairs\Clearance;
 use App\Livewire\StudentAffairs\Clearance as StudentAffairsClearance;
 use App\Models\Alumni;
 use App\Models\AlumniCategory;
+use App\Models\AlumniYear;
 use App\Models\FeeTemplate;
 use App\Models\FeeType;
 use App\Models\OnboardingSetting;
@@ -119,6 +120,61 @@ class ClearancePaymentStatusTest extends TestCase
             ->assertSee('Pending fees')
             ->assertSee('Alumni Association Registration')
             ->assertSee('Pending');
+    }
+
+    public function test_paid_required_fees_stay_paid_when_the_annual_due_is_unpaid(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/ANNUAL-DUE');
+        $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+
+        $paymentYear = AlumniYear::where('is_active', true)->first() ?? AlumniYear::create([
+            'year' => 2026,
+            'start_date' => now()->startOfYear()->toDateString(),
+            'end_date' => now()->endOfYear()->toDateString(),
+            'is_active' => true,
+        ]);
+        $annualType = FeeType::firstOrCreate(
+            ['code' => FeeType::ANNUAL_DUE_CODE],
+            ['name' => 'Annual Due', 'description' => 'Annual due', 'is_active' => true, 'is_system' => true]
+        );
+        $annualDue = FeeTemplate::create([
+            'fee_type_id' => $annualType->id,
+            'category_id' => null,
+            'fee_purpose' => FeeTemplate::PURPOSE_ANNUAL_RENEWAL,
+            'graduation_year' => $paymentYear->year,
+            'amount' => 5000,
+            'description' => 'Annual alumni due for clearance column',
+            'is_active' => true,
+            'valid_from' => now()->subDay(),
+            'valid_until' => null,
+        ]);
+
+        $this->assertTrue($alumni->fresh()->hasCompletedRequiredPayments());
+
+        $officer = $this->academicAffairsUser();
+        $officer->givePermissionTo('toggle academic affairs clearance');
+        OnboardingSetting::unguarded(function () {
+            OnboardingSetting::updateOrCreate(
+                ['id' => 1],
+                ['is_academic_affairs_clearance_enabled' => true]
+            );
+        });
+
+        Livewire::actingAs($officer)
+            ->test(Clearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee('Paid')
+            ->assertDontSee('Unpaid')
+            ->assertDontSee($annualDue->description)
+            ->call('viewPaymentDetails', $alumni->id)
+            ->assertSee('Paid')
+            ->assertSee('No outstanding fees.')
+            ->assertDontSee($annualDue->description)
+            ->call('closePaymentDetails')
+            ->call('markCleared', $alumni->id);
+
+        $this->assertTrue((bool) $alumni->fresh()->academic_affairs_cleared);
     }
 
     public function test_academic_affairs_clearance_shows_unpaid_for_new_onboarder(): void

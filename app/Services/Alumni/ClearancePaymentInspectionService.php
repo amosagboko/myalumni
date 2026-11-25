@@ -4,6 +4,7 @@ namespace App\Services\Alumni;
 
 use App\Models\Alumni;
 use App\Models\FeeTemplate;
+use App\Models\FeeType;
 use App\Models\Transaction;
 use App\Services\AlumniDuesService;
 use Illuminate\Support\Collection;
@@ -146,7 +147,11 @@ class ClearancePaymentInspectionService
             ->get()
             ->filter(fn (FeeTemplate $fee) => $fee->isValid() && ! $fee->feeType?->isEoiFee());
 
-        return $alumni->getActiveFees()->concat($cohort)->unique('id')->values();
+        return $alumni->getActiveFees()
+            ->concat($cohort)
+            ->unique('id')
+            ->reject(fn (FeeTemplate $fee) => $fee->feeType?->code === FeeType::ANNUAL_DUE_CODE)
+            ->values();
     }
 
     /**
