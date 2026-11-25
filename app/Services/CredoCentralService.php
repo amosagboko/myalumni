@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\PaymentAttempt;
 use App\Models\Transaction;
 
 class CredoCentralService
@@ -15,6 +16,7 @@ class CredoCentralService
     public function __construct(
         protected PaymentCompletionService $paymentCompletion,
         protected AlumniDuesService $duesService,
+        protected PaymentObligationService $obligations,
     ) {
         $this->baseUrl = rtrim(config('services.credocentral.base_url', 'https://api.credocentral.com'), '/');
         $this->publicKey = config('services.credocentral.public_key');
@@ -208,6 +210,8 @@ class CredoCentralService
                 'payment_provider' => 'credocentral',
                 'payment_provider_reference' => $credoReference,
             ]);
+
+            $this->obligations->recordGatewayAttempt($transaction, $credoReference, $authUrl);
 
             Log::info('Credo Central payment initialized successfully', [
                 'transaction_id' => $transaction->id,
@@ -560,10 +564,28 @@ class CredoCentralService
         }
 
         if ($businessRef) {
-            return Transaction::where('payment_reference', $businessRef)->first();
+            $transaction = Transaction::where('payment_reference', $businessRef)->first();
+            if ($transaction) {
+                return $transaction;
+            }
         }
 
-        return null;
+        if (! $providerRef && ! $businessRef) {
+            return null;
+        }
+
+        $attempt = PaymentAttempt::query()
+            ->where(function ($query) use ($providerRef, $businessRef) {
+                if ($providerRef) {
+                    $query->orWhere('payment_provider_reference', $providerRef);
+                }
+                if ($businessRef) {
+                    $query->orWhere('payment_reference', $businessRef);
+                }
+            })
+            ->first();
+
+        return $attempt?->transaction;
     }
 
     /**
@@ -600,9 +622,18 @@ class CredoCentralService
     protected function handleFailedPayment(Transaction $transaction, array $data)
     {
         try {
-            $transaction->update([
+            if ($transaction->canonicalObligation()->isPaid()) {
+                Log::info('Ignoring failed webhook for an obligation that is already paid', [
+                    'transaction_id' => $transaction->id,
+                ]);
+
+                return;
+            }
+
+            $this->obligations->recordFailure($transaction, [
                 'status' => 'failed',
-                'payment_details' => json_encode($data)
+                'failed_at' => now()->toIso8601String(),
+                'webhook_data' => $data,
             ]);
 
             Log::info('Payment failed', [

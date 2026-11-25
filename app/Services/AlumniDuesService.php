@@ -596,36 +596,36 @@ class AlumniDuesService
         FeeTemplate $template,
         AlumniYear $paymentYear
     ): ?Transaction {
-        $existingPending = Transaction::where('alumni_id', $alumni->id)
-            ->where('fee_template_id', $template->id)
-            ->where('status', 'pending')
-            ->first();
-
-        if ($existingPending) {
-            return $existingPending;
+        $existing = app(PaymentObligationService::class)->firstOpenFee($alumni->id, $template->id);
+        if ($existing) {
+            return $existing;
         }
 
         $alumni->loadMissing('user');
 
-        return Transaction::create([
-            'alumni_id' => $alumni->id,
-            'fee_template_id' => $template->id,
-            'amount' => $template->amount,
-            'status' => 'pending',
-            'payment_reference' => 'DUE-' . $paymentYear->year . '-' . strtoupper(Str::random(8)),
-            'payment_provider' => 'credocentral',
-            'payment_details' => [
-                'fee_type' => $template->feeType?->code,
-                'fee_description' => $template->description,
-                'payment_year' => $paymentYear->year,
-                'dues_phase' => 'annual',
-                'assigned_at' => now()->toIso8601String(),
-            ],
-            'metadata' => [
-                'payment_year' => $paymentYear->year,
-                'dues_phase' => 'annual',
-                'auto_assigned' => true,
-            ],
-        ]);
+        try {
+            return Transaction::create([
+                'alumni_id' => $alumni->id,
+                'fee_template_id' => $template->id,
+                'amount' => $template->amount,
+                'status' => 'pending',
+                'payment_reference' => 'DUE-'.$paymentYear->year.'-'.strtoupper(Str::random(8)),
+                'payment_provider' => 'credocentral',
+                'payment_details' => [
+                    'fee_type' => $template->feeType?->code,
+                    'fee_description' => $template->description,
+                    'payment_year' => $paymentYear->year,
+                    'dues_phase' => 'annual',
+                    'assigned_at' => now()->toIso8601String(),
+                ],
+                'metadata' => [
+                    'payment_year' => $paymentYear->year,
+                    'dues_phase' => 'annual',
+                    'auto_assigned' => true,
+                ],
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            return app(PaymentObligationService::class)->firstOpenFee($alumni->id, $template->id);
+        }
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\FeeTemplate;
 use App\Services\CredoCentralService;
 use App\Services\PaymentCompletionService;
+use App\Services\PaymentObligationService;
 use App\Services\AlumniDuesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class AlumniPaymentController extends Controller
     public function __construct(
         protected CredoCentralService $credocentral,
         protected PaymentCompletionService $paymentCompletion,
+        protected PaymentObligationService $obligations,
         protected AlumniDuesService $duesService,
     ) {
     }
@@ -128,79 +130,10 @@ class AlumniPaymentController extends Controller
                 return redirect()->back()->with('error', 'This fee is not applicable to your account at this time. If it is part of a combined payment, use Pay Combined Total.');
             }
 
-            // Check for existing pending transaction
-            $existingTransaction = Transaction::where('alumni_id', $alumni->id)
-                ->where('fee_template_id', $fee->id)
-                ->where('status', 'pending')
-                ->first();
-
-            Log::info('Checking for existing transaction', [
-                'alumni_id' => $alumni->id,
-                'fee_id' => $fee->id,
-                'found_existing' => !is_null($existingTransaction),
-                'existing_transaction_id' => $existingTransaction?->id,
-                'existing_status' => $existingTransaction?->status,
-                'existing_payment_link' => $existingTransaction?->payment_link
-            ]);
-
-            if ($existingTransaction) {
-                Log::info('Found existing pending transaction, attempting to reinitialize payment', [
-                    'transaction_id' => $existingTransaction->id,
-                    'payment_reference' => $existingTransaction->payment_reference
-                ]);
-                // If there's an existing payment link, redirect to it
-                if ($existingTransaction->payment_link) {
-                    Log::info('Redirecting to existing payment link', [
-                        'transaction_id' => $existingTransaction->id,
-                        'payment_link' => $existingTransaction->payment_link
-                    ]);
-                    return redirect($existingTransaction->payment_link);
-                }
-                // Otherwise, initialize a new payment for the existing transaction
-                try {
-                    Log::info('Initializing payment for existing transaction', [
-                        'transaction_id' => $existingTransaction->id,
-                        'amount' => $existingTransaction->amount,
-                        'reference' => $existingTransaction->payment_reference
-                    ]);
-                    $paymentLink = $this->credocentral->initializePayment($existingTransaction);
-                    Log::info('Successfully initialized payment for existing transaction', [
-                        'transaction_id' => $existingTransaction->id,
-                        'payment_link' => $paymentLink
-                    ]);
-                    return redirect($paymentLink);
-                } catch (\Exception $e) {
-                    Log::error('Failed to initialize payment for existing transaction', [
-                        'transaction_id' => $existingTransaction->id,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    throw $e;
-                }
-            }
-
-            // Create new transaction
-            DB::beginTransaction();
             try {
-                Log::info('Starting transaction creation', [
-                    'alumni_id' => $alumni->id,
-                    'fee_id' => $fee->id,
+                $transaction = $this->obligations->claimFee($alumni, $fee, [
                     'amount' => $fee->amount,
-                    'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10)),
-                    'alumni_name' => $alumni->user->name,
-                    'alumni_email' => $alumni->user->email,
-                    'alumni_phone' => $alumni->phone_number,
-                    'fee_type' => $fee->feeType->code,
-                    'fee_description' => $fee->description,
-                    'graduation_year' => $fee->graduation_year
-                ]);
-
-                $transaction = Transaction::create([
-                    'alumni_id' => $alumni->id,
-                    'fee_template_id' => $fee->id,
-                    'amount' => $fee->amount,
-                    'payment_reference' => 'ALUMNI-' . strtoupper(Str::random(10)),
-                    'status' => 'pending',
+                    'payment_reference' => 'ALUMNI-'.strtoupper(Str::random(10)),
                     'payment_provider' => 'credocentral',
                     'payment_details' => [
                         'fee_type' => $fee->feeType->code,
@@ -208,85 +141,16 @@ class AlumniPaymentController extends Controller
                         'graduation_year' => $fee->graduation_year,
                         'alumni_name' => $alumni->user->name,
                         'alumni_email' => $alumni->user->email,
-                        'alumni_phone' => $alumni->phone_number
-                    ]
+                        'alumni_phone' => $alumni->phone_number,
+                    ],
                 ]);
-
-                Log::info('Transaction created successfully', [
-                    'transaction_id' => $transaction->id,
-                    'payment_reference' => $transaction->payment_reference,
-                    'amount' => $transaction->amount,
-                    'status' => $transaction->status,
-                    'created_at' => $transaction->created_at,
-                    'payment_details' => $transaction->payment_details,
-                    'service_code' => config('services.credocentral.service_code'),
-                    'alumni_id' => $alumni->id,
-                    'fee_id' => $fee->id
-                ]);
-
-                // Initialize payment with Credo Central
-                Log::info('Starting payment initialization with Credo Central', [
-                    'transaction_id' => $transaction->id,
-                    'amount' => $transaction->amount,
-                    'reference' => $transaction->payment_reference,
-                    'service_code' => config('services.credocentral.service_code'),
-                    'alumni_id' => $alumni->id,
-                    'fee_id' => $fee->id,
-                    'customer_name' => $transaction->alumni->user->name,
-                    'customer_email' => $transaction->alumni->user->email,
-                    'customer_phone' => $transaction->alumni->phone_number,
-                    'base_url' => config('services.credocentral.base_url'),
-                    'has_public_key' => !empty(config('services.credocentral.public_key')),
-                    'has_secret_key' => !empty(config('services.credocentral.secret_key')),
-                    'environment' => app()->environment()
-                ]);
-                
-                try {
-                    $paymentLink = $this->credocentral->initializePayment($transaction);
-                    
-                    Log::info('Payment initialized successfully', [
-                        'transaction_id' => $transaction->id,
-                        'payment_link' => $paymentLink,
-                        'alumni_id' => $alumni->id,
-                        'fee_id' => $fee->id,
-                        'payment_reference' => $transaction->payment_reference
-                    ]);
-
-                    DB::commit();
-                    return redirect($paymentLink);
-                } catch (\Exception $e) {
-                    Log::error('Failed to initialize payment with Credo Central', [
-                        'transaction_id' => $transaction->id,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                        'payment_reference' => $transaction->payment_reference,
-                        'amount' => $transaction->amount,
-                        'service_code' => config('services.credocentral.service_code'),
-                        'base_url' => config('services.credocentral.base_url'),
-                        'has_public_key' => !empty(config('services.credocentral.public_key')),
-                        'has_secret_key' => !empty(config('services.credocentral.secret_key')),
-                        'environment' => app()->environment()
-                    ]);
-                    throw $e;
-                }
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Failed to create or initialize payment', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                    'fee_id' => $fee->id,
-                    'alumni_id' => $alumni->id,
-                    'service_code' => config('services.credocentral.service_code'),
-                    'alumni_phone' => $alumni->phone_number,
-                    'alumni_email' => $user->email,
-                    'alumni_name' => $user->name,
-                    'base_url' => config('services.credocentral.base_url'),
-                    'has_public_key' => !empty(config('services.credocentral.public_key')),
-                    'has_secret_key' => !empty(config('services.credocentral.secret_key')),
-                    'environment' => app()->environment()
-                ]);
-                throw $e;
+            } catch (\RuntimeException $e) {
+                return redirect()->back()->with('error', $e->getMessage());
             }
+
+            $paymentLink = $this->credocentral->initializePayment($transaction->fresh());
+
+            return redirect($paymentLink);
 
         } catch (\Exception $e) {
             Log::error('Payment initiation failed', [
@@ -335,62 +199,31 @@ class AlumniPaymentController extends Controller
         }
 
         try {
-            $existingTransaction = Transaction::query()
-                ->where('alumni_id', $alumni->id)
-                ->where('payment_structure_id', $structure->id)
-                ->where('status', 'pending')
-                ->latest('id')
-                ->first();
-
-            if ($existingTransaction) {
-                $this->syncCombinedTransactionItems($existingTransaction, $fees, $total);
-
-                if ($existingTransaction->payment_link) {
-                    return redirect($existingTransaction->payment_link);
-                }
-
-                $paymentLink = $this->credocentral->initializePayment($existingTransaction->fresh(['items.feeType', 'paymentStructure', 'alumni.user', 'alumni.category']));
-
-                return redirect($paymentLink);
-            }
-
-            DB::beginTransaction();
-            try {
-                $transaction = Transaction::create([
-                    'alumni_id' => $alumni->id,
-                    'fee_template_id' => null,
+            $transaction = $this->obligations->claimCombined($alumni, $structure, [
+                'amount' => $total,
+                'payment_reference' => 'ALUMNI-'.strtoupper(Str::random(10)),
+                'payment_provider' => 'credocentral',
+                'payment_details' => [
+                    'payment_mode' => 'combined',
+                    'fee_description' => $structure->payerTitle(),
+                    'item_count' => $fees->count(),
+                    'alumni_name' => $alumni->user->name,
+                    'alumni_email' => $alumni->user->email,
+                    'alumni_phone' => $alumni->phone_number,
+                ],
+                'metadata' => [
+                    'payment_mode' => 'combined',
                     'payment_structure_id' => $structure->id,
-                    'amount' => $total,
-                    'payment_reference' => 'ALUMNI-'.strtoupper(Str::random(10)),
-                    'status' => 'pending',
-                    'payment_provider' => 'credocentral',
-                    'payment_details' => [
-                        'payment_mode' => 'combined',
-                        'fee_description' => $structure->payerTitle(),
-                        'item_count' => $fees->count(),
-                        'alumni_name' => $alumni->user->name,
-                        'alumni_email' => $alumni->user->email,
-                        'alumni_phone' => $alumni->phone_number,
-                    ],
-                    'metadata' => [
-                        'payment_mode' => 'combined',
-                        'payment_structure_id' => $structure->id,
-                    ],
-                ]);
+                ],
+            ]);
 
-                $this->syncCombinedTransactionItems($transaction, $fees, $total);
+            $this->syncCombinedTransactionItems($transaction, $fees, $total);
 
-                $paymentLink = $this->credocentral->initializePayment(
-                    $transaction->fresh(['items.feeType', 'paymentStructure', 'alumni.user', 'alumni.category'])
-                );
+            $paymentLink = $this->credocentral->initializePayment(
+                $transaction->fresh(['items.feeType', 'paymentStructure', 'alumni.user', 'alumni.category'])
+            );
 
-                DB::commit();
-
-                return redirect($paymentLink);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
+            return redirect($paymentLink);
         } catch (\Exception $e) {
             Log::error('Combined payment initiation failed', [
                 'error' => $e->getMessage(),
@@ -825,7 +658,7 @@ class AlumniPaymentController extends Controller
     {
         $alumni = Auth::user()->alumni;
 
-        $baseQuery = Transaction::query()->where('alumni_id', $alumni->id);
+        $baseQuery = Transaction::query()->where('alumni_id', $alumni->id)->obligations();
 
         $transactions = (clone $baseQuery)
             ->with(['feeTemplate.feeType', 'items.feeType', 'paymentStructure'])
@@ -862,6 +695,14 @@ class AlumniPaymentController extends Controller
             abort(403, 'You are not authorized to process this payment.');
         }
 
+        if ($transaction->obligation_id) {
+            $transaction = $transaction->canonicalObligation();
+        }
+
+        if ($transaction->isPaid()) {
+            return redirect()->route('alumni.payments.success', $transaction);
+        }
+
         $transaction->loadMissing(['feeTemplate', 'items', 'paymentStructure']);
         if ($transaction->isCombined()) {
             $checkout = $this->duesService->resolveCombinedCheckout(Auth::user()->alumni);
@@ -879,7 +720,8 @@ class AlumniPaymentController extends Controller
         }
 
         try {
-            // Initialize payment with Credo Central and get the payment link
+            $this->obligations->prepareForGateway($transaction);
+            $transaction->refresh();
             $paymentLink = $this->credocentral->initializePayment($transaction);
             return redirect()->away($paymentLink);
         } catch (\Exception $e) {

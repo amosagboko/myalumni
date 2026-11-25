@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Candidate;
 use App\Models\ElectionOffice;
 use App\Models\FeeType;
+use App\Models\PaymentAttempt;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -96,8 +97,11 @@ class PaymentCompletionService
      */
     public function complete(Transaction $transaction, ?string $paidAt = null, array $detailExtras = []): Transaction
     {
-        return DB::transaction(function () use ($transaction, $paidAt, $detailExtras) {
-            $locked = Transaction::whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+        $matched = $transaction;
+        $obligation = $matched->canonicalObligation();
+
+        return DB::transaction(function () use ($matched, $obligation, $paidAt, $detailExtras) {
+            $locked = Transaction::whereKey($obligation->id)->lockForUpdate()->firstOrFail();
             $locked->loadMissing('feeTemplate.feeType');
 
             $existingDetails = $locked->payment_details;
@@ -119,6 +123,17 @@ class PaymentCompletionService
                 $locked->update($updates);
                 $locked->refresh();
             }
+
+            if ($matched->id !== $locked->id && ! $matched->isPaid()) {
+                Transaction::whereKey($matched->id)->update([
+                    'status' => 'paid',
+                    'paid_at' => $locked->paid_at,
+                ]);
+            }
+
+            PaymentAttempt::query()
+                ->where('payment_reference', $matched->payment_reference)
+                ->update(['status' => 'paid']);
 
             if ($this->isEoiTransaction($locked)) {
                 $this->syncEoiCandidate($locked);

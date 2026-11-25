@@ -184,11 +184,11 @@
                                         @endif
                                     </td>
                                     <td class="text-nowrap">
-                                        @if($transaction->status === 'pending' && ($transaction->isCombined() || $transaction->feeTemplate?->isValid()))
+                                        @if(in_array($transaction->status, ['pending', 'failed'], true) && ($transaction->isCombined() || $transaction->feeTemplate?->isValid()))
                                             <a href="{{ route('alumni.payments.process', $transaction) }}" class="btn btn-sm btn-primary">
                                                 Pay Now
                                             </a>
-                                        @elseif($transaction->status === 'pending')
+                                        @elseif(in_array($transaction->status, ['pending', 'failed'], true))
                                             <span class="badge bg-secondary">Inactive fee</span>
                                         @else
                                             <a href="{{ route('alumni.payments.show', $transaction) }}" class="btn btn-sm btn-outline-secondary">
@@ -239,11 +239,11 @@
 
                                 <div class="d-flex justify-content-between align-items-center gap-2">
                                     <div class="fw-semibold">₦{{ number_format($transaction->amount, 2) }}</div>
-                                    @if($transaction->status === 'pending' && ($transaction->isCombined() || $transaction->feeTemplate?->isValid()))
+                                    @if(in_array($transaction->status, ['pending', 'failed'], true) && ($transaction->isCombined() || $transaction->feeTemplate?->isValid()))
                                         <a href="{{ route('alumni.payments.process', $transaction) }}" class="btn btn-sm btn-primary flex-shrink-0">
                                             Pay Now
                                         </a>
-                                    @elseif($transaction->status === 'pending')
+                                    @elseif(in_array($transaction->status, ['pending', 'failed'], true))
                                         <span class="badge bg-secondary">Inactive fee</span>
                                     @else
                                         <a href="{{ route('alumni.payments.show', $transaction) }}" class="btn btn-sm btn-outline-secondary flex-shrink-0">

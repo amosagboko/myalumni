@@ -14,10 +14,12 @@ class Transaction extends Model
 
     protected $fillable = [
         'alumni_id',
+        'obligation_id',
         'fee_template_id',
         'payment_structure_id',
         'amount',
         'status',
+        'is_eoi',
         'payment_reference',
         'payment_provider',
         'payment_provider_reference',
@@ -36,8 +38,28 @@ class Transaction extends Model
         'fee_valid_until' => 'datetime',
         'fee_is_active' => 'boolean',
         'is_test_mode' => 'boolean',
+        'is_eoi' => 'boolean',
         'metadata' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Transaction $transaction) {
+            if ($transaction->is_eoi || ! $transaction->fee_template_id) {
+                return;
+            }
+
+            $code = FeeTemplate::query()
+                ->with('feeType')
+                ->find($transaction->fee_template_id)
+                ?->feeType
+                ?->code;
+
+            if (FeeType::isEoiFeeCode($code)) {
+                $transaction->is_eoi = true;
+            }
+        });
+    }
 
     /**
      * Get the user that owns the transaction through alumni.
@@ -71,6 +93,35 @@ class Transaction extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class);
+    }
+
+    public function obligation(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class, 'obligation_id');
+    }
+
+    public function linkedAttempts(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'obligation_id');
+    }
+
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(PaymentAttempt::class);
+    }
+
+    public function canonicalObligation(): self
+    {
+        if (! $this->obligation_id) {
+            return $this;
+        }
+
+        return $this->obligation ?? $this;
+    }
+
+    public function scopeObligations($query)
+    {
+        return $query->whereNull('obligation_id');
     }
 
     public function isCombined(): bool
