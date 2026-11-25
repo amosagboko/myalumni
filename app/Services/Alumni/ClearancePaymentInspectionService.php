@@ -5,12 +5,16 @@ namespace App\Services\Alumni;
 use App\Models\Alumni;
 use App\Models\FeeTemplate;
 use App\Models\FeeType;
+use App\Models\PaymentStructureItem;
 use App\Models\Transaction;
 use App\Services\AlumniDuesService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class ClearancePaymentInspectionService
 {
+    /** @var array<int, ?Carbon> */
+    private array $cohortCompletedAt = [];
 
     /**
      * Payment ledger for one alumni, built from stored transactions and current fee lines.
@@ -40,7 +44,7 @@ class ClearancePaymentInspectionService
             ->all();
 
         $outstanding = $this->outstandingFees($alumni);
-        $paymentsComplete = $alumni->hasCompletedRequiredPayments() && $outstanding === [];
+        $paymentsComplete = $this->paymentsComplete($alumni);
 
         return [
             'name' => $alumni->user?->name ?: '—',
@@ -54,12 +58,21 @@ class ClearancePaymentInspectionService
     }
 
     /**
+     * Clearance payment is complete when the cohort fees are paid.
+     * A combined-structure fee attached after that payment does not reopen it.
+     */
+    public function paymentsComplete(Alumni $alumni): bool
+    {
+        return $alumni->hasCompletedRequiredPayments() && $this->outstandingFees($alumni) === [];
+    }
+
+    /**
      * @return array{paid: bool, note: ?string}
      */
     public function paymentColumn(Alumni $alumni): array
     {
         $outstanding = $this->outstandingFees($alumni);
-        $paid = $alumni->hasCompletedRequiredPayments() && $outstanding === [];
+        $paid = $this->paymentsComplete($alumni);
 
         return [
             'paid' => $paid,
@@ -86,7 +99,7 @@ class ClearancePaymentInspectionService
 
         return $this->candidateFees($alumni)
             ->filter(function (FeeTemplate $fee) use ($alumni, &$seen) {
-                if (isset($seen[$fee->id]) || $fee->isPaidByAlumni($alumni)) {
+                if (isset($seen[$fee->id]) || $fee->isPaidByAlumni($alumni) || $this->addedAfterCohortPayment($alumni, $fee)) {
                     return false;
                 }
 
@@ -152,6 +165,83 @@ class ClearancePaymentInspectionService
             ->unique('id')
             ->reject(fn (FeeTemplate $fee) => $fee->feeType?->code === FeeType::ANNUAL_DUE_CODE)
             ->values();
+    }
+
+    /**
+     * A non-onboarding fee that was attached to a combined payment only after
+     * this alumnus had already paid the cohort fees.
+     */
+    private function addedAfterCohortPayment(Alumni $alumni, FeeTemplate $fee): bool
+    {
+        $fee->loadMissing('feeType');
+
+        if ($fee->isOnboarding() || $fee->feeType?->isOnboardingFee() || $fee->feeType?->code === 'subscription') {
+            return false;
+        }
+
+        $completedAt = $this->cohortPaymentCompletedAt($alumni);
+        if (! $completedAt) {
+            return false;
+        }
+
+        $attachedAt = PaymentStructureItem::query()
+            ->where('fee_template_id', $fee->id)
+            ->whereHas('structure', fn ($query) => $query->combined()->active())
+            ->orderBy('created_at')
+            ->value('created_at');
+
+        return $attachedAt !== null && Carbon::parse($attachedAt)->gt($completedAt);
+    }
+
+    private function cohortPaymentCompletedAt(Alumni $alumni): ?Carbon
+    {
+        if (array_key_exists($alumni->id, $this->cohortCompletedAt)) {
+            return $this->cohortCompletedAt[$alumni->id];
+        }
+
+        if (! $alumni->hasCompletedRequiredPayments()) {
+            return $this->cohortCompletedAt[$alumni->id] = null;
+        }
+
+        $categoryId = app(AlumniDuesService::class)->resolveEffectiveCategoryId($alumni);
+        $templateIds = FeeTemplate::query()
+            ->where(function ($query) use ($alumni, $categoryId) {
+                $query->where(function ($cohort) use ($alumni, $categoryId) {
+                    $cohort->when($categoryId, fn ($inner) => $inner->where('category_id', $categoryId))
+                        ->where('graduation_year', $alumni->year_of_graduation)
+                        ->where(function ($purpose) {
+                            $purpose->where('fee_purpose', FeeTemplate::PURPOSE_ONBOARDING)
+                                ->orWhereHas('feeType', fn ($type) => $type->whereIn('code', FeeType::ONBOARDING_FEE_CODES));
+                        });
+                })->orWhere(function ($subscription) use ($alumni) {
+                    $subscription->where(function ($year) use ($alumni) {
+                        $year->where('graduation_year', $alumni->year_of_graduation)
+                            ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
+                    })->whereHas('feeType', fn ($type) => $type->where('code', 'subscription')->where('is_active', true));
+                });
+            })
+            ->pluck('id');
+
+        $latest = null;
+        if ($templateIds->isNotEmpty()) {
+            $transactions = Transaction::query()
+                ->where('alumni_id', $alumni->id)
+                ->where('status', 'paid')
+                ->where(function ($query) use ($templateIds) {
+                    $query->whereIn('fee_template_id', $templateIds)
+                        ->orWhereHas('items', fn ($items) => $items->whereIn('fee_template_id', $templateIds));
+                })
+                ->get(['paid_at', 'created_at']);
+
+            foreach ($transactions as $transaction) {
+                $at = $transaction->paid_at ?? $transaction->created_at;
+                if ($at && ($latest === null || $at->gt($latest))) {
+                    $latest = $at;
+                }
+            }
+        }
+
+        return $this->cohortCompletedAt[$alumni->id] = $latest;
     }
 
     /**

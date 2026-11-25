@@ -109,7 +109,7 @@ class Clearance extends Component
 
             foreach ($alumniRecords as $alumni) {
                 $onboardingComplete = $alumni->biodata_completed;
-                $paymentsComplete = $alumni->hasCompletedRequiredPayments();
+                $paymentsComplete = app(ClearancePaymentInspectionService::class)->paymentsComplete($alumni);
 
                 if (!$onboardingComplete || !$paymentsComplete) {
                     $skippedCount++;
@@ -263,7 +263,7 @@ class Clearance extends Component
         }
 
         $onboard = $alumni->biodata_completed;
-        $paid = $alumni->hasCompletedRequiredPayments();
+        $paid = app(ClearancePaymentInspectionService::class)->paymentsComplete($alumni);
 
         if (!$onboard || !$paid) {
             $this->message = 'Alumni must complete onboarding and payments first.';
@@ -352,7 +352,7 @@ class Clearance extends Component
             $query->chunk(500, function ($chunk) use ($handle) {
                 foreach ($chunk as $a) {
                     $onboard = $a->biodata_completed;
-                    $paid = $a->hasCompletedRequiredPayments();
+                    $paid = app(ClearancePaymentInspectionService::class)->paymentsComplete($a);
                     fputcsv($handle, [
                         $a->user->name ?? 'N/A',
                         $a->matric_number ?? 'N/A',

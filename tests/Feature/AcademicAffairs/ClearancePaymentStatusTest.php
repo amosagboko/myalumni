@@ -9,6 +9,9 @@ use App\Models\AlumniCategory;
 use App\Models\AlumniYear;
 use App\Models\FeeTemplate;
 use App\Models\FeeType;
+use App\Models\PaymentStructure;
+use App\Models\PaymentStructureItem;
+use App\Models\TransactionItem;
 use App\Models\OnboardingSetting;
 use App\Models\Transaction;
 use App\Models\User;
@@ -120,6 +123,69 @@ class ClearancePaymentStatusTest extends TestCase
             ->assertSee('Pending fees')
             ->assertSee('Alumni Association Registration')
             ->assertSee('Pending');
+    }
+
+    public function test_combined_fee_added_after_payment_does_not_reopen_clearance(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/LATE-COMBINED');
+        $payment = Transaction::create([
+            'alumni_id' => $alumni->id,
+            'amount' => $registration->amount + $levy->amount,
+            'status' => 'paid',
+            'payment_reference' => 'ALUMNI-'.uniqid(),
+            'payment_provider' => 'credocentral',
+            'paid_at' => now()->subDays(10),
+        ]);
+        foreach ([$registration, $levy] as $fee) {
+            TransactionItem::create([
+                'transaction_id' => $payment->id,
+                'fee_template_id' => $fee->id,
+                'fee_type_id' => $fee->fee_type_id,
+                'category_id' => $fee->category_id,
+                'description' => $fee->description,
+                'amount' => $fee->amount,
+            ]);
+        }
+
+        $added = $this->associationFee($alumni, now()->subHours(2));
+        $this->attachCombinedFee($alumni, $added, now());
+
+        $officer = $this->academicAffairsUser();
+        $officer->givePermissionTo('toggle academic affairs clearance');
+        $this->enableAcademicAffairsClearance();
+
+        Livewire::actingAs($officer)
+            ->test(Clearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee('Paid')
+            ->assertDontSee('Unpaid')
+            ->assertDontSee('Alumni Association Registration')
+            ->call('markCleared', $alumni->id);
+
+        $this->assertTrue((bool) $alumni->fresh()->academic_affairs_cleared);
+    }
+
+    public function test_combined_fee_already_in_the_cohort_keeps_clearance_closed(): void
+    {
+        [$alumni, $registration, $levy] = $this->createUnpaidUgAlumni('2021/SC/PSB/EARLY-COMBINED');
+        $added = $this->associationFee($alumni, now()->subDays(3));
+        $this->attachCombinedFee($alumni, $added, now()->subDays(10));
+        $this->payFee($alumni, $registration);
+        $this->payFee($alumni, $levy);
+
+        $officer = $this->academicAffairsUser();
+        $officer->givePermissionTo('toggle academic affairs clearance');
+        $this->enableAcademicAffairsClearance();
+
+        Livewire::actingAs($officer)
+            ->test(Clearance::class)
+            ->set('search', $alumni->matric_number)
+            ->assertSee('Unpaid')
+            ->assertSee('Alumni Association Registration')
+            ->call('markCleared', $alumni->id);
+
+        $this->assertFalse((bool) $alumni->fresh()->academic_affairs_cleared);
+        $this->assertTrue($alumni->fresh()->hasCompletedRequiredPayments());
     }
 
     public function test_paid_required_fees_stay_paid_when_the_annual_due_is_unpaid(): void
@@ -423,6 +489,55 @@ class ClearancePaymentStatusTest extends TestCase
             'valid_from' => now()->subDay(),
             'valid_until' => null,
         ]);
+    }
+
+    private function enableAcademicAffairsClearance(): void
+    {
+        OnboardingSetting::unguarded(function () {
+            OnboardingSetting::updateOrCreate(
+                ['id' => 1],
+                ['is_academic_affairs_clearance_enabled' => true]
+            );
+        });
+    }
+
+    private function associationFee(Alumni $alumni, $validFrom): FeeTemplate
+    {
+        $type = FeeType::firstOrCreate(
+            ['code' => 'alumni-association-registration'],
+            ['name' => 'Alumni Association Registration', 'description' => 'Alumni Association Registration', 'is_active' => true, 'is_system' => false]
+        );
+
+        return FeeTemplate::create([
+            'fee_type_id' => $type->id,
+            'category_id' => $alumni->category_id,
+            'fee_purpose' => null,
+            'graduation_year' => $alumni->year_of_graduation,
+            'amount' => 5000,
+            'description' => null,
+            'is_active' => true,
+            'valid_from' => $validFrom,
+            'valid_until' => null,
+        ]);
+    }
+
+    private function attachCombinedFee(Alumni $alumni, FeeTemplate $fee, $attachedAt): void
+    {
+        $structure = PaymentStructure::create([
+            'name' => 'Combined '.$alumni->matric_number,
+            'payment_mode' => PaymentStructure::MODE_COMBINED,
+            'graduation_year' => $alumni->year_of_graduation,
+            'category_id' => $alumni->category_id,
+            'is_active' => true,
+        ]);
+        $item = PaymentStructureItem::create([
+            'payment_structure_id' => $structure->id,
+            'fee_template_id' => $fee->id,
+        ]);
+        $item->forceFill([
+            'created_at' => $attachedAt,
+            'updated_at' => $attachedAt,
+        ])->save();
     }
 
     private function payFee(Alumni $alumni, FeeTemplate $fee): Transaction

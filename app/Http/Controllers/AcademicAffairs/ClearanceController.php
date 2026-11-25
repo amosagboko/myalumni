@@ -5,6 +5,7 @@ namespace App\Http\Controllers\AcademicAffairs;
 use App\Http\Controllers\Controller;
 use App\Models\Alumni;
 use App\Models\OnboardingSetting;
+use App\Services\Alumni\ClearancePaymentInspectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,7 @@ class ClearanceController extends Controller
         $alumni = Alumni::findOrFail($alumniId);
 
         $onboard = $alumni->biodata_completed;
-        $paid = $alumni->hasCompletedRequiredPayments();
+        $paid = app(ClearancePaymentInspectionService::class)->paymentsComplete($alumni);
 
         if (! $onboard || ! $paid) {
             return redirect()->route('academic-affairs.clearance')

@@ -158,7 +158,7 @@
                                                     $paymentColumn = app(\App\Services\Alumni\ClearancePaymentInspectionService::class)->paymentColumn($a);
                                                     $paid = $paymentColumn['paid'];
                                                     $pendingPaymentNote = $paymentColumn['note'];
-                                                    $eligible = $onboard && $a->hasCompletedRequiredPayments();
+                                                    $eligible = $onboard && $paid;
                                                     $cleared = (bool) $a->academic_affairs_cleared;
                                                 @endphp
                                                 <tr wire:key="aa-clearance-{{ $a->id }}-{{ (int) $cleared }}">
