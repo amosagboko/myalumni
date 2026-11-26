@@ -250,6 +250,14 @@ class ClearancePaymentStatusTest extends TestCase
             'valid_from' => now()->subDay(),
             'valid_until' => null,
         ]);
+        Transaction::create([
+            'alumni_id' => $alumni->id,
+            'fee_template_id' => $annualDue->id,
+            'amount' => $annualDue->amount,
+            'status' => 'pending',
+            'payment_reference' => 'DUE-'.uniqid(),
+            'payment_provider' => 'credocentral',
+        ]);
 
         $this->assertTrue($alumni->fresh()->hasCompletedRequiredPayments());
 

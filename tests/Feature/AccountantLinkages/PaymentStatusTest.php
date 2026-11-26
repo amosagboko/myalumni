@@ -4,6 +4,7 @@ namespace Tests\Feature\AccountantLinkages;
 
 use App\Models\Alumni;
 use App\Models\AlumniCategory;
+use App\Models\AlumniYear;
 use App\Models\FeeTemplate;
 use App\Models\FeeType;
 use App\Models\Transaction;
@@ -78,6 +79,64 @@ class PaymentStatusTest extends TestCase
             ->assertOk()
             ->assertSee($paid->matric_number)
             ->assertDontSee($pending->matric_number);
+    }
+
+    public function test_paid_alumni_is_not_pending_because_of_the_annual_due(): void
+    {
+        [$paid, $registration, $levy] = $this->createUnpaidUgAlumni('2036/SC/PSB/ACCT-ANNUAL', 2036);
+        $this->payFee($paid, $registration);
+        $this->payFee($paid, $levy);
+        [$unpaid] = $this->createUnpaidUgAlumni('2037/SC/PSB/ACCT-STILL-DUE', 2037);
+
+        $paymentYear = AlumniYear::where('is_active', true)->first() ?? AlumniYear::create([
+            'year' => 2036,
+            'start_date' => now()->startOfYear()->toDateString(),
+            'end_date' => now()->endOfYear()->toDateString(),
+            'is_active' => true,
+        ]);
+        $annualType = FeeType::firstOrCreate(
+            ['code' => FeeType::ANNUAL_DUE_CODE],
+            ['name' => 'Annual Due', 'description' => 'Annual due', 'is_active' => true, 'is_system' => true]
+        );
+        $annualDue = FeeTemplate::create([
+            'fee_type_id' => $annualType->id,
+            'category_id' => null,
+            'fee_purpose' => FeeTemplate::PURPOSE_ANNUAL_RENEWAL,
+            'graduation_year' => $paymentYear->year,
+            'amount' => 2000,
+            'description' => 'Annual alumni due for accountant list',
+            'is_active' => true,
+            'valid_from' => now()->subDay(),
+            'valid_until' => null,
+        ]);
+        Transaction::create([
+            'alumni_id' => $paid->id,
+            'fee_template_id' => $annualDue->id,
+            'amount' => $annualDue->amount,
+            'status' => 'pending',
+            'payment_reference' => 'DUE-ACCT-'.uniqid(),
+            'payment_provider' => 'credocentral',
+        ]);
+
+        $service = app(\App\Services\Alumni\AccountantLinkagePaymentService::class);
+        $this->assertSame('Paid', $service->statusLabel($paid->fresh()));
+        $this->assertNotContains(
+            $annualDue->description,
+            array_column($service->ledger($paid->fresh()), 'description')
+        );
+        $this->assertSame('Pending', $service->statusLabel($unpaid->fresh()));
+
+        $this->actingAs($this->officer())
+            ->get(route('accountant-linkages.payments', ['search' => $paid->matric_number]))
+            ->assertOk()
+            ->assertSee($paid->matric_number)
+            ->assertSee('Paid');
+
+        $this->actingAs($this->officer())
+            ->get(route('accountant-linkages.payments.show', $paid))
+            ->assertOk()
+            ->assertSee($registration->description)
+            ->assertDontSee($annualDue->description);
     }
 
     public function test_view_and_print_show_only_the_selected_alumni_2026_payments(): void

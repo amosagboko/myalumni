@@ -39,6 +39,7 @@ class ClearancePaymentInspectionService
             ->orderByDesc('paid_at')
             ->orderByDesc('id')
             ->get()
+            ->reject(fn (Transaction $transaction) => $this->isAnnualDueTransaction($transaction))
             ->map(fn (Transaction $transaction) => $this->transactionRow($transaction))
             ->values()
             ->all();
@@ -254,6 +255,7 @@ class ClearancePaymentInspectionService
             ?: ($transaction->isCombined() ? 'Combined payment' : 'Payment');
 
         $items = $transaction->items
+            ->reject(fn ($item) => $this->isAnnualDueFee($item->feeTemplate))
             ->map(fn ($item) => [
                 'description' => $item->description
                     ?: $item->feeTemplate?->description
@@ -273,6 +275,22 @@ class ClearancePaymentInspectionService
             'status' => ucfirst((string) $transaction->status),
             'items' => $items,
         ];
+    }
+
+    private function isAnnualDueTransaction(Transaction $transaction): bool
+    {
+        $transaction->loadMissing(['feeTemplate.feeType', 'items.feeTemplate.feeType']);
+
+        if ($transaction->items->isEmpty()) {
+            return $this->isAnnualDueFee($transaction->feeTemplate);
+        }
+
+        return $transaction->items->every(fn ($item) => $this->isAnnualDueFee($item->feeTemplate));
+    }
+
+    private function isAnnualDueFee(?FeeTemplate $fee): bool
+    {
+        return $fee?->feeType?->code === FeeType::ANNUAL_DUE_CODE;
     }
 
     private function feeLabel(FeeTemplate $fee): string

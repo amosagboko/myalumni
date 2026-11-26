@@ -4,6 +4,7 @@ namespace App\Services\Alumni;
 
 use App\Models\Alumni;
 use App\Models\FeeTemplate;
+use App\Models\FeeType;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -124,6 +125,7 @@ class AccountantLinkagePaymentService
         }
 
         $outstanding = $alumni->getActiveFees()
+            ->reject(fn (FeeTemplate $fee) => $this->isAnnualDue($fee))
             ->filter(fn (FeeTemplate $fee) => $this->feeIsInScope($fee))
             ->filter(fn (FeeTemplate $fee) => ! $fee->isPaidByAlumni($alumni))
             ->reject(fn (FeeTemplate $fee) => isset($coveredFeeIds[$fee->id]));
@@ -156,7 +158,9 @@ class AccountantLinkagePaymentService
             })
             ->orderByDesc('paid_at')
             ->orderByDesc('id')
-            ->get();
+            ->get()
+            ->reject(fn (Transaction $transaction) => $this->isAnnualDueTransaction($transaction))
+            ->values();
     }
 
     private function scopeFeeYear(Builder $fee): void
@@ -165,6 +169,22 @@ class AccountantLinkagePaymentService
             $year->where('graduation_year', '>=', self::MIN_YEAR)
                 ->orWhere('graduation_year', FeeTemplate::PAYMENT_YEAR_ALL);
         });
+    }
+
+    private function isAnnualDue(?FeeTemplate $fee): bool
+    {
+        $fee?->loadMissing('feeType');
+
+        return $fee?->feeType?->code === FeeType::ANNUAL_DUE_CODE;
+    }
+
+    private function isAnnualDueTransaction(Transaction $transaction): bool
+    {
+        if ($transaction->items->isEmpty()) {
+            return $this->isAnnualDue($transaction->feeTemplate);
+        }
+
+        return $transaction->items->every(fn ($item) => $this->isAnnualDue($item->feeTemplate));
     }
 
     private function feeIsInScope(FeeTemplate $fee): bool
@@ -195,6 +215,10 @@ class AccountantLinkagePaymentService
         ];
 
         $items = $transaction->items->filter(function ($item) {
+            if ($this->isAnnualDue($item->feeTemplate)) {
+                return false;
+            }
+
             return ! $item->feeTemplate || $this->feeIsInScope($item->feeTemplate);
         });
 
